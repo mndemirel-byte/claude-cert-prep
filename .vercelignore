@@ -1,0 +1,8 @@
+content/
+scripts/
+build/
+requirements.txt
+Makefile
+CONTEXT.md
+CLAUDE.md
+docs/
