@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "installCommand": false,
-  "buildCommand": false,
+  "installCommand": "",
+  "buildCommand": "",
   "outputDirectory": "dist"
 }
