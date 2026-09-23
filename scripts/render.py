@@ -281,6 +281,7 @@ def scen_page():
     return "\n".join(p)
 pages.append(scen_page())
 css=open(os.path.join(ROOT,"src","style.css"),encoding="utf-8").read(); js=open(os.path.join(ROOT,"src","app.js"),encoding="utf-8").read()
+narration_js=open(os.path.join(ROOT,"src","narration-player.js"),encoding="utf-8").read()
 doc=f'''<!DOCTYPE html>
 <html lang="tr" data-lang="tr">
 <head>
@@ -298,7 +299,7 @@ doc=f'''<!DOCTYPE html>
 {''.join(pages)}
 <footer class="foot">{bi(f"Claude Certified Architect (Foundations) çalışma notları · {len(D)} domain · {total_q} soru", f"Claude Certified Architect (Foundations) study notes · {len(D)} domains · {total_q} questions")}</footer>
 </div>
-<script>var MOCK_POOL={POOL_JSON};var MOCK_META={META_JSON};var MOCK_SCEN={SCEN_JSON};</script>\n<script>{js}</script>
+<script>var MOCK_POOL={POOL_JSON};var MOCK_META={META_JSON};var MOCK_SCEN={SCEN_JSON};</script>\n<script>{narration_js}</script>\n<script>{js}</script>
 </body></html>'''
 OUT=os.path.join(ROOT,"dist","index.html")
 os.makedirs(os.path.dirname(OUT),exist_ok=True)

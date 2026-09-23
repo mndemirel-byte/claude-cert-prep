@@ -27,6 +27,47 @@
   window.addEventListener('hashchange',route);
   route();
 
+  /* ---------- lesson narration ---------- */
+  (function(){
+    if(typeof resolveNarrationSrc!=='function')return;
+    var audio=new Audio(); audio.preload='none';
+    var activeBtn=null;
+    function setBtnState(btn,playing){
+      btn.classList.toggle('playing',playing);
+      btn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
+      btn.textContent=playing?'⏸':'▶';
+    }
+    function stopActive(){ if(activeBtn){setBtnState(activeBtn,false); activeBtn=null;} }
+    audio.addEventListener('pause',stopActive);
+    audio.addEventListener('ended',stopActive);
+
+    document.querySelectorAll('.lesson').forEach(function(lessonEl){
+      var summary=lessonEl.querySelector('summary');
+      var btn=document.createElement('button');
+      btn.type='button'; btn.className='lesson-play'; setBtnState(btn,false);
+      summary.appendChild(btn);
+
+      function refresh(){
+        var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
+        btn.hidden=!src;
+        if(!src&&activeBtn===btn)audio.pause();
+      }
+
+      btn.addEventListener('click',function(e){
+        e.preventDefault();
+        var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
+        if(!src)return;
+        if(activeBtn===btn&&!audio.paused){audio.pause();return;}
+        if(activeBtn&&activeBtn!==btn)setBtnState(activeBtn,false);
+        audio.src=src; audio.play();
+        activeBtn=btn; setBtnState(btn,true);
+      });
+
+      updaters.push(refresh);
+      refresh();
+    });
+  })();
+
   document.querySelectorAll('.quiz').forEach(function(quiz){
     var qs=quiz.querySelectorAll('.q'), scoreTxt=quiz.querySelector('.scoretxt');
     function update(){

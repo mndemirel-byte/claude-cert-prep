@@ -48,6 +48,9 @@ h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0 0 20px;font-weight
 .lesson[open] summary::after{content:"–"}
 .lesson[open] summary{border-bottom:1px solid var(--line)}
 .lidx{color:var(--c);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.85rem;white-space:nowrap}
+.lesson-play{margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--c);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;padding:0}
+.lesson-play.playing{background:var(--c);color:#fff;border-color:var(--c)}
+.lesson-play[hidden]{display:none}
 .lesson .prose{padding:6px 22px 22px}
 /* prose */
 .prose{font-size:.98rem}
