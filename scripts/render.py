@@ -2,6 +2,16 @@ import json, re, html, os, markdown
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MD=lambda s: markdown.markdown(s, extensions=['fenced_code','tables'])
 D=json.load(open(os.path.join(ROOT,"build","data.json"),encoding="utf-8"))
+import sys
+sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+from narration import narration_filename
+def narration_attrs(idx):
+    attrs=[]
+    fname=narration_filename(idx)
+    for lang in ("en","tr"):
+        if os.path.exists(os.path.join(ROOT,"dist","audio",lang,fname)):
+            attrs.append(f'data-narration-{lang}="audio/{lang}/{fname}"')
+    return (" "+" ".join(attrs)) if attrs else ""
 EN_TITLE={1:"Agentic Architecture & Orchestration",2:"Tool Design & MCP Integration",3:"Claude Code Configuration & Workflows",4:"Prompt Engineering & Structured Output",5:"Context Management & Reliability"}
 EN_DESC={1:"Agentic loops, multi-agent orchestration, subagent invocation and context passing, workflow enforcement and hooks, task decomposition, session state.",
 2:"Tool interface design, structured error responses, tool distribution and tool_choice, MCP server integration, built-in tools.",
@@ -168,7 +178,7 @@ for d in D:
         idx=title.split(":")[0].strip(); f_tr=d["lessons"][i]
         tr_t=esc(title.split(":",1)[1].strip()) if ":" in title else esc(title)
         en_b=en_lesson_body(idx,f_tr,body)
-        p.append(f'<details class="lesson"><summary><span class="lidx">{idx}</span><span class="ltitle">{bi(tr_t,esc(en_title(title)))}</span></summary><div class="prose l-tr">{body}</div><div class="prose l-en">{en_b}</div></details>')
+        p.append(f'<details class="lesson"{narration_attrs(idx)}><summary><span class="lidx">{idx}</span><span class="ltitle">{bi(tr_t,esc(en_title(title)))}</span></summary><div class="prose l-tr">{body}</div><div class="prose l-en">{en_b}</div></details>')
     p.append('</div>')
     p.append(f'<h2 class="secttl" id="domain-{d["id"]}-quiz">{bi("Yeterlilik testi","Practice quiz")}</h2>')
     allen=all(q.get("en") for q in d["questions"])

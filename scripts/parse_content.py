@@ -87,4 +87,4 @@ for d in DOMAINS:
         assert len(q["opts"])==4 and q.get("ans"), (d["id"],q["n"],q["opts"].keys())
     print(d["id"],len(d["lessons_html"]),"lessons",len(d["questions"]),"questions")
 os.makedirs(os.path.join(ROOT,"build"),exist_ok=True)
-json.dump(DOMAINS,open(os.path.join(ROOT,"build","data.json"),"w"),ensure_ascii=False)
+json.dump(DOMAINS,open(os.path.join(ROOT,"build","data.json"),"w",encoding="utf-8"),ensure_ascii=False)

@@ -1,4 +1,6 @@
 markdown>=3.5
 pytest>=8.0
+# only for scripts/generate_narration.py
+openai>=1.50
 # optional, only for scripts/check.py
 playwright>=1.40
