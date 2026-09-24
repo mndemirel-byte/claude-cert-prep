@@ -49,6 +49,13 @@ h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0 0 20px;font-weight
 .jump a:hover{background:var(--c);color:#fff}
 .secttl{font-size:1.6rem;margin:44px 0 16px;letter-spacing:-.01em}
 .lessons{display:flex;flex-direction:column;gap:8px}
+.guide-item{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.guide-item summary{cursor:pointer;padding:16px 18px;display:flex;gap:14px;align-items:baseline;font-weight:700;list-style:none}
+.guide-item summary::-webkit-details-marker{display:none}
+.guide-item summary::after{content:"+";margin-left:auto;color:var(--c);font-size:1.4rem;font-weight:500;line-height:1}
+.guide-item[open] summary::after{content:"–"}
+.guide-item[open] summary{border-bottom:1px solid var(--line)}
+.guide-item .prose{padding:6px 22px 22px}
 .lesson{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .lesson summary{cursor:pointer;padding:16px 18px;display:flex;gap:14px;align-items:baseline;font-weight:700;list-style:none}
 .lesson summary::-webkit-details-marker{display:none}
@@ -219,7 +226,7 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 </header><div class="weightbar" role="img" aria-label="Domain ağırlıkları"><a href="#domain-1" class="seg" style="--c:#0F6E6E;flex:27"><b><span class="l-tr">%27</span><span class="l-en">27%</span></b><small>D1</small></a><a href="#domain-2" class="seg" style="--c:#8A4B08;flex:18"><b><span class="l-tr">%18</span><span class="l-en">18%</span></b><small>D2</small></a><a href="#domain-3" class="seg" style="--c:#3B4F9A;flex:20"><b><span class="l-tr">%20</span><span class="l-en">20%</span></b><small>D3</small></a><a href="#domain-4" class="seg" style="--c:#7A2E5C;flex:20"><b><span class="l-tr">%20</span><span class="l-en">20%</span></b><small>D4</small></a><a href="#domain-5" class="seg" style="--c:#4E6B2A;flex:15"><b><span class="l-tr">%15</span><span class="l-en">15%</span></b><small>D5</small></a></div><p class="meta"><span class="l-tr">5 domain · 30 task statement dersi · 45 pratik soru</span><span class="l-en">5 domains · 30 task statement lessons · 45 practice questions</span></p><a class="scencta" href="#scenarios"><span class="scencta-t"><span class="l-tr">Sınav senaryoları</span><span class="l-en">Exam scenarios</span></span><span class="scencta-s"><span class="l-tr">6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?</span><span class="l-en">4 of 6 are drawn at random; which domain is asked in which context?</span></span><span class="scencta-go">→</span></a><a class="mockcta" href="#practice">
 <span class="mockcta-t"><span class="l-tr">Practice</span><span class="l-en">Practice</span></span>
 <span class="mockcta-s"><span class="l-tr">Quick Mock, Full-Length Mock veya Flashcards ile çalış</span><span class="l-en">Study with Quick Mock, Full-Length Mock, or Flashcards</span></span>
-<span class="mockcta-go">→</span></a><a class="regcta" href="https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification" target="_blank" rel="noopener"><span class="l-tr">Sınava register olmak için</span><span class="l-en">Register for the exam</span> <span>→</span></a><ol class="domains"><li class="drow" style="--c:#0F6E6E">
+<span class="mockcta-go">→</span></a><a class="regcta" href="#exam-guide">Claude Certified Architect – Foundations Exam Guide <span>→</span></a><ol class="domains"><li class="drow" style="--c:#0F6E6E">
 <div class="dnum">1</div>
 <div class="dbody">
  <h2><a href="#domain-1"><span class="l-tr">Agentic Mimari ve Orkestrasyon</span><span class="l-en">Agentic Architecture & Orchestration</span></a></h2>
@@ -11668,6 +11675,90 @@ if confidence &lt; 0.70: → priority human review
 <div class="palette" id="mock-palette"></div>
 </div>
 <div id="mock-result" hidden></div>
+</section><section id="exam-guide" class="page mock">
+<a class="back" href="#home"><span class="l-tr">← Ana sayfa</span><span class="l-en">← Home</span></a>
+<p class="kicker"><span class="l-tr">Sertifika kılavuzu</span><span class="l-en">Certification guide</span></p>
+<h1>Claude Certified Architect – Foundations</h1>
+<p class="lede"><span class="l-tr">Sınava kaydolmadan önce okuman gereken resmi sınav kılavuzu.</span><span class="l-en">The official exam guide to read before registering.</span></p>
+
+<details class="guide-item"><summary><span class="l-tr">1. Bu Sertifika Hakkında</span><span class="l-en">1. About This Certification</span></summary>
+<div class="prose l-tr"><p>Claude Certified Architect – Foundations sertifikası, pratisyenlerin Claude ile gerçek dünya
+çözümleri uygularken doğru tradeoff kararları verebildiğini doğrular. Bu sınav, Claude ile production
+seviyesinde uygulamalar geliştirmek için kullanılan temel teknolojiler olan Claude Code, Claude Agent
+SDK, Claude API ve Model Context Protocol (MCP) genelinde temel bilgiyi test eder.</p>
+<p>Sınavdaki sorular; müşteri destek için agentic sistemler kurma, çoklu agent araştırma pipeline'ları
+tasarlama, Claude Code'u CI/CD iş akışlarına entegre etme, geliştirici verimlilik araçları inşa etme ve
+yapılandırılmamış dokümanlardan yapılandırılmış veri çıkarma gibi gerçek müşteri kullanım
+senaryolarından alınan gerçekçi senaryolara dayanır. Adaylar sadece kavramsal bilgi değil, production
+ortamlarındaki mimari, konfigürasyon ve tradeoff kararlarında pratik muhakeme de göstermelidir.</p>
+<p>Bu kılavuz, sınava hazırlanan adaylar için yetkili referans kaynağıdır. Sınav içeriğini açıklar, test
+edilen domain ve task statement'ları listeler, örnek sorular sunar ve hazırlık stratejileri önerir. Sınavı
+planlamadan önce baştan sona okuyun.</p></div><div class="prose l-en"><p>The Claude Certified Architect – Foundations certification validates that practitioners can make
+informed decisions about tradeoffs when implementing real-world solutions with Claude. This exam
+tests foundational knowledge across Claude Code, the Claude Agent SDK, the Claude API, and Model
+Context Protocol (MCP), the core technologies used to build production-grade applications with
+Claude.</p>
+<p>Questions on this exam are grounded in realistic scenarios drawn from actual customer use cases,
+including building agentic systems for customer support, designing multi-agent research pipelines,
+integrating Claude Code into CI/CD workflows, building developer productivity tools, and extracting
+structured data from unstructured documents. Candidates must demonstrate not only conceptual
+knowledge but practical judgment about architecture, configuration, and tradeoffs in production
+deployments.</p>
+<p>This guide is the authoritative reference for candidates preparing to sit the exam. It describes the
+exam content, lists the domains and task statements tested, provides sample questions, and
+recommends preparation strategies. Read it in full before scheduling your exam.</p></div></details>
+
+<details class="guide-item"><summary><span class="l-tr">2. Hedef Kitle</span><span class="l-en">2. Intended Audience</span></summary>
+<div class="prose l-tr"><p>Bu sertifika için ideal aday, Claude ile production uygulamaları tasarlayan ve uygulayan bir solution
+architect'tir. Bu aday şu konularda hands-on deneyime sahiptir:</p>
+<ul>
+<li>Claude Agent SDK kullanarak agentic uygulamalar geliştirme; çoklu agent orkestrasyonu, subagent
+delegasyonu, araç entegrasyonu ve lifecycle hook'ları dahil</li>
+<li>Takım iş akışları için Claude Code'u CLAUDE.md dosyaları, Agent Skill'ler, MCP sunucu
+entegrasyonları ve plan modu kullanarak konfigüre etme ve özelleştirme</li>
+<li>Backend sistem entegrasyonu için Model Context Protocol (MCP) araç ve resource arayüzleri
+tasarlama</li>
+<li>JSON şemaları, few-shot örnekler ve extraction pattern'lerinden yararlanarak güvenilir
+yapılandırılmış çıktı üreten prompt'lar mühendisleştirme</li>
+<li>Uzun dokümanlar, çok turlu konuşmalar ve çoklu agent handoff'ları genelinde bağlam pencerelerini
+etkili yönetme</li>
+<li>Otomatik kod incelemesi, test üretimi ve pull request geri bildirimi için Claude'u CI/CD
+pipeline'larına entegre etme</li>
+<li>Hata yönetimi, human-in-the-loop iş akışları ve self-evaluation pattern'leri dahil sağlam eskalasyon
+ve güvenilirlik kararları verme</li>
+</ul>
+<p>Aday tipik olarak Claude API'leri, Agent SDK, Claude Code ve MCP ile geliştirme konusunda 6+ ay
+pratik deneyime sahiptir; production ortamlarında büyük dil modellerinin hem yeteneklerini hem
+sınırlamalarını anlar.</p></div><div class="prose l-en"><p>The ideal candidate for this certification is a solution architect who designs and implements
+production applications with Claude. This candidate has hands-on experience with:</p>
+<ul>
+<li>Building agentic applications using the Claude Agent SDK, including multi-agent orchestration,
+subagent delegation, tool integration, and lifecycle hooks</li>
+<li>Configuring and customizing Claude Code for team workflows using CLAUDE.md files, Agent Skills,
+MCP server integrations, and plan mode</li>
+<li>Designing Model Context Protocol (MCP) tool and resource interfaces for backend system
+integration</li>
+<li>Engineering prompts that produce reliable structured output, leveraging JSON schemas, few-shot
+examples, and extraction patterns</li>
+<li>Managing context windows effectively across long documents, multi-turn conversations, and
+multi-agent handoffs</li>
+<li>Integrating Claude into CI/CD pipelines for automated code review, test generation, and pull
+request feedback</li>
+<li>Making sound escalation and reliability decisions, including error handling, human-in-the-loop
+workflows, and self-evaluation patterns</li>
+</ul>
+<p>The candidate typically has 6+ months of practical experience building with Claude APIs, Agent SDK,
+Claude Code, and MCP, understanding both the capabilities and limitations of large language models
+in production environments.</p></div></details>
+
+<details class="guide-item"><summary><span class="l-tr">3. Sınav Detayları — Genel Bakış</span><span class="l-en">3. Exam Details at a Glance</span></summary>
+<div class="prose"><table class="rules"><tbody><tr><th><span class="l-tr">Kimlik belgesi</span><span class="l-en">Credential</span></th><td><span class="l-tr">Claude Certified Architect – Foundations</span><span class="l-en">Claude Certified Architect – Foundations</span></td></tr><tr><th><span class="l-tr">Sınav kodu</span><span class="l-en">Exam code</span></th><td><span class="l-tr">CCAR-F</span><span class="l-en">CCAR-F</span></td></tr><tr><th><span class="l-tr">Soru sayısı</span><span class="l-en">Number of items</span></th><td><span class="l-tr">60</span><span class="l-en">60</span></td></tr><tr><th><span class="l-tr">Soru formatı</span><span class="l-en">Item format</span></th><td><span class="l-tr">Çoktan seçmeli ve çoklu yanıtlı sorular; her soru kaç yanıt seçileceğini belirtir</span><span class="l-en">Multiple-choice and multiple-response items; each item states how many responses to select</span></td></tr><tr><th><span class="l-tr">Sınav yapısı</span><span class="l-en">Exam structure</span></th><td><span class="l-tr">6 senaryoluk havuzdan seçilen 4 senaryo</span><span class="l-en">4 scenarios drawn from a bank of 6</span></td></tr><tr><th><span class="l-tr">Süre</span><span class="l-en">Time limit</span></th><td><span class="l-tr">120 dakika</span><span class="l-en">120 minutes</span></td></tr><tr><th><span class="l-tr">Uygulama şekli</span><span class="l-en">Delivery</span></th><td><span class="l-tr">Gözetimli: online gözetimli ve/veya test merkezi, program politikasına göre</span><span class="l-en">Proctored: online proctored and/or test center, per program policy</span></td></tr><tr><th><span class="l-tr">Geçme puanı</span><span class="l-en">Passing score</span></th><td><span class="l-tr">100–1.000 ölçeğinde 720 skaler puan</span><span class="l-en">Scaled score of 720 on a scale of 100–1,000</span></td></tr><tr><th><span class="l-tr">Sınav ücreti</span><span class="l-en">Exam fee</span></th><td><span class="l-tr">125 USD</span><span class="l-en">$125 USD</span></td></tr><tr><th><span class="l-tr">Geçerlilik süresi</span><span class="l-en">Validity period</span></th><td><span class="l-tr">Sertifikanın verildiği tarihten itibaren 12 ay</span><span class="l-en">12 months from the date the credential is awarded</span></td></tr><tr><th><span class="l-tr">Sonuç raporlama</span><span class="l-en">Result reporting</span></th><td><span class="l-tr">Skaler puanla (100–1.000) geçti/kaldı, ayrıca skor raporunda domain bazında doğru yüzdesi</span><span class="l-en">Pass/fail with scaled score (100–1,000), plus percent-correct by domain on the score report</span></td></tr></tbody></table></div></details>
+
+<details class="guide-item"><summary><span class="l-tr">4. Sınav İçerik Taslağı (Blueprint)</span><span class="l-en">4. Exam Content Outline (Blueprint)</span></summary>
+<div class="prose"><table class="rules"><thead><tr><th><span class="l-tr">Domain</span><span class="l-en">Domain</span></th><th><span class="l-tr">İçerik Alanı</span><span class="l-en">Content Domain</span></th><th><span class="l-tr">Ağırlık</span><span class="l-en">Weight</span></th></tr></thead>
+<tbody><tr><td>1</td><td><span class="l-tr">Agentic Mimari ve Orkestrasyon</span><span class="l-en">Agentic Architecture & Orchestration</span></td><td>%27</td></tr><tr><td>2</td><td><span class="l-tr">Araç Tasarımı ve MCP Entegrasyonu</span><span class="l-en">Tool Design & MCP Integration</span></td><td>%18</td></tr><tr><td>3</td><td><span class="l-tr">Claude Code Konfigürasyonu ve İş Akışları</span><span class="l-en">Claude Code Configuration & Workflows</span></td><td>%20</td></tr><tr><td>4</td><td><span class="l-tr">Prompt Engineering ve Yapılandırılmış Çıktı</span><span class="l-en">Prompt Engineering & Structured Output</span></td><td>%20</td></tr><tr><td>5</td><td><span class="l-tr">Bağlam Yönetimi ve Güvenilirlik</span><span class="l-en">Context Management & Reliability</span></td><td>%15</td></tr></tbody></table></div></details>
+
+<a class="regcta" href="https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification" target="_blank" rel="noopener" style="margin-top:24px"><span class="l-tr">Sınava register ol</span><span class="l-en">Register for exam</span> <span>→</span></a>
 </section><section id="scenarios" class="page scen">
 <a class="back" href="#home"><span class="l-tr">← Ana sayfa</span><span class="l-en">← Home</span></a>
 <p class="kicker"><span class="l-tr">Resmi sınav kılavuzuna göre</span><span class="l-en">According to the official exam guide</span></p>

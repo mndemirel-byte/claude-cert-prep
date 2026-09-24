@@ -37,3 +37,7 @@ _Avoid_: Mock Exam (the old single-mode name), Practice Test
 **Flashcard** / **Flashcard Deck**:
 A front/back flip card testing a single concept, term, principle, or anti-pattern from a Lesson's "Key Exam Takeaways" table (front: the Concept; back: the Remember text). A Flashcard Deck is one Domain's full set of Flashcards, pooled from every Lesson in that Domain and shown in randomized order each time the deck is opened.
 _Avoid_: Study card, Quiz card
+
+**Exam Guide**:
+The site's own page reproducing four sections of Anthropic's official Exam Guide PDF (About This Certification, Intended Audience, Exam Details at a Glance, Exam Content Outline) as collapsible entries, replacing the home page's direct "Register for Exam" link — a learner reads the guide here first, then registers from a button at the end of this page.
+_Avoid_: Certification guide, About page

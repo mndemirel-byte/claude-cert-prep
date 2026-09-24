@@ -41,6 +41,13 @@ h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0 0 20px;font-weight
 .jump a:hover{background:var(--c);color:#fff}
 .secttl{font-size:1.6rem;margin:44px 0 16px;letter-spacing:-.01em}
 .lessons{display:flex;flex-direction:column;gap:8px}
+.guide-item{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:8px}
+.guide-item summary{cursor:pointer;padding:16px 18px;display:flex;gap:14px;align-items:baseline;font-weight:700;list-style:none}
+.guide-item summary::-webkit-details-marker{display:none}
+.guide-item summary::after{content:"+";margin-left:auto;color:var(--c);font-size:1.4rem;font-weight:500;line-height:1}
+.guide-item[open] summary::after{content:"–"}
+.guide-item[open] summary{border-bottom:1px solid var(--line)}
+.guide-item .prose{padding:6px 22px 22px}
 .lesson{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .lesson summary{cursor:pointer;padding:16px 18px;display:flex;gap:14px;align-items:baseline;font-weight:700;list-style:none}
 .lesson summary::-webkit-details-marker{display:none}

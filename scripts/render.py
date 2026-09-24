@@ -165,7 +165,7 @@ home.append(f'''<a class="mockcta" href="#practice">
 <span class="mockcta-t">{bi("Practice","Practice")}</span>
 <span class="mockcta-s">{bi("Quick Mock, Full-Length Mock veya Flashcards ile çalış","Study with Quick Mock, Full-Length Mock, or Flashcards")}</span>
 <span class="mockcta-go">→</span></a>''')
-home.append(f'''<a class="regcta" href="https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification" target="_blank" rel="noopener">{bi("Sınava register olmak için","Register for the exam")} <span>→</span></a>''')
+home.append(f'''<a class="regcta" href="#exam-guide">Claude Certified Architect – Foundations Exam Guide <span>→</span></a>''')
 home.append('<ol class="domains">')
 for d in D:
     home.append(f'''<li class="drow" style="--c:{d["hue"]}">
@@ -305,6 +305,122 @@ examrunner=f'''<section id="practice-exam" class="page mock">
 <div id="mock-result" hidden></div>
 </section>'''
 pages.append(examrunner)
+
+REG_URL="https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification"
+
+eg_about_tr='''<p>Claude Certified Architect – Foundations sertifikası, pratisyenlerin Claude ile gerçek dünya
+çözümleri uygularken doğru tradeoff kararları verebildiğini doğrular. Bu sınav, Claude ile production
+seviyesinde uygulamalar geliştirmek için kullanılan temel teknolojiler olan Claude Code, Claude Agent
+SDK, Claude API ve Model Context Protocol (MCP) genelinde temel bilgiyi test eder.</p>
+<p>Sınavdaki sorular; müşteri destek için agentic sistemler kurma, çoklu agent araştırma pipeline'ları
+tasarlama, Claude Code'u CI/CD iş akışlarına entegre etme, geliştirici verimlilik araçları inşa etme ve
+yapılandırılmamış dokümanlardan yapılandırılmış veri çıkarma gibi gerçek müşteri kullanım
+senaryolarından alınan gerçekçi senaryolara dayanır. Adaylar sadece kavramsal bilgi değil, production
+ortamlarındaki mimari, konfigürasyon ve tradeoff kararlarında pratik muhakeme de göstermelidir.</p>
+<p>Bu kılavuz, sınava hazırlanan adaylar için yetkili referans kaynağıdır. Sınav içeriğini açıklar, test
+edilen domain ve task statement'ları listeler, örnek sorular sunar ve hazırlık stratejileri önerir. Sınavı
+planlamadan önce baştan sona okuyun.</p>'''
+
+eg_about_en='''<p>The Claude Certified Architect – Foundations certification validates that practitioners can make
+informed decisions about tradeoffs when implementing real-world solutions with Claude. This exam
+tests foundational knowledge across Claude Code, the Claude Agent SDK, the Claude API, and Model
+Context Protocol (MCP), the core technologies used to build production-grade applications with
+Claude.</p>
+<p>Questions on this exam are grounded in realistic scenarios drawn from actual customer use cases,
+including building agentic systems for customer support, designing multi-agent research pipelines,
+integrating Claude Code into CI/CD workflows, building developer productivity tools, and extracting
+structured data from unstructured documents. Candidates must demonstrate not only conceptual
+knowledge but practical judgment about architecture, configuration, and tradeoffs in production
+deployments.</p>
+<p>This guide is the authoritative reference for candidates preparing to sit the exam. It describes the
+exam content, lists the domains and task statements tested, provides sample questions, and
+recommends preparation strategies. Read it in full before scheduling your exam.</p>'''
+
+eg_audience_tr='''<p>Bu sertifika için ideal aday, Claude ile production uygulamaları tasarlayan ve uygulayan bir solution
+architect'tir. Bu aday şu konularda hands-on deneyime sahiptir:</p>
+<ul>
+<li>Claude Agent SDK kullanarak agentic uygulamalar geliştirme; çoklu agent orkestrasyonu, subagent
+delegasyonu, araç entegrasyonu ve lifecycle hook'ları dahil</li>
+<li>Takım iş akışları için Claude Code'u CLAUDE.md dosyaları, Agent Skill'ler, MCP sunucu
+entegrasyonları ve plan modu kullanarak konfigüre etme ve özelleştirme</li>
+<li>Backend sistem entegrasyonu için Model Context Protocol (MCP) araç ve resource arayüzleri
+tasarlama</li>
+<li>JSON şemaları, few-shot örnekler ve extraction pattern'lerinden yararlanarak güvenilir
+yapılandırılmış çıktı üreten prompt'lar mühendisleştirme</li>
+<li>Uzun dokümanlar, çok turlu konuşmalar ve çoklu agent handoff'ları genelinde bağlam pencerelerini
+etkili yönetme</li>
+<li>Otomatik kod incelemesi, test üretimi ve pull request geri bildirimi için Claude'u CI/CD
+pipeline'larına entegre etme</li>
+<li>Hata yönetimi, human-in-the-loop iş akışları ve self-evaluation pattern'leri dahil sağlam eskalasyon
+ve güvenilirlik kararları verme</li>
+</ul>
+<p>Aday tipik olarak Claude API'leri, Agent SDK, Claude Code ve MCP ile geliştirme konusunda 6+ ay
+pratik deneyime sahiptir; production ortamlarında büyük dil modellerinin hem yeteneklerini hem
+sınırlamalarını anlar.</p>'''
+
+eg_audience_en='''<p>The ideal candidate for this certification is a solution architect who designs and implements
+production applications with Claude. This candidate has hands-on experience with:</p>
+<ul>
+<li>Building agentic applications using the Claude Agent SDK, including multi-agent orchestration,
+subagent delegation, tool integration, and lifecycle hooks</li>
+<li>Configuring and customizing Claude Code for team workflows using CLAUDE.md files, Agent Skills,
+MCP server integrations, and plan mode</li>
+<li>Designing Model Context Protocol (MCP) tool and resource interfaces for backend system
+integration</li>
+<li>Engineering prompts that produce reliable structured output, leveraging JSON schemas, few-shot
+examples, and extraction patterns</li>
+<li>Managing context windows effectively across long documents, multi-turn conversations, and
+multi-agent handoffs</li>
+<li>Integrating Claude into CI/CD pipelines for automated code review, test generation, and pull
+request feedback</li>
+<li>Making sound escalation and reliability decisions, including error handling, human-in-the-loop
+workflows, and self-evaluation patterns</li>
+</ul>
+<p>The candidate typically has 6+ months of practical experience building with Claude APIs, Agent SDK,
+Claude Code, and MCP, understanding both the capabilities and limitations of large language models
+in production environments.</p>'''
+
+EG_DETAILS=[
+ ("Kimlik belgesi","Credential","Claude Certified Architect – Foundations","Claude Certified Architect – Foundations"),
+ ("Sınav kodu","Exam code","CCAR-F","CCAR-F"),
+ ("Soru sayısı","Number of items","60","60"),
+ ("Soru formatı","Item format","Çoktan seçmeli ve çoklu yanıtlı sorular; her soru kaç yanıt seçileceğini belirtir","Multiple-choice and multiple-response items; each item states how many responses to select"),
+ ("Sınav yapısı","Exam structure","6 senaryoluk havuzdan seçilen 4 senaryo","4 scenarios drawn from a bank of 6"),
+ ("Süre","Time limit","120 dakika","120 minutes"),
+ ("Uygulama şekli","Delivery","Gözetimli: online gözetimli ve/veya test merkezi, program politikasına göre","Proctored: online proctored and/or test center, per program policy"),
+ ("Geçme puanı","Passing score","100–1.000 ölçeğinde 720 skaler puan","Scaled score of 720 on a scale of 100–1,000"),
+ ("Sınav ücreti","Exam fee","125 USD","$125 USD"),
+ ("Geçerlilik süresi","Validity period","Sertifikanın verildiği tarihten itibaren 12 ay","12 months from the date the credential is awarded"),
+ ("Sonuç raporlama","Result reporting","Skaler puanla (100–1.000) geçti/kaldı, ayrıca skor raporunda domain bazında doğru yüzdesi","Pass/fail with scaled score (100–1,000), plus percent-correct by domain on the score report"),
+]
+eg_details_rows=''.join(f'<tr><th>{bi(tr_l,en_l)}</th><td>{bi(tr_v,en_v)}</td></tr>' for tr_l,en_l,tr_v,en_v in EG_DETAILS)
+
+eg_blueprint_rows=''.join(
+    f'<tr><td>{d["id"]}</td><td>{bi(esc(d["title"]),EN_TITLE[d["id"]])}</td><td>%{d["weight"]}</td></tr>'
+    for d in D
+)
+
+pages.append(f'''<section id="exam-guide" class="page mock">
+<a class="back" href="#home">{bi("← Ana sayfa","← Home")}</a>
+<p class="kicker">{bi("Sertifika kılavuzu","Certification guide")}</p>
+<h1>Claude Certified Architect – Foundations</h1>
+<p class="lede">{bi("Sınava kaydolmadan önce okuman gereken resmi sınav kılavuzu.","The official exam guide to read before registering.")}</p>
+
+<details class="guide-item"><summary>{bi("1. Bu Sertifika Hakkında","1. About This Certification")}</summary>
+<div class="prose l-tr">{eg_about_tr}</div><div class="prose l-en">{eg_about_en}</div></details>
+
+<details class="guide-item"><summary>{bi("2. Hedef Kitle","2. Intended Audience")}</summary>
+<div class="prose l-tr">{eg_audience_tr}</div><div class="prose l-en">{eg_audience_en}</div></details>
+
+<details class="guide-item"><summary>{bi("3. Sınav Detayları — Genel Bakış","3. Exam Details at a Glance")}</summary>
+<div class="prose"><table class="rules"><tbody>{eg_details_rows}</tbody></table></div></details>
+
+<details class="guide-item"><summary>{bi("4. Sınav İçerik Taslağı (Blueprint)","4. Exam Content Outline (Blueprint)")}</summary>
+<div class="prose"><table class="rules"><thead><tr><th>{bi("Domain","Domain")}</th><th>{bi("İçerik Alanı","Content Domain")}</th><th>{bi("Ağırlık","Weight")}</th></tr></thead>
+<tbody>{eg_blueprint_rows}</tbody></table></div></details>
+
+<a class="regcta" href="{REG_URL}" target="_blank" rel="noopener" style="margin-top:24px">{bi("Sınava register ol","Register for exam")} <span>→</span></a>
+</section>''')
 SEL_TR='''<p>Resmi kılavuzun tanımı şu: sınav senaryo tabanlı sorular kullanır; her senaryo, bir dizi soruyu çerçeveleyen gerçekçi bir üretim bağlamı sunar ve sınav sırasında <strong>6 senaryoluk havuzdan rastgele 4'ü</strong> sunulur. Yani:</p>
 <ul>
 <li>Sorular bağımsız birer bilgi sorusu değildir; "şu sistemi kuruyorsun" diye başlayan bir senaryo metninin altında gelir ve o senaryonun araç adları, hedef metrikleri ve kısıtları soru gövdesine gömülüdür.</li>
