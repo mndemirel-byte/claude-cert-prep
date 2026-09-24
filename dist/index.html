@@ -110,12 +110,6 @@ h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0 0 20px;font-weight
 .lesson-play{margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--c);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;padding:0}
 .lesson-play.playing{background:var(--c);color:#fff;border-color:var(--c)}
 .lesson-play[hidden]{display:none}
-.narration-controls{display:flex;align-items:center;gap:8px;padding:0 18px 14px;font-size:.8rem;color:var(--muted)}
-.narration-controls[hidden]{display:none}
-.narration-controls button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--c);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:.8rem;line-height:1}
-.nc-seek{flex:1;accent-color:var(--c)}
-.nc-time{font-family:var(--mono);white-space:nowrap}
-.nc-speed{min-width:2.6em}
 .lesson .prose{padding:6px 22px 22px}
 /* prose */
 .prose{font-size:.98rem}
@@ -296,6 +290,24 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 .tabbar a .ticon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;line-height:1}
 .tabbar a.active{color:var(--accent-text)}
 @media (max-width:720px){.tabbar{display:block}}
+
+/* persistent narration player bar */
+.playerbar{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--tabbar-bg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);box-shadow:0 -2px 16px rgba(0,0,0,.08)}
+.playerbar-inner{max-width:820px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px}
+.pb-playpause{flex:none;width:38px;height:38px;border-radius:50%;border:none;background:var(--c);color:var(--on-domain);cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;padding:0}
+.pb-info{flex:1;min-width:0}
+.pb-title{font-weight:700;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb-domain{color:var(--muted);font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb-icon{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--c);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:.8rem;line-height:1}
+.pb-seek{flex:2;min-width:60px;accent-color:var(--c)}
+.pb-time{font-family:var(--mono);font-size:.75rem;color:var(--muted);white-space:nowrap;flex:none}
+.pb-speed{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--c);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:.75rem;min-width:2.6em}
+.pb-close{margin-left:4px;border:none;background:none;color:var(--muted);font-size:.9rem;cursor:pointer;padding:4px}
+@media (max-width:720px){
+  .playerbar{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .pb-domain,.pb-restart,.pb-end,.pb-close{display:none}
+  .playerbar-inner{padding:8px 14px;gap:8px}
+}
 </style>
 </head>
 <body>
@@ -320,6 +332,22 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 <a href="#flashcards" data-nav="flashcards"><span class="ticon">◫</span><span class="l-tr">Flashcards</span><span class="l-en">Flashcards</span></a>
 </div>
 </nav>
+<div class="playerbar" id="playerbar" hidden>
+<div class="playerbar-inner">
+<button type="button" class="pb-playpause" id="pb-playpause" aria-label="Play/Pause">▶</button>
+<div class="pb-info">
+<div class="pb-title" id="pb-title"></div>
+<div class="pb-domain" id="pb-domain"></div>
+</div>
+<button type="button" class="pb-icon pb-restart" id="pb-restart" aria-label="Restart">⏮</button>
+<span class="pb-time" id="pb-current">0:00</span>
+<input type="range" class="pb-seek" id="pb-seek" min="0" max="0" step="1" value="0">
+<span class="pb-time" id="pb-duration">0:00</span>
+<button type="button" class="pb-icon pb-end" id="pb-end" aria-label="Skip to end">⏭</button>
+<button type="button" class="pb-speed" id="pb-speed" aria-label="Playback speed">1x</button>
+<button type="button" class="pb-icon pb-close" id="pb-close" aria-label="Close player">✕</button>
+</div>
+</div>
 <div class="wrap">
 <section id="home" class="page"><header class="hero">
 <div class="hero-copy">
@@ -383,7 +411,7 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 </header>
 <h2 class="secttl" id="domain-1-lessons"><span class="l-tr">Dersler</span><span class="l-en">Lessons</span></h2>
 <div class="lessons">
-<details class="lesson" data-lesson-id="1.1" data-narration-en="audio/en/D1-1.mp3" data-narration-tr="audio/tr/D1-1.mp3"><summary><span class="lidx">1.1</span><span class="ltitle"><span class="l-tr">Agentic Döngüler (Agentic Loops)</span><span class="l-en">Agentic Loops</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="1.1" data-narration-en="audio/en/D1-1.mp3" data-narration-tr="audio/tr/D1-1.mp3"><summary><span class="lidx">1.1</span><span class="ltitle"><span class="l-tr">Agentic Döngüler (Agentic Loops)</span><span class="l-en">Agentic Loops</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Normalde Claude'u kullandığınızda tek bir alışveriş gerçekleşir: bir mesaj gönderirsin, bir yanıt alırsın, biter. <strong>Agentic döngü</strong>, Claude'u <em>harekete geçebilen</em> bir şeye dönüştürür — araçları çağırabilir, sonuçlara bakabilir, tekrar düşünebilir, daha fazla araç çağırabilir ve iş bitene kadar devam edebilir.</p>
 <p>Bunu bir araştırma asistanı tutmak gibi düşün. Ona sadece bir soru sorup tek bir cevap almazsın. Gider araştırır, bulduklarıyla geri gelir, daha fazla bilgiye ihtiyacı olduğuna karar verir, başka bir şey daha araştırır ve sonunda eksiksiz bir cevapla geri döner. İşte agentic döngü budur.</p>
 <hr />
@@ -568,7 +596,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
     # send updated conversation back to Claude
 </code></pre>
 <p><strong>Key Principle:</strong> <code>stop_reason</code> is a <strong>structured field on the response object</strong>, not part of the response text. It is the only reliable mechanism for determining whether the agentic loop should continue or terminate.</p></div></details>
-<details class="lesson" data-lesson-id="1.2" data-narration-en="audio/en/D1-2.mp3" data-narration-tr="audio/tr/D1-2.mp3"><summary><span class="lidx">1.2</span><span class="ltitle"><span class="l-tr">Çoklu Agent Orkestrasyonu (Multi-Agent Orchestration)</span><span class="l-en">Multi-Agent Orchestration</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="1.2" data-narration-en="audio/en/D1-2.mp3" data-narration-tr="audio/tr/D1-2.mp3"><summary><span class="lidx">1.2</span><span class="ltitle"><span class="l-tr">Çoklu Agent Orkestrasyonu (Multi-Agent Orchestration)</span><span class="l-en">Multi-Agent Orchestration</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Döngüye sahip tek bir agent güçlüdür, ancak bazı problemler tek bir agent'ın iyi başa çıkamayacağı kadar karmaşıktır. Uzmanlara ihtiyacın var. İşte <strong>çoklu agent orkestrasyonu</strong> tam olarak burada devreye girer.</p>
 <p>Sınavın test ettiği mimari <strong>hub-and-spoke</strong> (merkez ve bağlantı) olarak adlandırılır. Bir tekerlek hayal et:</p>
 <ul>
@@ -747,7 +775,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>Why A is wrong:</strong> The web search subagent returns excellent results when tested independently with geothermal or tidal queries. Its search capability is fine — it was simply never given those topics to search for. The fault is upstream.</p>
 <p><strong>Why C is wrong:</strong> The synthesis subagent can only synthesise what it receives. If no research on geothermal or tidal was ever conducted, there's nothing for it to filter out. The missing topics were never researched in the first place.</p>
 <p><strong>Why D is wrong:</strong> This is the isolation principle trap. Giving subagents the coordinator's full conversation history is the opposite of good architecture. Subagents should receive only the specific context they need, explicitly passed by the coordinator. The fix is to improve the coordinator's decomposition, not to break the isolation principle.</p></div></details>
-<details class="lesson" data-lesson-id="1.3" data-narration-en="audio/en/D1-3.mp3" data-narration-tr="audio/tr/D1-3.mp3"><summary><span class="lidx">1.3</span><span class="ltitle"><span class="l-tr">Subagent Çağırma ve Bağlam Aktarımı (Subagent Invocation and Context Passing)</span><span class="l-en">Subagent Invocation and Context Passing</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="1.3" data-narration-en="audio/en/D1-3.mp3" data-narration-tr="audio/tr/D1-3.mp3"><summary><span class="lidx">1.3</span><span class="ltitle"><span class="l-tr">Subagent Çağırma ve Bağlam Aktarımı (Subagent Invocation and Context Passing)</span><span class="l-en">Subagent Invocation and Context Passing</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Task Statement 1.2'de koordinatörün subagent'ları yönettiğini öğrendik. Şimdi asıl soruya geliyoruz: <strong>koordinatör subagent'ları nasıl oluşturur ve onlara bilgiyi nasıl aktarır?</strong></p>
 <hr />
 <h2>Task Tool</h2>
@@ -952,7 +980,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>Why A is wrong:</strong> Adding a prompt instruction might help, but it isn't the root cause. Even if you tell the synthesis agent to "cite sources," if the data it receives doesn't carry structured source information, there's nothing to attribute. A prompt instruction can't invent missing data.</p>
 <p><strong>Why C is wrong:</strong> The scenario explicitly states the web search subagent works perfectly and produces rich, well-sourced data. The problem isn't at the source — it's in the coordinator's hand-off mechanism.</p>
 <p><strong>Why D is wrong:</strong> This is the isolation-principle trap. Giving a subagent the coordinator's full conversation history is not the correct architectural approach — it violates the isolation principle. The fix is for the coordinator to do context passing with structured metadata, not to break isolation.</p></div></details>
-<details class="lesson" data-lesson-id="1.4" data-narration-en="audio/en/D1-4.mp3" data-narration-tr="audio/tr/D1-4.mp3"><summary><span class="lidx">1.4</span><span class="ltitle"><span class="l-tr">İş Akışı Zorlaması ve Devir Teslim (Workflow Enforcement and Handoff)</span><span class="l-en">Workflow Enforcement and Handoff</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="1.4" data-narration-en="audio/en/D1-4.mp3" data-narration-tr="audio/tr/D1-4.mp3"><summary><span class="lidx">1.4</span><span class="ltitle"><span class="l-tr">İş Akışı Zorlaması ve Devir Teslim (Workflow Enforcement and Handoff)</span><span class="l-en">Workflow Enforcement and Handoff</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Agentic loops, multi-agent orchestration, context passing — bunların hepsi Claude'un <strong>esnek</strong> ve <strong>akıllı</strong> kararlar vermesine dayanıyor. Ama bazı kararlar esnekliğe bırakılamaz. Bazı kurallar <strong>her seferinde, istisnasız</strong> uygulanmalıdır.</p>
 <p>Bu task statement tam olarak bunu öğretiyor: <strong>ne zaman Claude'a güvenirsin, ne zaman programmatik olarak zorlarsın?</strong></p>
 <hr />
@@ -1137,7 +1165,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>Why B is wrong:</strong> Strengthening the prompt is probabilistic — it might raise success from 92% to 97%, but it can't guarantee 100%. The current 8% failure rate is itself proof the prompt isn't sufficient. Financial risk remains.</p>
 <p><strong>Why C is wrong:</strong> Few-shot examples are also in the prompt-based-guidance category. They <em>guide</em> the model's behavior but don't <em>enforce</em> it. Same problem — not deterministic.</p>
 <p><strong>Why D is wrong:</strong> A routing classifier moves the problem elsewhere without solving it. The classifier itself can make mistakes. And the core issue remains: the refund tool can still be called without verification. No gate, no guarantee.</p></div></details>
-<details class="lesson" data-lesson-id="1.5" data-narration-en="audio/en/D1-5.mp3" data-narration-tr="audio/tr/D1-5.mp3"><summary><span class="lidx">1.5</span><span class="ltitle"><span class="l-tr">Agent SDK Hook&#x27;ları (Agent SDK Hooks)</span><span class="l-en">Agent SDK Hooks</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="1.5" data-narration-en="audio/en/D1-5.mp3" data-narration-tr="audio/tr/D1-5.mp3"><summary><span class="lidx">1.5</span><span class="ltitle"><span class="l-tr">Agent SDK Hook&#x27;ları (Agent SDK Hooks)</span><span class="l-en">Agent SDK Hooks</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Task Statement 1.4'te programmatic enforcement'ın neden gerekli olduğunu öğrendik. Şimdi <strong>nasıl</strong> uygulandığını öğreniyoruz. Cevap: <strong>hooks</strong>.</p>
 <p>Hook'lar, tool çağrılarının <strong>önüne</strong> veya <strong>sonrasına</strong> yerleştirdiğin kod parçaları. İki ana türü var:</p>
 <hr />
@@ -1308,7 +1336,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <h3>Correct Answer: Hook</h3>
 <p><strong>Explanation:</strong> Regulatory risk means a single failure creates legal consequences. Prompt instructions can raise the success rate (say, from 92% to 97%) but can't guarantee 100%. A tool call interception hook physically blocks the transfer tool from running until the compliance check completes. Zero failure rate.</p>
 <p><strong>Why a prompt isn't enough:</strong> International transfers are subject to financial regulation. Even a single uncontrolled transfer carries the risk of penalties or legal investigation. A probabilistic solution is unacceptable at this risk level. A deterministic guarantee is required.</p></div></details>
-<details class="lesson" data-lesson-id="1.6" data-narration-en="audio/en/D1-6.mp3" data-narration-tr="audio/tr/D1-6.mp3"><summary><span class="lidx">1.6</span><span class="ltitle"><span class="l-tr">Görev Ayrıştırma Stratejileri (Task Decomposition Strategies)</span><span class="l-en">Task Decomposition Strategies</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="1.6" data-narration-en="audio/en/D1-6.mp3" data-narration-tr="audio/tr/D1-6.mp3"><summary><span class="lidx">1.6</span><span class="ltitle"><span class="l-tr">Görev Ayrıştırma Stratejileri (Task Decomposition Strategies)</span><span class="l-en">Task Decomposition Strategies</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Büyük görevleri nasıl parçalara ayırırsın? İki temel pattern var ve her birinin ne zaman doğru olduğunu bilmen gerekiyor.</p>
 <hr />
 <h2>Pattern 1: Fixed Sequential Pipelines (Prompt Chaining)</h2>
@@ -1477,7 +1505,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>Why A is wrong:</strong> The problem isn't context window size, it's attention dilution. A bigger model would face the same issue, because trying to focus on 14 files in one pass is a structural problem.</p>
 <p><strong>Why C is wrong:</strong> A prompt instruction is probabilistic. Saying "pay equal attention" doesn't fix attention dilution — this is a structural architecture problem, not a prompt problem.</p>
 <p><strong>Why D is wrong:</strong> Reordering the files changes which ones get neglected but doesn't fix the underlying issue. It's still a single pass, still diluted attention.</p></div></details>
-<details class="lesson" data-lesson-id="1.7" data-narration-en="audio/en/D1-7.mp3" data-narration-tr="audio/tr/D1-7.mp3"><summary><span class="lidx">1.7</span><span class="ltitle"><span class="l-tr">Oturum Durumu ve Devam Ettirme (Session State and Resumption)</span><span class="l-en">Session State and Resumption</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="1.7" data-narration-en="audio/en/D1-7.mp3" data-narration-tr="audio/tr/D1-7.mp3"><summary><span class="lidx">1.7</span><span class="ltitle"><span class="l-tr">Oturum Durumu ve Devam Ettirme (Session State and Resumption)</span><span class="l-en">Session State and Resumption</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Agent'lar uzun süre çalışabilir. Bazen bir oturumu bırakıp sonra geri dönmen gerekir. Ya da agent uzun süredir çalışıyordur ve context bozulmaya başlamıştır. Bu task statement, <strong>oturumu nasıl yönetirsin</strong> sorusunu cevaplıyor.</p>
 <hr />
 <h2>Üç Seçenek</h2>
@@ -1893,7 +1921,7 @@ reached $120B. Geothermal projects expanded in Iceland and Kenya.&quot;
 </header>
 <h2 class="secttl" id="domain-2-lessons"><span class="l-tr">Dersler</span><span class="l-en">Lessons</span></h2>
 <div class="lessons">
-<details class="lesson" data-lesson-id="2.1" data-narration-en="audio/en/D2-1.mp3" data-narration-tr="audio/tr/D2-1.mp3"><summary><span class="lidx">2.1</span><span class="ltitle"><span class="l-tr">Araç Arayüz Tasarımı (Tool Interface Design)</span><span class="l-en">Tool Interface Design</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="2.1" data-narration-en="audio/en/D2-1.mp3" data-narration-tr="audio/tr/D2-1.mp3"><summary><span class="lidx">2.1</span><span class="ltitle"><span class="l-tr">Araç Arayüz Tasarımı (Tool Interface Design)</span><span class="l-en">Tool Interface Design</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Claude bir agent olarak çalışırken, <strong>araçlara (tools)</strong> erişimi vardır — veritabanı sorgulama, müşteri bilgisi çekme, e-posta gönderme, API çağrısı yapma gibi fonksiyonlar. Bu araçları sen tanımlarsın ve API üzerinden Claude'a verirsin.</p>
 <p>Kritik nokta: <strong>Claude hangi aracı çağıracağına neredeyse tamamen aracın açıklamasına (description) bakarak karar verir.</strong> Aracın adına değil. System prompt'taki örneklere değil. <strong>Açıklama</strong>, TEK mekanizmadır.</p>
 <p>Şöyle düşün: karanlık bir odada 6 tane etiketsiz düğme var. Birisi sana her düğmenin tek cümlelik açıklamasını okuyor. Sadece bu açıklamalara dayanarak doğru düğmeye basmalısın. İki açıklama birbirine çok benziyorsa, bazen yanlış düğmeye basacaksın.</p>
@@ -2166,7 +2194,7 @@ use for order-related queries — use lookup_order instead.&quot;
 <p><strong>Why A is wrong:</strong> A routing classifier is over-engineering for a first step. You haven't tried the simple fix (better descriptions). A classifier adds complexity and maintenance cost.</p>
 <p><strong>Why C is wrong:</strong> Merging breaks separation of concerns. Combining two different data sources (knowledge base and tickets) into one tool loses tool focus.</p>
 <p><strong>Why D is wrong:</strong> Few-shot examples add token cost and treat the symptom, not the root cause. While descriptions are vague, examples do not provide a reliable fix.</p></div></details>
-<details class="lesson" data-lesson-id="2.2" data-narration-en="audio/en/D2-2.mp3" data-narration-tr="audio/tr/D2-2.mp3"><summary><span class="lidx">2.2</span><span class="ltitle"><span class="l-tr">Yapılandırılmış Hata Yanıtları (Structured Error Responses)</span><span class="l-en">Structured Error Responses</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="2.2" data-narration-en="audio/en/D2-2.mp3" data-narration-tr="audio/tr/D2-2.mp3"><summary><span class="lidx">2.2</span><span class="ltitle"><span class="l-tr">Yapılandırılmış Hata Yanıtları (Structured Error Responses)</span><span class="l-en">Structured Error Responses</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Araçlar her zaman başarılı olmaz. Timeout olur, geçersiz girdi gelir, yetki reddedilir. Mesele şu: <strong>araç başarısız olduğunda, bunu Claude'a NASIL bildiriyorsun?</strong></p>
 <p>MCP'de bunun için <strong><code>isError</code> flag'i</strong> var. Araç hata döndürdüğünde bu flag'i <code>true</code> olarak işaretlersin ve yanıta yapılandırılmış hata bilgisi eklersin. Böylece Claude hatanın ne olduğunu anlayıp doğru kararı verebilir.</p>
 <hr />
@@ -2455,7 +2483,7 @@ use for order-related queries — use lookup_order instead.&quot;
 <p><strong>Why A is wrong:</strong> Raising the retry count does not fix it — the problem is not insufficient retries but a successful empty result being mistaken for an error. Even after 5 attempts the result is the same: an empty array. Because the order really does not exist.</p>
 <p><strong>Why C is wrong:</strong> A prompt instruction is probabilistic. The real problem is in the tool's response structure — a structural problem needs a structural fix. A prompt instruction will not work reliably in every case.</p>
 <p><strong>Why D is wrong:</strong> Replacing the tool does not solve it — if the new tool uses the same ambiguous response structure the problem persists. The root cause is the response format, not the tool's scope.</p></div></details>
-<details class="lesson" data-lesson-id="2.3" data-narration-en="audio/en/D2-3.mp3" data-narration-tr="audio/tr/D2-3.mp3"><summary><span class="lidx">2.3</span><span class="ltitle"><span class="l-tr">Araç Dağılımı ve tool_choice (Tool Distribution &amp; tool_choice)</span><span class="l-en">Tool Distribution &amp; tool_choice</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="2.3" data-narration-en="audio/en/D2-3.mp3" data-narration-tr="audio/tr/D2-3.mp3"><summary><span class="lidx">2.3</span><span class="ltitle"><span class="l-tr">Araç Dağılımı ve tool_choice (Tool Distribution &amp; tool_choice)</span><span class="l-en">Tool Distribution &amp; tool_choice</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bir agent'a kaç araç verirsin? Hepsini mi, yoksa sadece ihtiyacı olanları mı? Bu task statement tam olarak bu soruyu cevaplıyor.</p>
 <hr />
 <h2>Araç Aşırı Yüklemesi Problemi (Tool Overload)</h2>
@@ -2750,7 +2778,7 @@ use for order-related queries — use lookup_order instead.&quot;
 <p><strong>Why A is wrong:</strong> A faster model does not change the round-trip structure. Every verification still goes through the coordinator — slightly faster, but the structural latency remains.</p>
 <p><strong>Why C is wrong:</strong> Loss of functionality. Verification is an important step that protects report quality — removing it does not solve the problem, it creates a new one.</p>
 <p><strong>Why D is wrong:</strong> <code>fetch_url</code> is too broad — it can fetch any URL and creates a security risk. The constrained tool (<code>verify_fact</code>) is the safe, focused alternative.</p></div></details>
-<details class="lesson" data-lesson-id="2.4" data-narration-en="audio/en/D2-4.mp3" data-narration-tr="audio/tr/D2-4.mp3"><summary><span class="lidx">2.4</span><span class="ltitle"><span class="l-tr">MCP Sunucu Entegrasyonu (MCP Server Integration)</span><span class="l-en">MCP Server Integration</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="2.4" data-narration-en="audio/en/D2-4.mp3" data-narration-tr="audio/tr/D2-4.mp3"><summary><span class="lidx">2.4</span><span class="ltitle"><span class="l-tr">MCP Sunucu Entegrasyonu (MCP Server Integration)</span><span class="l-en">MCP Server Integration</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>MCP (Model Context Protocol), Claude'un dış araçlara ve veri kaynaklarına bağlanmasını sağlayan protokoldür. Bu task statement, MCP sunucularının nasıl yapılandırıldığını, kapsamlandırıldığını ve ne zaman özel sunucu inşa edilmesi gerektiğini öğretir.</p>
 <hr />
 <h2>Kapsam Hiyerarşisi (Scoping Hierarchy)</h2>
@@ -2967,7 +2995,7 @@ use for order-related queries — use lookup_order instead.&quot;
 <p><strong>Why A is wrong:</strong> "Full control" sounds good, but building from scratch when an existing solution exists is over-engineering. Exam principle: the simple, low-effort fix first.</p>
 <p><strong>Why C is wrong:</strong> The MCP layer is the standard protocol that lets Claude discover and use tools. Direct API use does not fit the agent architecture.</p>
 <p><strong>Why D is wrong:</strong> GitHub and Jira are independent integrations — building one on top of the other makes no sense.</p></div></details>
-<details class="lesson" data-lesson-id="2.5" data-narration-en="audio/en/D2-5.mp3" data-narration-tr="audio/tr/D2-5.mp3"><summary><span class="lidx">2.5</span><span class="ltitle"><span class="l-tr">Yerleşik Araçlar (Built-in Tools)</span><span class="l-en">Built-in Tools</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="2.5" data-narration-en="audio/en/D2-5.mp3" data-narration-tr="audio/tr/D2-5.mp3"><summary><span class="lidx">2.5</span><span class="ltitle"><span class="l-tr">Yerleşik Araçlar (Built-in Tools)</span><span class="l-en">Built-in Tools</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Claude Code'un yerleşik (built-in) araçları vardır — dosya okuma, yazma, arama gibi temel operasyonlar. Sınav, bu araçların her birinin ne zaman kullanılacağını ve özellikle <strong>Grep ile Glob arasındaki farkı</strong> bilmeni bekliyor.</p>
 <hr />
 <h2>Grep vs Glob — Kritik Ayrım</h2>
@@ -3453,7 +3481,7 @@ use for order-related queries — use lookup_order instead.&quot;
 </header>
 <h2 class="secttl" id="domain-3-lessons"><span class="l-tr">Dersler</span><span class="l-en">Lessons</span></h2>
 <div class="lessons">
-<details class="lesson" data-lesson-id="3.1" data-narration-en="audio/en/D3-1.mp3" data-narration-tr="audio/tr/D3-1.mp3"><summary><span class="lidx">3.1</span><span class="ltitle"><span class="l-tr">CLAUDE.md Hiyerarşisi</span><span class="l-en">CLAUDE.md Hierarchy</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="3.1" data-narration-en="audio/en/D3-1.mp3" data-narration-tr="audio/tr/D3-1.mp3"><summary><span class="lidx">3.1</span><span class="ltitle"><span class="l-tr">CLAUDE.md Hiyerarşisi</span><span class="l-en">CLAUDE.md Hierarchy</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Claude Code çalıştığında, <strong>nasıl davranacağını</strong> belirleyen <code>CLAUDE.md</code> adlı talimat dosyalarını arar. Kodlama standartları, isimlendirme kuralları, test gereksinimleri, projeye özgü bağlam — hepsi bu dosyalarda tanımlanır. Bunu, kod tabanın için <strong>kalıcı bir system prompt</strong> olarak düşün.</p>
 <p>Kritik nokta: <strong>Üç seviye var</strong> ve sınav, hangi seviyenin ne işe yaradığını bilip bilmediğini sürekli test ediyor.</p>
 <hr />
@@ -3778,7 +3806,7 @@ use for order-related queries — use lookup_order instead.&quot;
 <p><strong>Why A is wrong:</strong> cramming all rules into one file wastes tokens. Loading React rules while working in the backend is pointless — it pollutes the context.</p>
 <p><strong>Why C is wrong:</strong> user-level configuration is not shared. New team members don't get the rules. It also depends on personal preference — no standardisation.</p>
 <p><strong>Why D is wrong:</strong> the system prompt is a different mechanism. Directory-level CLAUDE.md files solve this correctly and cleanly.</p></div></details>
-<details class="lesson" data-lesson-id="3.2" data-narration-en="audio/en/D3-2.mp3" data-narration-tr="audio/tr/D3-2.mp3"><summary><span class="lidx">3.2</span><span class="ltitle"><span class="l-tr">Özel Slash Komutları ve Skill&#x27;ler</span><span class="l-en">Custom Slash Commands &amp; Skills</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="3.2" data-narration-en="audio/en/D3-2.mp3" data-narration-tr="audio/tr/D3-2.mp3"><summary><span class="lidx">3.2</span><span class="ltitle"><span class="l-tr">Özel Slash Komutları ve Skill&#x27;ler</span><span class="l-en">Custom Slash Commands &amp; Skills</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Claude Code'da tekrarlayan iş akışlarını <strong>özel komutlar</strong> ve <strong>skill'ler</strong> olarak tanımlayabilirsin. Bunlar <code>/review</code>, <code>/test-setup</code>, <code>/brainstorm</code> gibi slash komutlarıyla çağrılır. Sınav, bunların <strong>nereye konulacağını</strong>, <strong>nasıl yapılandırılacağını</strong> ve <strong>CLAUDE.md'den farkını</strong> bilmeni bekliyor.</p>
 <hr />
 <h2>Dizin Yapısı</h2>
@@ -4179,7 +4207,7 @@ argument-hint: &quot;Enter the path of the file to analyse&quot;
 <p><strong>Why A is wrong:</strong> the file's length is not the real problem — the problem is a task-specific procedure living in an always-loaded file.</p>
 <p><strong>Why C is wrong:</strong> not a language issue. Claude handles instructions in any language well. The problem is structural — the content's location.</p>
 <p><strong>Why D is wrong:</strong> the <code>.claude/rules/</code> directory is for path-based rules (covered in Task 3.3). The migration procedure is tied to a task, not to a file path — it should be a skill.</p></div></details>
-<details class="lesson" data-lesson-id="3.3" data-narration-en="audio/en/D3-3.mp3" data-narration-tr="audio/tr/D3-3.mp3"><summary><span class="lidx">3.3</span><span class="ltitle"><span class="l-tr">Yol-Bazlı Kurallar (Path-Specific Rules)</span><span class="l-en">Path-Specific Rules</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="3.3" data-narration-en="audio/en/D3-3.mp3" data-narration-tr="audio/tr/D3-3.mp3"><summary><span class="lidx">3.3</span><span class="ltitle"><span class="l-tr">Yol-Bazlı Kurallar (Path-Specific Rules)</span><span class="l-en">Path-Specific Rules</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bazen kuralların belirli <strong>dosya türlerine</strong> uygulanması gerekir — tüm test dosyaları, tüm API dosyaları, tüm Terraform dosyaları gibi. Bu dosyalar kod tabanının her yerine dağılmış olabilir. Dizin seviyesi CLAUDE.md dosyaları bu durumda yetersiz kalır çünkü tek bir dizine bağlıdır. İşte yol-bazlı kurallar (path-specific rules) tam olarak bu sorunu çözer.</p>
 <hr />
 <h2><code>.claude/rules/</code> Dosyaları ve YAML Frontmatter</h2>
@@ -4482,7 +4510,7 @@ paths: [&quot;terraform/**/*&quot;, &quot;infrastructure/**/*&quot;]
 <p><strong>Why A is wrong:</strong> a directory-level CLAUDE.md applies only to files in <code>infrastructure/terraform/</code>. Terraform files in <code>modules/</code> don't get the rules. You'd need a second CLAUDE.md — path-specific rules solve this with one file.</p>
 <p><strong>Why C is wrong:</strong> the root CLAUDE.md is always loaded. Even while editing a Python file the Terraform rules sit in context — token waste.</p>
 <p><strong>Why D is wrong:</strong> in-file comments are not Claude Code's configuration mechanism. Hard to maintain, no standardisation.</p></div></details>
-<details class="lesson" data-lesson-id="3.4" data-narration-en="audio/en/D3-4.mp3" data-narration-tr="audio/tr/D3-4.mp3"><summary><span class="lidx">3.4</span><span class="ltitle"><span class="l-tr">Plan Modu vs Doğrudan Çalıştırma</span><span class="l-en">Plan Modu vs Doğrudan Çalıştırma</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="3.4" data-narration-en="audio/en/D3-4.mp3" data-narration-tr="audio/tr/D3-4.mp3"><summary><span class="lidx">3.4</span><span class="ltitle"><span class="l-tr">Plan Modu vs Doğrudan Çalıştırma</span><span class="l-en">Plan Modu vs Doğrudan Çalıştırma</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Claude Code'a bir görev verdiğinde iki temel mod var: <strong>plan modu</strong> (önce düşün, sonra yap) ve <strong>doğrudan çalıştırma</strong> (hemen yap). Sınav, hangi durumda hangisinin kullanılacağını bilmeni bekliyor.</p>
 <hr />
 <h2>Plan Modu — Önce Düşün, Sonra Yap</h2>
@@ -4977,7 +5005,7 @@ Step 2 (direct execution):
 <p><strong>Why A is wrong:</strong> a 25-file legacy module with unclear dependencies — exploration is absolutely necessary. Starting with direct execution means changing things blindly.</p>
 <p><strong>Why C is wrong:</strong> loading 25 files sequentially into the main conversation exhausts the context window. The Explore sub-agent solves exactly this — isolates and summarises.</p>
 <p><strong>Why D is wrong:</strong> the exploration phase produces very detailed output — combining it with plan mode pollutes the main conversation's context. The Explore sub-agent exists to isolate exploration.</p></div></details>
-<details class="lesson" data-lesson-id="3.5" data-narration-en="audio/en/D3-5.mp3" data-narration-tr="audio/tr/D3-5.mp3"><summary><span class="lidx">3.5</span><span class="ltitle"><span class="l-tr">Yinelemeli İyileştirme (Iterative Refinement)</span><span class="l-en">Iterative Refinement</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="3.5" data-narration-en="audio/en/D3-5.mp3" data-narration-tr="audio/tr/D3-5.mp3"><summary><span class="lidx">3.5</span><span class="ltitle"><span class="l-tr">Yinelemeli İyileştirme (Iterative Refinement)</span><span class="l-en">Iterative Refinement</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Claude Code'a bir görev verdin, sonuç beklediğin gibi değil. Nasıl iyileştirirsin? Bu task statement, Claude Code'un çıktısını <strong>sistematik olarak</strong> iyileştirme tekniklerini öğretiyor.</p>
 <hr />
 <h2>Teknik Hiyerarşisi</h2>
@@ -5252,7 +5280,7 @@ requirements. Design based on my answers.&quot;
 <p><strong>Why A is wrong:</strong> batch feedback is for interacting fixes — when changing one affects the other. Here the problems are independent.</p>
 <p><strong>Why C is wrong:</strong> leaving prioritisation to Claude Code can produce inconsistent results. As the developer you should steer the flow.</p>
 <p><strong>Why D is wrong:</strong> using different techniques isn't wrong, but the question asks about feedback timing. The core point: independent problems → sequential. That is correct timing regardless of technique choice.</p></div></details>
-<details class="lesson" data-lesson-id="3.6" data-narration-en="audio/en/D3-6.mp3" data-narration-tr="audio/tr/D3-6.mp3"><summary><span class="lidx">3.6</span><span class="ltitle"><span class="l-tr">CI/CD Entegrasyonu</span><span class="l-en">CI/CD Integration</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="3.6" data-narration-en="audio/en/D3-6.mp3" data-narration-tr="audio/tr/D3-6.mp3"><summary><span class="lidx">3.6</span><span class="ltitle"><span class="l-tr">CI/CD Entegrasyonu</span><span class="l-en">CI/CD Integration</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Claude Code sadece terminal'de etkileşimli olarak kullanılmaz — <strong>CI/CD pipeline'larına</strong> da entegre edilebilir. PR inceleme, test üretimi, kod analizi gibi görevler otomatik olarak çalıştırılabilir. Bu task statement, CI/CD entegrasyonunun <strong>nasıl yapılandırılacağını</strong> ve <strong>yaygın tuzaklarını</strong> öğretiyor.</p>
 <hr />
 <h2><code>-p</code> Flag'i — Non-Interactive Mod (Print Mode)</h2>
@@ -5760,7 +5788,7 @@ claude "Analyze this PR for potential bugs"</code></p>
 </header>
 <h2 class="secttl" id="domain-4-lessons"><span class="l-tr">Dersler</span><span class="l-en">Lessons</span></h2>
 <div class="lessons">
-<details class="lesson" data-lesson-id="4.1" data-narration-en="audio/en/D4-1.mp3" data-narration-tr="audio/tr/D4-1.mp3"><summary><span class="lidx">4.1</span><span class="ltitle"><span class="l-tr">Açık Kriterler (Explicit Criteria)</span><span class="l-en">Explicit Criteria</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="4.1" data-narration-en="audio/en/D4-1.mp3" data-narration-tr="audio/tr/D4-1.mp3"><summary><span class="lidx">4.1</span><span class="ltitle"><span class="l-tr">Açık Kriterler (Explicit Criteria)</span><span class="l-en">Explicit Criteria</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bir Claude agent'ını kod inceleme, güvenlik taraması veya belge analizi gibi görevler için yönlendirirken, en sık yapılan hata şu: <strong>belirsiz, öznel talimatlar vermek.</strong></p>
 <blockquote>
 <p><em>"Sadece önemli bulguları raporla."</em>
@@ -6083,7 +6111,7 @@ def getUserData():  # Should be snake_case, not camelCase
 <strong>D)</strong> The agent returns an incorrect error message</p>
 <p><strong>✅ Answer: C</strong></p>
 <p><em>Explanation:</em> Claude runs and filters, but sets the "high priority" threshold differently every time. The same codebase can yield different findings. Inconsistency is the real cost of vague criteria.</p></div></details>
-<details class="lesson" data-lesson-id="4.2" data-narration-en="audio/en/D4-2.mp3" data-narration-tr="audio/tr/D4-2.mp3"><summary><span class="lidx">4.2</span><span class="ltitle"><span class="l-tr">Few-Shot Prompting</span><span class="l-en">Few-Shot Prompting</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="4.2" data-narration-en="audio/en/D4-2.mp3" data-narration-tr="audio/tr/D4-2.mp3"><summary><span class="lidx">4.2</span><span class="ltitle"><span class="l-tr">Few-Shot Prompting</span><span class="l-en">Few-Shot Prompting</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Few-shot prompting: Claude'a talimat vermek yerine <strong>örnek göstermek.</strong> Modele "şunu yap" demek yerine "işte böyle yapılır" demek.</p>
 <p>Bu teknik, <strong>tutarlılık problemlerini çözmek için en etkili yoldur.</strong> Daha ayrıntılı talimatlar değil. Güven eşikleri değil. Daha büyük model değil. <strong>Örnekler.</strong></p>
 <p>Sınavın bu konudaki soruları sana şunu sorar: <em>"Hangi durumda few-shot kullanmalısın, hangi durumda başka bir şey?"</em> Cevabı bilmek için önce ne zaman işe yaradığını anlamalısın.</p>
@@ -6534,7 +6562,7 @@ Extraction: {&quot;item&quot;: &quot;Item A&quot;, &quot;unit_price&quot;: null,
 <strong>D)</strong> Raise the safety threshold: tell the model "don't write if unsure"</p>
 <p><strong>✅ Answer: C</strong></p>
 <p><em>Explanation:</em> hallucination usually comes from the model inventing a "plausible" value instead of extracting from the format. Few-shot teaches the model the right extraction strategy. The "null if no information" example teaches returning null instead of inventing. A strict required schema (A) does the opposite — it causes fabrication.</p></div></details>
-<details class="lesson" data-lesson-id="4.3" data-narration-en="audio/en/D4-3.mp3" data-narration-tr="audio/tr/D4-3.mp3"><summary><span class="lidx">4.3</span><span class="ltitle"><span class="l-tr">Tool_Use ile Yapılandırılmış Çıktı</span><span class="l-en">Structured Output with Tool_use</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="4.3" data-narration-en="audio/en/D4-3.mp3" data-narration-tr="audio/tr/D4-3.mp3"><summary><span class="lidx">4.3</span><span class="ltitle"><span class="l-tr">Tool_Use ile Yapılandırılmış Çıktı</span><span class="l-en">Structured Output with Tool_use</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Yapılandırılmış veri çıkarmanın iki yolu var:</p>
 <ol>
 <li><strong>Prompt tabanlı JSON:</strong> "JSON formatında yanıt ver" diye talimat vermek</li>
@@ -7015,7 +7043,7 @@ Phone numbers in +90XXXXXXXXXX format.&quot;
 <strong>D)</strong> The model refuses to process the document</p>
 <p><strong>✅ Answer: B</strong></p>
 <p><em>Explanation:</em> because the model must conform to the schema, it forces the unknown type into an existing category. Fix: add an <code>"other"</code> enum value + a nullable <code>document_type_detail</code> field.</p></div></details>
-<details class="lesson" data-lesson-id="4.4" data-narration-en="audio/en/D4-4.mp3" data-narration-tr="audio/tr/D4-4.mp3"><summary><span class="lidx">4.4</span><span class="ltitle"><span class="l-tr">Validation-Retry Döngüleri</span><span class="l-en">Validation-Retry Loops</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="4.4" data-narration-en="audio/en/D4-4.mp3" data-narration-tr="audio/tr/D4-4.mp3"><summary><span class="lidx">4.4</span><span class="ltitle"><span class="l-tr">Validation-Retry Döngüleri</span><span class="l-en">Validation-Retry Loops</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>İlk çıkarım her zaman mükemmel olmaz. Validation-retry, şu soruyu sorar: <strong>"Hata geri gönderilebilir ve model kendini düzeltebilir mi?"</strong></p>
 <p>Cevap duruma göre değişir. Ve sınav tam olarak bu ayrımı bilip bilmediğini test eder.</p>
 <hr />
@@ -7568,7 +7596,7 @@ After the last failed attempt:
 <strong>D)</strong> Unlimited retries — the system tries until it succeeds</p>
 <p><strong>✅ Answer: B</strong></p>
 <p><em>Explanation:</em> 2–3 retries is optimal for cost-benefit. Documents still failing after 3 retries usually have source problems or a completely unknown format — human review is needed. An infinite loop consumes system resources.</p></div></details>
-<details class="lesson" data-lesson-id="4.5" data-narration-en="audio/en/D4-5.mp3" data-narration-tr="audio/tr/D4-5.mp3"><summary><span class="lidx">4.5</span><span class="ltitle"><span class="l-tr">Toplu İşleme (Batch Processing)</span><span class="l-en">Batch Processing</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="4.5" data-narration-en="audio/en/D4-5.mp3" data-narration-tr="audio/tr/D4-5.mp3"><summary><span class="lidx">4.5</span><span class="ltitle"><span class="l-tr">Toplu İşleme (Batch Processing)</span><span class="l-en">Batch Processing</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Her Claude çağrısı eşzamanlı (synchronous) olmak zorunda değil. <strong>Message Batches API</strong>, belirli görevler için önemli maliyet tasarrufu sağlar — ama kısıtlamaları vardır ve bu kısıtlamalar sınavın odak noktasıdır.</p>
 <p>Temel soru: <strong>"Bu iş akışı beklemeye tahammül edebilir mi?"</strong></p>
 <hr />
@@ -8087,7 +8115,7 @@ Not supported → Batch:
 <strong>D)</strong> Send without custom_id — it's processed faster</p>
 <p><strong>✅ Answer: B</strong></p>
 <p><em>Explanation:</em> testing on a small sample catches prompt errors early. Instead of waiting 24 hours to learn that all results are unusable, validating first and then sending the large batch saves both time and money.</p></div></details>
-<details class="lesson" data-lesson-id="4.6" data-narration-en="audio/en/D4-6.mp3" data-narration-tr="audio/tr/D4-6.mp3"><summary><span class="lidx">4.6</span><span class="ltitle"><span class="l-tr">Çok Örnekli İnceleme (Multi-Instance Review)</span><span class="l-en">Multi-Instance Review</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="4.6" data-narration-en="audio/en/D4-6.mp3" data-narration-tr="audio/tr/D4-6.mp3"><summary><span class="lidx">4.6</span><span class="ltitle"><span class="l-tr">Çok Örnekli İnceleme (Multi-Instance Review)</span><span class="l-en">Multi-Instance Review</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bir model kendi çıktısını kendi oturumunda incelerse, özgün bağlamını taşıdığından aynı hataları gözden kaçırması yüksek ihtimaldir. Çözüm: <strong>bağımsız bir instance, önceki bağlam olmadan yeniden inceler.</strong></p>
 <p>Bu, yazılım geliştirmede "kendi kodunu kendi gözden geçirme" sorununa benzer — bir insan da bunu iyi yapamaz.</p>
 <hr />
@@ -8868,7 +8896,7 @@ This contradiction is flagged automatically:
 </header>
 <h2 class="secttl" id="domain-5-lessons"><span class="l-tr">Dersler</span><span class="l-en">Lessons</span></h2>
 <div class="lessons">
-<details class="lesson" data-lesson-id="5.1" data-narration-en="audio/en/D5-1.mp3" data-narration-tr="audio/tr/D5-1.mp3"><summary><span class="lidx">5.1</span><span class="ltitle"><span class="l-tr">Bağlam Koruma (Context Preservation)</span><span class="l-en">Context Preservation</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="5.1" data-narration-en="audio/en/D5-1.mp3" data-narration-tr="audio/tr/D5-1.mp3"><summary><span class="lidx">5.1</span><span class="ltitle"><span class="l-tr">Bağlam Koruma (Context Preservation)</span><span class="l-en">Context Preservation</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Agent'lar uzun konuşmalar boyunca çalışır, araç sonuçlarını biriktirir ve önceki turlardan gelen bilgiye dayanarak karar verir. Bu süreçte <strong>kritik bilgilerin kaybolması</strong> en yaygın ve en tehlikeli hatadır. Bu task statement, bağlam kaybını nasıl önleyeceğini öğretir.</p>
 <p>Sınavda bu kavramlar özellikle <strong>Customer Support Resolution Agent</strong> ve <strong>Multi-Agent Research System</strong> senaryolarında karşına çıkacak.</p>
 <hr />
@@ -9279,7 +9307,7 @@ context.append(relevant_fields)  # 5 fields
 <p><strong>Why A is wrong:</strong> raising the budget is expensive and doesn't fix the underlying problem. Verbose content still wastes tokens — at 10 sources the same problem returns.</p>
 <p><strong>Why C is wrong:</strong> looking for the fix in the wrong place. The problem isn't the synthesis agent's output but its input. The incoming data is already verbose — instructing the synthesis agent doesn't change that.</p>
 <p><strong>Why D is wrong:</strong> narrowing the scope lowers quality. If 5 sources are needed, cutting to 3 means incomplete research.</p></div></details>
-<details class="lesson" data-lesson-id="5.2" data-narration-en="audio/en/D5-2.mp3" data-narration-tr="audio/tr/D5-2.mp3"><summary><span class="lidx">5.2</span><span class="ltitle"><span class="l-tr">Eskalasyon ve Belirsizlik Çözümü (Escalation &amp; Ambiguity Resolution)</span><span class="l-en">Escalation &amp; Ambiguity Resolution</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="5.2" data-narration-en="audio/en/D5-2.mp3" data-narration-tr="audio/tr/D5-2.mp3"><summary><span class="lidx">5.2</span><span class="ltitle"><span class="l-tr">Eskalasyon ve Belirsizlik Çözümü (Escalation &amp; Ambiguity Resolution)</span><span class="l-en">Escalation &amp; Ambiguity Resolution</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bir müşteri destek agent'ı her sorunu çözemez. Bazen insana yönlendirme (eskalasyon) gerekir. Ama <strong>ne zaman</strong> eskalasyon yapılacağını yanlış belirlemek ya aşırı eskalasyona (agent'ın işe yaramaz hale gelmesi) ya da yetersiz eskalasyona (müşteri memnuniyetsizliği) yol açar.</p>
 <p>Bu task statement, <strong>güvenilir</strong> ve <strong>güvenilmez</strong> eskalasyon tetikleyicilerini ayırt etmeyi ve belirsiz durumlarda nasıl hareket edileceğini öğretir.</p>
 <hr />
@@ -9638,7 +9666,7 @@ context.append(relevant_fields)  # 5 fields
 <p><strong>Why A is wrong:</strong> the agent has no authority to interpret the policy broadly. The policy only covers our own site's price — extending it exceeds the agent's authority.</p>
 <p><strong>Why B is wrong:</strong> refusing outright damages the customer experience and the agent's authority to make that decision isn't clear. The policy doesn't say "competitor matching is NOT done" — there's a gap.</p>
 <p><strong>Why D is wrong:</strong> a sentiment-based decision — an unreliable trigger. The escalation decision must rest on the policy gap, not on emotion.</p></div></details>
-<details class="lesson" data-lesson-id="5.3" data-narration-en="audio/en/D5-3.mp3" data-narration-tr="audio/tr/D5-3.mp3"><summary><span class="lidx">5.3</span><span class="ltitle"><span class="l-tr">Hata Yayılımı (Error Propagation)</span><span class="l-en">Error Propagation</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="5.3" data-narration-en="audio/en/D5-3.mp3" data-narration-tr="audio/tr/D5-3.mp3"><summary><span class="lidx">5.3</span><span class="ltitle"><span class="l-tr">Hata Yayılımı (Error Propagation)</span><span class="l-en">Error Propagation</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Multi-agent sistemlerde ve veri çıkarım pipeline'larında hatalar kaçınılmazdır. Bir araç zaman aşımına uğrar, bir API erişim reddeder, bir veri kaynağı sonuç döndürmez. Kritik soru: <strong>hata oluştuğunda ne yaparsın?</strong></p>
 <p>Bu task statement, hataların nasıl yapılandırılmış şekilde raporlanacağını, iki yaygın anti-pattern'ı ve erişim hatası ile geçerli boş sonuç arasındaki farkı öğretir.</p>
 <hr />
@@ -10117,7 +10145,7 @@ context.append(relevant_fields)  # 5 fields
 <p><strong>Why A is wrong:</strong> more retries return the same valid empty result. The problem isn't the retry count but the interpretation of the result.</p>
 <p><strong>Why C is wrong:</strong> the tool is working correctly. "No match" is a valid answer — a tool isn't obliged to always return a non-empty result.</p>
 <p><strong>Why D is wrong:</strong> the search was done with the information the customer gave and there's no result. Changing the parameters (e.g. searching a different name) can lead to wrong results. Ask the customer for additional information first.</p></div></details>
-<details class="lesson" data-lesson-id="5.4" data-narration-en="audio/en/D5-4.mp3" data-narration-tr="audio/tr/D5-4.mp3"><summary><span class="lidx">5.4</span><span class="ltitle"><span class="l-tr">Kod Tabanı Keşfi (Codebase Exploration)</span><span class="l-en">Codebase Exploration</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="5.4" data-narration-en="audio/en/D5-4.mp3" data-narration-tr="audio/tr/D5-4.mp3"><summary><span class="lidx">5.4</span><span class="ltitle"><span class="l-tr">Kod Tabanı Keşfi (Codebase Exploration)</span><span class="l-en">Codebase Exploration</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bir agent büyük bir kod tabanını keşfederken uzun süre çalışır. Dosyaları okur, sınıfları inceler, bağımlılıkları haritalar. Bu süreçte <strong>bağlam bozulması</strong> (context degradation) kaçınılmaz bir sorundur. Agent, oturumun başlarında keşfettiği spesifik bilgileri kaybetmeye ve "tipik kalıplar" gibi genel ifadeler kullanmaya başlar.</p>
 <p>Bu task statement, bağlam bozulmasını nasıl tespit edeceğini ve dört farklı stratejiyle nasıl önleyeceğini öğretir.</p>
 <hr />
@@ -10436,7 +10464,7 @@ Phase 2: Deep analysis (clean context + summary of earlier findings)
 <p><strong>Why A is wrong:</strong> hardware reliability reduces crashes but doesn't eliminate them. A recovery mechanism should exist in every system.</p>
 <p><strong>Why C is wrong:</strong> the full conversation history is very verbose — restoring the whole history during recovery immediately exhausts the context budget. A manifest file is structured and compact — it contains only the necessary state information.</p>
 <p><strong>Why D is wrong:</strong> reducing the number of agents doesn't solve crash recovery. Even a single agent can crash — a recovery mechanism is needed.</p></div></details>
-<details class="lesson" data-lesson-id="5.5" data-narration-en="audio/en/D5-5.mp3" data-narration-tr="audio/tr/D5-5.mp3"><summary><span class="lidx">5.5</span><span class="ltitle"><span class="l-tr">İnsan İncelemesi ve Güven Kalibrasyonu (Human Review &amp; Confidence Calibration)</span><span class="l-en">Human Review &amp; Confidence Calibration</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="5.5" data-narration-en="audio/en/D5-5.mp3" data-narration-tr="audio/tr/D5-5.mp3"><summary><span class="lidx">5.5</span><span class="ltitle"><span class="l-tr">İnsan İncelemesi ve Güven Kalibrasyonu (Human Review &amp; Confidence Calibration)</span><span class="l-en">Human Review &amp; Confidence Calibration</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bir yapılandırılmış veri çıkarım pipeline'ı (extraction pipeline) çalıştırıyorsun. Model faturalardan alanları çıkarıyor, sözleşmelerden tarihleri okuyor, belgelerden miktarları alıyor. Sistem %97 genel doğruluk bildiriyor. Her şey yolunda gibi görünüyor — ta ki belirli bir belge türünde %40 hata oranı keşfedene kadar.</p>
 <p>Bu task statement, toplam metriklerin nasıl yanıltabileceğini, güven kalibrasyonunu ve insan incelemesi kapasitesinin nasıl optimize edileceğini öğretir.</p>
 <hr />
@@ -10809,7 +10837,7 @@ if confidence &lt; 0.70: → priority human review
 <p><strong>Why A is wrong:</strong> raising the threshold doesn't fix the calibration problem. At 95% the model's confidence may still be misaligned with real accuracy. Data-based calibration is needed instead of an intuitive threshold.</p>
 <p><strong>Why C is wrong:</strong> a bigger model doesn't guarantee confidence calibration. Calibration is a process independent of model size — it must be done separately for every model.</p>
 <p><strong>Why D is wrong:</strong> once calibrated, the confidence score is a very valuable tool. Removing the tool instead of fixing the problem is wrong. A calibrated confidence score optimises human review routing.</p></div></details>
-<details class="lesson" data-lesson-id="5.6" data-narration-en="audio/en/D5-6.mp3" data-narration-tr="audio/tr/D5-6.mp3"><summary><span class="lidx">5.6</span><span class="ltitle"><span class="l-tr">Bilgi Kaynağı Takibi (Information Provenance)</span><span class="l-en">Information Provenance</span></span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr"><h2>Temel Fikir</h2>
+<details class="lesson" data-lesson-id="5.6" data-narration-en="audio/en/D5-6.mp3" data-narration-tr="audio/tr/D5-6.mp3"><summary><span class="lidx">5.6</span><span class="ltitle"><span class="l-tr">Bilgi Kaynağı Takibi (Information Provenance)</span><span class="l-en">Information Provenance</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Bir multi-agent araştırma sistemi 5 farklı kaynaktan veri topluyor ve sentez raporu yazıyor. Rapor mükemmel yazılmış ama bir iddia sorgulanıyor: "Güneş enerjisi kapasitesi %45 arttı." Bu iddia hangi kaynaktan geliyor? Hangi tarihte yayımlanmış? Kaynağın orijinal ifadesi ne?</p>
 <p>Bu bilgi sentez sırasında kaybolmuşsa → <strong>atıf ölü</strong>. Okuyucu iddianın güvenilirliğini değerlendiremez.</p>
 <p>Bu task statement, bilgi kaynak eşleştirmelerinin nasıl korunacağını, çelişkili kaynakların nasıl ele alınacağını ve zamansal farkındalığı öğretir.</p>
@@ -12107,6 +12135,7 @@ if (typeof module !== 'undefined' && module.exports) {
 </script>
 <script>(function(){
   var root=document.documentElement;
+  var $=function(id){return document.getElementById(id);};
   var I18N={tr:{none:'Henüz cevaplanmadı',partial:function(ok,done,n){return 'Doğru: '+ok+' / '+done+' cevaplanan ('+n+' soru)';},
       final:function(ok,n){return 'Sonuç: '+ok+' / '+n+(ok/n>=0.8?' — geçme eşiği aşıldı ✓':' — hedef 8+/10, tekrar dene');},
       right:'Doğru!',wrong:function(a){return 'Yanlış — doğru cevap '+a;}},
@@ -12160,7 +12189,7 @@ if (typeof module !== 'undefined' && module.exports) {
   (function(){
     if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function'||typeof previousLessonInDomain!=='function'||typeof parseListeningPosition!=='function'||typeof nextPlaybackRate!=='function'||typeof formatTime!=='function')return;
     var audio=new Audio(); audio.preload='none';
-    var registry={}; // lessonId -> {el, btn, controls, seek, curTimeEl, durTimeEl, speedBtn}
+    var registry={}; // lessonId -> {el, btn}
     var current=null; // {id, btn, el} - lesson loaded into `audio`, whether playing or paused
     var POSITION_KEY='cca-position';
     var SPEED_KEY='cca-speed';
@@ -12171,6 +12200,9 @@ if (typeof module !== 'undefined' && module.exports) {
     try{ var savedRate=parseFloat(localStorage.getItem(SPEED_KEY)); if(savedRate)playbackRate=savedRate; }catch(e){}
     audio.playbackRate=playbackRate;
 
+    var bar=$('playerbar'), playPauseBtn=$('pb-playpause'), titleEl=$('pb-title'), domainEl=$('pb-domain'),
+        seek=$('pb-seek'), curTimeEl=$('pb-current'), durTimeEl=$('pb-duration'), speedBtn=$('pb-speed');
+
     function persistPosition(lessonId,lang,time){
       try{ localStorage.setItem(POSITION_KEY,JSON.stringify({lessonId:lessonId,lang:lang,time:time})); }catch(e){}
     }
@@ -12179,15 +12211,22 @@ if (typeof module !== 'undefined' && module.exports) {
       btn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
       btn.textContent=playing?'⏸':'▶';
     }
-    function updateSpeedBtn(reg){ reg.speedBtn.textContent=playbackRate+'x'; }
-    function updateSeekUI(reg){
-      reg.seek.max=isFinite(audio.duration)?audio.duration:0;
-      reg.seek.value=audio.currentTime;
-      reg.curTimeEl.textContent=formatTime(audio.currentTime);
-      reg.durTimeEl.textContent=formatTime(audio.duration);
+    function updatePlayIcons(playing){
+      if(current)setBtnState(current.btn,playing);
+      playPauseBtn.classList.toggle('playing',playing);
+      playPauseBtn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
+      playPauseBtn.textContent=playing?'⏸':'▶';
+    }
+    function updateSpeedBtn(){ speedBtn.textContent=playbackRate+'x'; }
+    function updateSeekUI(){
+      seek.max=isFinite(audio.duration)?audio.duration:0;
+      seek.value=audio.currentTime;
+      curTimeEl.textContent=formatTime(audio.currentTime);
+      durTimeEl.textContent=formatTime(audio.duration);
     }
     function clearCurrent(){
-      if(current){ setBtnState(current.btn,false); registry[current.id].controls.hidden=true; current=null; }
+      if(current){ setBtnState(current.btn,false); current=null; }
+      bar.hidden=true;
     }
     function domainLessons(lessonEl){
       var page=lessonEl.closest('.page.domain');
@@ -12212,11 +12251,16 @@ if (typeof module !== 'undefined' && module.exports) {
         album:'Claude Certified Architect (Foundations)'
       });
     }
+    function updatePlayerInfo(lessonEl){
+      var lang=root.dataset.lang;
+      titleEl.textContent=lessonTitle(lessonEl,lang);
+      domainEl.textContent=domainTitle(lessonEl,lang);
+    }
     function playLesson(lessonEl){
       var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
       if(!src)return;
       var reg=registry[lessonEl.dataset.lessonId];
-      if(current&&current.el!==lessonEl){setBtnState(current.btn,false); registry[current.id].controls.hidden=true;}
+      if(current&&current.el!==lessonEl){setBtnState(current.btn,false);}
       audio.src=src;
       audio.playbackRate=playbackRate;
       var lessonId=lessonEl.dataset.lessonId, lang=root.dataset.lang, startTime=0;
@@ -12229,28 +12273,28 @@ if (typeof module !== 'undefined' && module.exports) {
       }
       audio.play();
       current={id:lessonId,btn:reg.btn,el:lessonEl};
-      lessonEl.open=true;
-      reg.controls.hidden=false;
-      updateSpeedBtn(reg);
-      updateSeekUI(reg);
+      bar.hidden=false;
+      updatePlayerInfo(lessonEl);
+      updateSpeedBtn();
+      updateSeekUI();
       updateMediaSessionMetadata(lessonEl);
       lastPersistAt=Date.now();
       persistPosition(lessonId,lang,startTime);
     }
     audio.addEventListener('play',function(){
-      if(current)setBtnState(current.btn,true);
+      updatePlayIcons(true);
       if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing';
     });
     audio.addEventListener('pause',function(){
-      if(current)setBtnState(current.btn,false);
+      updatePlayIcons(false);
       if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';
     });
     audio.addEventListener('loadedmetadata',function(){
-      if(current)updateSeekUI(registry[current.id]);
+      if(current)updateSeekUI();
     });
     audio.addEventListener('timeupdate',function(){
       if(!current)return;
-      updateSeekUI(registry[current.id]);
+      updateSeekUI();
       var now=Date.now();
       if(now-lastPersistAt<3000)return;
       lastPersistAt=now;
@@ -12284,14 +12328,7 @@ if (typeof module !== 'undefined' && module.exports) {
       var btn=document.createElement('button');
       btn.type='button'; btn.className='lesson-play'; setBtnState(btn,false);
       summary.appendChild(btn);
-      var controls=lessonEl.querySelector('.narration-controls');
-      var reg={
-        el:lessonEl, btn:btn, controls:controls,
-        seek:controls.querySelector('.nc-seek'),
-        curTimeEl:controls.querySelector('.nc-current'),
-        durTimeEl:controls.querySelector('.nc-duration'),
-        speedBtn:controls.querySelector('.nc-speed')
-      };
+      var reg={el:lessonEl, btn:btn};
       registry[lessonEl.dataset.lessonId]=reg;
 
       function refresh(){
@@ -12308,27 +12345,32 @@ if (typeof module !== 'undefined' && module.exports) {
         }
         playLesson(lessonEl);
       });
-      controls.querySelector('.nc-restart').addEventListener('click',function(){
-        if(current&&current.el===lessonEl)audio.currentTime=0;
-      });
-      controls.querySelector('.nc-end').addEventListener('click',function(){
-        if(current&&current.el===lessonEl&&isFinite(audio.duration))audio.currentTime=Math.max(0,audio.duration-0.25);
-      });
-      reg.speedBtn.addEventListener('click',function(){
-        playbackRate=nextPlaybackRate(playbackRate);
-        try{ localStorage.setItem(SPEED_KEY,String(playbackRate)); }catch(e){}
-        audio.playbackRate=playbackRate;
-        Object.keys(registry).forEach(function(id){ updateSpeedBtn(registry[id]); });
-      });
-      reg.seek.addEventListener('input',function(){
-        if(current&&current.el===lessonEl)audio.currentTime=reg.seek.valueAsNumber;
-      });
 
       updaters.push(refresh);
       refresh();
     });
 
-    Object.keys(registry).forEach(function(id){ updateSpeedBtn(registry[id]); });
+    playPauseBtn.addEventListener('click',function(){
+      if(!current)return;
+      if(audio.paused)audio.play(); else audio.pause();
+    });
+    $('pb-restart').addEventListener('click',function(){ if(current)audio.currentTime=0; });
+    $('pb-end').addEventListener('click',function(){
+      if(current&&isFinite(audio.duration))audio.currentTime=Math.max(0,audio.duration-0.25);
+    });
+    $('pb-close').addEventListener('click',function(){ audio.pause(); clearCurrent(); });
+    speedBtn.addEventListener('click',function(){
+      playbackRate=nextPlaybackRate(playbackRate);
+      try{ localStorage.setItem(SPEED_KEY,String(playbackRate)); }catch(e){}
+      audio.playbackRate=playbackRate;
+      updateSpeedBtn();
+    });
+    seek.addEventListener('input',function(){
+      if(current)audio.currentTime=seek.valueAsNumber;
+    });
+    updaters.push(function(){ if(current)updatePlayerInfo(current.el); });
+
+    updateSpeedBtn();
 
     if(pendingResume&&registry[pendingResume.lessonId]&&resolveNarrationSrc(registry[pendingResume.lessonId].el.dataset,pendingResume.lang)){
       setLang(pendingResume.lang);
@@ -12396,7 +12438,6 @@ if (typeof module !== 'undefined' && module.exports) {
   var NOTE_EN='<p class="langnote">English version of this question is not available yet — showing the Turkish text.</p>';
   function scName(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?(root.dataset.lang==='en'?sc.en:sc.tr):'';}
   function scCtx(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?sc.ctx:'';}
-  var $=function(id){return document.getElementById(id);};
   function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
   function buildExam(mode){
     var combos=viableScenarioCombos(MOCK_POOL,mode.targets);

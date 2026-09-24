@@ -1,5 +1,6 @@
 (function(){
   var root=document.documentElement;
+  var $=function(id){return document.getElementById(id);};
   var I18N={tr:{none:'Henüz cevaplanmadı',partial:function(ok,done,n){return 'Doğru: '+ok+' / '+done+' cevaplanan ('+n+' soru)';},
       final:function(ok,n){return 'Sonuç: '+ok+' / '+n+(ok/n>=0.8?' — geçme eşiği aşıldı ✓':' — hedef 8+/10, tekrar dene');},
       right:'Doğru!',wrong:function(a){return 'Yanlış — doğru cevap '+a;}},
@@ -53,7 +54,7 @@
   (function(){
     if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function'||typeof previousLessonInDomain!=='function'||typeof parseListeningPosition!=='function'||typeof nextPlaybackRate!=='function'||typeof formatTime!=='function')return;
     var audio=new Audio(); audio.preload='none';
-    var registry={}; // lessonId -> {el, btn, controls, seek, curTimeEl, durTimeEl, speedBtn}
+    var registry={}; // lessonId -> {el, btn}
     var current=null; // {id, btn, el} - lesson loaded into `audio`, whether playing or paused
     var POSITION_KEY='cca-position';
     var SPEED_KEY='cca-speed';
@@ -64,6 +65,9 @@
     try{ var savedRate=parseFloat(localStorage.getItem(SPEED_KEY)); if(savedRate)playbackRate=savedRate; }catch(e){}
     audio.playbackRate=playbackRate;
 
+    var bar=$('playerbar'), playPauseBtn=$('pb-playpause'), titleEl=$('pb-title'), domainEl=$('pb-domain'),
+        seek=$('pb-seek'), curTimeEl=$('pb-current'), durTimeEl=$('pb-duration'), speedBtn=$('pb-speed');
+
     function persistPosition(lessonId,lang,time){
       try{ localStorage.setItem(POSITION_KEY,JSON.stringify({lessonId:lessonId,lang:lang,time:time})); }catch(e){}
     }
@@ -72,15 +76,22 @@
       btn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
       btn.textContent=playing?'⏸':'▶';
     }
-    function updateSpeedBtn(reg){ reg.speedBtn.textContent=playbackRate+'x'; }
-    function updateSeekUI(reg){
-      reg.seek.max=isFinite(audio.duration)?audio.duration:0;
-      reg.seek.value=audio.currentTime;
-      reg.curTimeEl.textContent=formatTime(audio.currentTime);
-      reg.durTimeEl.textContent=formatTime(audio.duration);
+    function updatePlayIcons(playing){
+      if(current)setBtnState(current.btn,playing);
+      playPauseBtn.classList.toggle('playing',playing);
+      playPauseBtn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
+      playPauseBtn.textContent=playing?'⏸':'▶';
+    }
+    function updateSpeedBtn(){ speedBtn.textContent=playbackRate+'x'; }
+    function updateSeekUI(){
+      seek.max=isFinite(audio.duration)?audio.duration:0;
+      seek.value=audio.currentTime;
+      curTimeEl.textContent=formatTime(audio.currentTime);
+      durTimeEl.textContent=formatTime(audio.duration);
     }
     function clearCurrent(){
-      if(current){ setBtnState(current.btn,false); registry[current.id].controls.hidden=true; current=null; }
+      if(current){ setBtnState(current.btn,false); current=null; }
+      bar.hidden=true;
     }
     function domainLessons(lessonEl){
       var page=lessonEl.closest('.page.domain');
@@ -105,11 +116,16 @@
         album:'Claude Certified Architect (Foundations)'
       });
     }
+    function updatePlayerInfo(lessonEl){
+      var lang=root.dataset.lang;
+      titleEl.textContent=lessonTitle(lessonEl,lang);
+      domainEl.textContent=domainTitle(lessonEl,lang);
+    }
     function playLesson(lessonEl){
       var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
       if(!src)return;
       var reg=registry[lessonEl.dataset.lessonId];
-      if(current&&current.el!==lessonEl){setBtnState(current.btn,false); registry[current.id].controls.hidden=true;}
+      if(current&&current.el!==lessonEl){setBtnState(current.btn,false);}
       audio.src=src;
       audio.playbackRate=playbackRate;
       var lessonId=lessonEl.dataset.lessonId, lang=root.dataset.lang, startTime=0;
@@ -122,28 +138,28 @@
       }
       audio.play();
       current={id:lessonId,btn:reg.btn,el:lessonEl};
-      lessonEl.open=true;
-      reg.controls.hidden=false;
-      updateSpeedBtn(reg);
-      updateSeekUI(reg);
+      bar.hidden=false;
+      updatePlayerInfo(lessonEl);
+      updateSpeedBtn();
+      updateSeekUI();
       updateMediaSessionMetadata(lessonEl);
       lastPersistAt=Date.now();
       persistPosition(lessonId,lang,startTime);
     }
     audio.addEventListener('play',function(){
-      if(current)setBtnState(current.btn,true);
+      updatePlayIcons(true);
       if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing';
     });
     audio.addEventListener('pause',function(){
-      if(current)setBtnState(current.btn,false);
+      updatePlayIcons(false);
       if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';
     });
     audio.addEventListener('loadedmetadata',function(){
-      if(current)updateSeekUI(registry[current.id]);
+      if(current)updateSeekUI();
     });
     audio.addEventListener('timeupdate',function(){
       if(!current)return;
-      updateSeekUI(registry[current.id]);
+      updateSeekUI();
       var now=Date.now();
       if(now-lastPersistAt<3000)return;
       lastPersistAt=now;
@@ -177,14 +193,7 @@
       var btn=document.createElement('button');
       btn.type='button'; btn.className='lesson-play'; setBtnState(btn,false);
       summary.appendChild(btn);
-      var controls=lessonEl.querySelector('.narration-controls');
-      var reg={
-        el:lessonEl, btn:btn, controls:controls,
-        seek:controls.querySelector('.nc-seek'),
-        curTimeEl:controls.querySelector('.nc-current'),
-        durTimeEl:controls.querySelector('.nc-duration'),
-        speedBtn:controls.querySelector('.nc-speed')
-      };
+      var reg={el:lessonEl, btn:btn};
       registry[lessonEl.dataset.lessonId]=reg;
 
       function refresh(){
@@ -201,27 +210,32 @@
         }
         playLesson(lessonEl);
       });
-      controls.querySelector('.nc-restart').addEventListener('click',function(){
-        if(current&&current.el===lessonEl)audio.currentTime=0;
-      });
-      controls.querySelector('.nc-end').addEventListener('click',function(){
-        if(current&&current.el===lessonEl&&isFinite(audio.duration))audio.currentTime=Math.max(0,audio.duration-0.25);
-      });
-      reg.speedBtn.addEventListener('click',function(){
-        playbackRate=nextPlaybackRate(playbackRate);
-        try{ localStorage.setItem(SPEED_KEY,String(playbackRate)); }catch(e){}
-        audio.playbackRate=playbackRate;
-        Object.keys(registry).forEach(function(id){ updateSpeedBtn(registry[id]); });
-      });
-      reg.seek.addEventListener('input',function(){
-        if(current&&current.el===lessonEl)audio.currentTime=reg.seek.valueAsNumber;
-      });
 
       updaters.push(refresh);
       refresh();
     });
 
-    Object.keys(registry).forEach(function(id){ updateSpeedBtn(registry[id]); });
+    playPauseBtn.addEventListener('click',function(){
+      if(!current)return;
+      if(audio.paused)audio.play(); else audio.pause();
+    });
+    $('pb-restart').addEventListener('click',function(){ if(current)audio.currentTime=0; });
+    $('pb-end').addEventListener('click',function(){
+      if(current&&isFinite(audio.duration))audio.currentTime=Math.max(0,audio.duration-0.25);
+    });
+    $('pb-close').addEventListener('click',function(){ audio.pause(); clearCurrent(); });
+    speedBtn.addEventListener('click',function(){
+      playbackRate=nextPlaybackRate(playbackRate);
+      try{ localStorage.setItem(SPEED_KEY,String(playbackRate)); }catch(e){}
+      audio.playbackRate=playbackRate;
+      updateSpeedBtn();
+    });
+    seek.addEventListener('input',function(){
+      if(current)audio.currentTime=seek.valueAsNumber;
+    });
+    updaters.push(function(){ if(current)updatePlayerInfo(current.el); });
+
+    updateSpeedBtn();
 
     if(pendingResume&&registry[pendingResume.lessonId]&&resolveNarrationSrc(registry[pendingResume.lessonId].el.dataset,pendingResume.lang)){
       setLang(pendingResume.lang);
@@ -289,7 +303,6 @@
   var NOTE_EN='<p class="langnote">English version of this question is not available yet — showing the Turkish text.</p>';
   function scName(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?(root.dataset.lang==='en'?sc.en:sc.tr):'';}
   function scCtx(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?sc.ctx:'';}
-  var $=function(id){return document.getElementById(id);};
   function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
   function buildExam(mode){
     var combos=viableScenarioCombos(MOCK_POOL,mode.targets);

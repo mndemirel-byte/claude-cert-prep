@@ -198,7 +198,7 @@ for d in D:
         idx=title.split(":")[0].strip(); f_tr=d["lessons"][i]
         tr_t=esc(title.split(":",1)[1].strip()) if ":" in title else esc(title)
         en_b=en_lesson_body(idx,f_tr,body)
-        p.append(f'<details class="lesson" data-lesson-id="{idx}"{narration_attrs(idx)}><summary><span class="lidx">{idx}</span><span class="ltitle">{bi(tr_t,esc(en_title(title)))}</span></summary><div class="narration-controls" hidden><button type="button" class="nc-restart" aria-label="Restart">⏮</button><span class="nc-time nc-current">0:00</span><input type="range" class="nc-seek" min="0" max="0" step="1" value="0"><span class="nc-time nc-duration">0:00</span><button type="button" class="nc-end" aria-label="Skip to end">⏭</button><button type="button" class="nc-speed" aria-label="Playback speed">1x</button></div><div class="prose l-tr">{body}</div><div class="prose l-en">{en_b}</div></details>')
+        p.append(f'<details class="lesson" data-lesson-id="{idx}"{narration_attrs(idx)}><summary><span class="lidx">{idx}</span><span class="ltitle">{bi(tr_t,esc(en_title(title)))}</span></summary><div class="prose l-tr">{body}</div><div class="prose l-en">{en_b}</div></details>')
     p.append('</div>')
     p.append(f'<h2 class="secttl" id="domain-{d["id"]}-quiz">{bi("Yeterlilik testi","Practice quiz")}</h2>')
     allen=all(q.get("en") for q in d["questions"])
@@ -509,7 +509,23 @@ nav=f'''<nav class="topnav" data-style="apple" data-palette="A">
 <a href="#practice" data-nav="practice"><span class="ticon">▤</span>{bi("Practice","Practice")}</a>
 <a href="#flashcards" data-nav="flashcards"><span class="ticon">◫</span>{bi("Flashcards","Flashcards")}</a>
 </div>
-</nav>'''
+</nav>
+<div class="playerbar" id="playerbar" hidden>
+<div class="playerbar-inner">
+<button type="button" class="pb-playpause" id="pb-playpause" aria-label="Play/Pause">▶</button>
+<div class="pb-info">
+<div class="pb-title" id="pb-title"></div>
+<div class="pb-domain" id="pb-domain"></div>
+</div>
+<button type="button" class="pb-icon pb-restart" id="pb-restart" aria-label="Restart">⏮</button>
+<span class="pb-time" id="pb-current">0:00</span>
+<input type="range" class="pb-seek" id="pb-seek" min="0" max="0" step="1" value="0">
+<span class="pb-time" id="pb-duration">0:00</span>
+<button type="button" class="pb-icon pb-end" id="pb-end" aria-label="Skip to end">⏭</button>
+<button type="button" class="pb-speed" id="pb-speed" aria-label="Playback speed">1x</button>
+<button type="button" class="pb-icon pb-close" id="pb-close" aria-label="Close player">✕</button>
+</div>
+</div>'''
 doc=f'''<!DOCTYPE html>
 <html lang="tr" data-lang="tr" data-style="apple" data-palette="A">
 <head>
