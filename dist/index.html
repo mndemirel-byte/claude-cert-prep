@@ -166,6 +166,11 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 .scencta-t{grid-area:t;font-weight:800;font-size:1.2rem}.scencta-s{grid-area:s;font-size:.9rem;color:#4A3A2C}.scencta-go{grid-area:go;font-size:1.8rem}
 .scencta:hover{background:var(--surface)}
 .matrixwrap{overflow-x:auto;margin:12px 0 8px}
+.practice-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+.practice-card{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;color:inherit;transition:transform .15s,border-color .15s}
+.practice-card:hover{transform:translateY(-2px);border-color:var(--c,#1B1F2A)}
+.practice-card h2{margin:0 0 6px;font-size:1.15rem}
+.practice-card p{margin:0;color:var(--muted);font-size:.9rem}
 .matrix{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
 .matrix th,.matrix td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:center}
 .matrix thead th{border-bottom:2px solid var(--line)}
@@ -203,9 +208,9 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 <p class="kicker"><span class="l-tr">Çalışma rehberi</span><span class="l-en">Study guide</span></p>
 <h1>Claude Certified Architect<br><span>Foundations</span></h1>
 <p class="lede"><span class="l-tr">Sınav beş alandan (domain) oluşur. Aşağıdaki şerit her alanın sınav içindeki ağırlığını gösterir; her alanın sayfasında önce dersler, ardından cevap anahtarlı yeterlilik testi yer alır.</span><span class="l-en">The exam has five domains. The bar below shows each domain's weight in the exam; every domain page has the lessons first, followed by a practice quiz with answer key.</span></p>
-</header><div class="weightbar" role="img" aria-label="Domain ağırlıkları"><a href="#domain-1" class="seg" style="--c:#0F6E6E;flex:27"><b><span class="l-tr">%27</span><span class="l-en">27%</span></b><small>D1</small></a><a href="#domain-2" class="seg" style="--c:#8A4B08;flex:18"><b><span class="l-tr">%18</span><span class="l-en">18%</span></b><small>D2</small></a><a href="#domain-3" class="seg" style="--c:#3B4F9A;flex:20"><b><span class="l-tr">%20</span><span class="l-en">20%</span></b><small>D3</small></a><a href="#domain-4" class="seg" style="--c:#7A2E5C;flex:20"><b><span class="l-tr">%20</span><span class="l-en">20%</span></b><small>D4</small></a><a href="#domain-5" class="seg" style="--c:#4E6B2A;flex:15"><b><span class="l-tr">%15</span><span class="l-en">15%</span></b><small>D5</small></a></div><p class="meta"><span class="l-tr">5 domain · 30 task statement dersi · 45 pratik soru</span><span class="l-en">5 domains · 30 task statement lessons · 45 practice questions</span></p><a class="scencta" href="#scenarios"><span class="scencta-t"><span class="l-tr">Sınav senaryoları</span><span class="l-en">Exam scenarios</span></span><span class="scencta-s"><span class="l-tr">6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?</span><span class="l-en">4 of 6 are drawn at random; which domain is asked in which context?</span></span><span class="scencta-go">→</span></a><a class="mockcta" href="#mock">
-<span class="mockcta-t"><span class="l-tr">Mock sınav</span><span class="l-en">Mock exam</span></span>
-<span class="mockcta-s"><span class="l-tr">6 senaryodan rastgele 4'ü · senaryo altında gruplanmış sorular · soru başına 2 dk · 720/1000 geçme puanı</span><span class="l-en">4 of 6 scenarios at random · questions grouped by scenario · 2 min per question · 720/1000 to pass</span></span>
+</header><div class="weightbar" role="img" aria-label="Domain ağırlıkları"><a href="#domain-1" class="seg" style="--c:#0F6E6E;flex:27"><b><span class="l-tr">%27</span><span class="l-en">27%</span></b><small>D1</small></a><a href="#domain-2" class="seg" style="--c:#8A4B08;flex:18"><b><span class="l-tr">%18</span><span class="l-en">18%</span></b><small>D2</small></a><a href="#domain-3" class="seg" style="--c:#3B4F9A;flex:20"><b><span class="l-tr">%20</span><span class="l-en">20%</span></b><small>D3</small></a><a href="#domain-4" class="seg" style="--c:#7A2E5C;flex:20"><b><span class="l-tr">%20</span><span class="l-en">20%</span></b><small>D4</small></a><a href="#domain-5" class="seg" style="--c:#4E6B2A;flex:15"><b><span class="l-tr">%15</span><span class="l-en">15%</span></b><small>D5</small></a></div><p class="meta"><span class="l-tr">5 domain · 30 task statement dersi · 45 pratik soru</span><span class="l-en">5 domains · 30 task statement lessons · 45 practice questions</span></p><a class="scencta" href="#scenarios"><span class="scencta-t"><span class="l-tr">Sınav senaryoları</span><span class="l-en">Exam scenarios</span></span><span class="scencta-s"><span class="l-tr">6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?</span><span class="l-en">4 of 6 are drawn at random; which domain is asked in which context?</span></span><span class="scencta-go">→</span></a><a class="mockcta" href="#practice">
+<span class="mockcta-t"><span class="l-tr">Practice</span><span class="l-en">Practice</span></span>
+<span class="mockcta-s"><span class="l-tr">Quick Mock, Full-Length Mock veya Flashcards ile çalış</span><span class="l-en">Study with Quick Mock, Full-Length Mock, or Flashcards</span></span>
 <span class="mockcta-go">→</span></a><a class="regcta" href="https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification" target="_blank" rel="noopener"><span class="l-tr">Sınava register olmak için</span><span class="l-en">Register for the exam</span> <span>→</span></a><ol class="domains"><li class="drow" style="--c:#0F6E6E">
 <div class="dnum">1</div>
 <div class="dbody">
@@ -11593,6 +11598,28 @@ if confidence &lt; 0.70: → priority human review
 <div class="palette" id="mock-palette"></div>
 </div>
 <div id="mock-result" hidden></div>
+</section><section id="practice" class="page practice">
+<a class="back" href="#home"><span class="l-tr">← Ana sayfa</span><span class="l-en">← Home</span></a>
+<p class="kicker"><span class="l-tr">Çalışma</span><span class="l-en">Study</span></p>
+<h1>Practice</h1>
+<p class="lede"><span class="l-tr">Zamana göre bir çalışma modu seç: hızlı bir kontrol, gerçek sınav koşullarında tam deneme, ya da kavramları hızlı tekrar için flashcard'lar.</span><span class="l-en">Pick a study mode that fits your time: a quick check, a full-length attempt under real exam conditions, or flashcards for fast concept review.</span></p>
+<div class="practice-cards">
+<a class="practice-card" href="#quick-mock"><h2>Quick Mock</h2><p><span class="l-tr">24 soru · 2 dk/soru · ~48 dk</span><span class="l-en">24 questions · 2 min/question · ~48 min</span></p></a>
+<a class="practice-card" href="#full-length-mock"><h2>Full-Length Mock</h2><p><span class="l-tr">60 soru · 2 dk/soru · gerçek sınav koşulları</span><span class="l-en">60 questions · 2 min/question · real exam conditions</span></p></a>
+<a class="practice-card" href="#flashcards"><h2>Flashcards</h2><p><span class="l-tr">Domain başına kavram kartları</span><span class="l-en">Concept cards per Domain</span></p></a>
+</div>
+</section><section id="quick-mock" class="page">
+<a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
+<h1>Quick Mock</h1>
+<p class="lede"><span class="l-tr">Yakında.</span><span class="l-en">Coming soon.</span></p>
+</section><section id="full-length-mock" class="page">
+<a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
+<h1>Full-Length Mock</h1>
+<p class="lede"><span class="l-tr">Yakında.</span><span class="l-en">Coming soon.</span></p>
+</section><section id="flashcards" class="page">
+<a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
+<h1>Flashcards</h1>
+<p class="lede"><span class="l-tr">Yakında.</span><span class="l-en">Coming soon.</span></p>
 </section><section id="scenarios" class="page scen">
 <a class="back" href="#home"><span class="l-tr">← Ana sayfa</span><span class="l-en">← Home</span></a>
 <p class="kicker"><span class="l-tr">Resmi sınav kılavuzuna göre</span><span class="l-en">According to the official exam guide</span></p>

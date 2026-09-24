@@ -145,9 +145,9 @@ home.append('</div>')
 total_q=sum(len(d["questions"]) for d in D); total_l=sum(len(d["lessons_html"]) for d in D)
 home.append(f'<p class="meta">{bi(f"{len(D)} domain · {total_l} task statement dersi · {total_q} pratik soru", f"{len(D)} domains · {total_l} task statement lessons · {total_q} practice questions")}</p>')
 home.append(f'''<a class="scencta" href="#scenarios"><span class="scencta-t">{bi("Sınav senaryoları","Exam scenarios")}</span><span class="scencta-s">{bi("6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?","4 of 6 are drawn at random; which domain is asked in which context?")}</span><span class="scencta-go">→</span></a>''')
-home.append(f'''<a class="mockcta" href="#mock">
-<span class="mockcta-t">{bi("Mock sınav","Mock exam")}</span>
-<span class="mockcta-s">{bi("6 senaryodan rastgele 4'ü · senaryo altında gruplanmış sorular · soru başına 2 dk · 720/1000 geçme puanı","4 of 6 scenarios at random · questions grouped by scenario · 2 min per question · 720/1000 to pass")}</span>
+home.append(f'''<a class="mockcta" href="#practice">
+<span class="mockcta-t">{bi("Practice","Practice")}</span>
+<span class="mockcta-s">{bi("Quick Mock, Full-Length Mock veya Flashcards ile çalış","Study with Quick Mock, Full-Length Mock, or Flashcards")}</span>
 <span class="mockcta-go">→</span></a>''')
 home.append(f'''<a class="regcta" href="https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification" target="_blank" rel="noopener">{bi("Sınava register olmak için","Register for the exam")} <span>→</span></a>''')
 home.append('<ol class="domains">')
@@ -223,6 +223,26 @@ mock=f'''<section id="mock" class="page mock">
 <div id="mock-result" hidden></div>
 </section>'''
 pages.append(mock)
+
+practice=f'''<section id="practice" class="page practice">
+<a class="back" href="#home">{bi("← Ana sayfa","← Home")}</a>
+<p class="kicker">{bi("Çalışma","Study")}</p>
+<h1>Practice</h1>
+<p class="lede">{bi("Zamana göre bir çalışma modu seç: hızlı bir kontrol, gerçek sınav koşullarında tam deneme, ya da kavramları hızlı tekrar için flashcard'lar.","Pick a study mode that fits your time: a quick check, a full-length attempt under real exam conditions, or flashcards for fast concept review.")}</p>
+<div class="practice-cards">
+<a class="practice-card" href="#quick-mock"><h2>Quick Mock</h2><p>{bi("24 soru · 2 dk/soru · ~48 dk","24 questions · 2 min/question · ~48 min")}</p></a>
+<a class="practice-card" href="#full-length-mock"><h2>Full-Length Mock</h2><p>{bi("60 soru · 2 dk/soru · gerçek sınav koşulları","60 questions · 2 min/question · real exam conditions")}</p></a>
+<a class="practice-card" href="#flashcards"><h2>Flashcards</h2><p>{bi("Domain başına kavram kartları","Concept cards per Domain")}</p></a>
+</div>
+</section>'''
+pages.append(practice)
+
+for route_id,title in [("quick-mock","Quick Mock"),("full-length-mock","Full-Length Mock"),("flashcards","Flashcards")]:
+    pages.append(f'''<section id="{route_id}" class="page">
+<a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
+<h1>{title}</h1>
+<p class="lede">{bi("Yakında.","Coming soon.")}</p>
+</section>''')
 SEL_TR='''<p>Resmi kılavuzun tanımı şu: sınav senaryo tabanlı sorular kullanır; her senaryo, bir dizi soruyu çerçeveleyen gerçekçi bir üretim bağlamı sunar ve sınav sırasında <strong>6 senaryoluk havuzdan rastgele 4'ü</strong> sunulur. Yani:</p>
 <ul>
 <li>Sorular bağımsız birer bilgi sorusu değildir; "şu sistemi kuruyorsun" diye başlayan bir senaryo metninin altında gelir ve o senaryonun araç adları, hedef metrikleri ve kısıtları soru gövdesine gömülüdür.</li>

@@ -158,6 +158,11 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 .scencta-t{grid-area:t;font-weight:800;font-size:1.2rem}.scencta-s{grid-area:s;font-size:.9rem;color:#4A3A2C}.scencta-go{grid-area:go;font-size:1.8rem}
 .scencta:hover{background:var(--surface)}
 .matrixwrap{overflow-x:auto;margin:12px 0 8px}
+.practice-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:24px}
+.practice-card{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px;color:inherit;transition:transform .15s,border-color .15s}
+.practice-card:hover{transform:translateY(-2px);border-color:var(--c,#1B1F2A)}
+.practice-card h2{margin:0 0 6px;font-size:1.15rem}
+.practice-card p{margin:0;color:var(--muted);font-size:.9rem}
 .matrix{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
 .matrix th,.matrix td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:center}
 .matrix thead th{border-bottom:2px solid var(--line)}
