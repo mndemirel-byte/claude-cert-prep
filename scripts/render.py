@@ -149,6 +149,7 @@ META_JSON=json.dumps({"weights":{d["id"]:d["weight"] for d in D},"hues":{d["id"]
 
 home=[]
 total_q=sum(len(d["questions"]) for d in D); total_l=sum(len(d["lessons_html"]) for d in D)
+grand_total_q=total_q+len(POOL); grand_total_q_label=f"{(grand_total_q//50)*50}+"
 home.append('<section id="home" class="page">')
 home.append(f'''<header class="hero">
 <div class="hero-copy">
@@ -159,14 +160,14 @@ home.append(f'''<header class="hero">
 <div class="statcells">
 <div class="statcell"><b>{len(D)}</b><small>{bi("domain","domains")}</small></div>
 <div class="statcell"><b>{total_l}</b><small>{bi("ders","lessons")}</small></div>
-<div class="statcell"><b>{total_q}</b><small>{bi("soru","questions")}</small></div>
+<div class="statcell"><b>{grand_total_q_label}</b><small>{bi("soru","questions")}</small></div>
 </div>
 </header>''')
 home.append('<div class="weightbar" role="img" aria-label="Domain ağırlıkları">')
 for d in D:
     home.append(f'<a href="#domain-{d["id"]}" class="seg" style="--c:{d["hue"]};flex:{d["weight"]}"><b>{bi(f"%{d['weight']}", f"{d['weight']}%")}</b><small>D{d["id"]}</small></a>')
 home.append('</div>')
-home.append(f'<p class="meta">{bi(f"{len(D)} domain · {total_l} task statement dersi · {total_q} pratik soru", f"{len(D)} domains · {total_l} task statement lessons · {total_q} practice questions")}</p>')
+home.append(f'<p class="meta">{bi(f"{len(D)} domain · {total_l} task statement dersi · {grand_total_q_label} pratik soru", f"{len(D)} domains · {total_l} task statement lessons · {grand_total_q_label} practice questions")}</p>')
 home.append('<div class="action-cards">')
 home.append(f'''<a class="action-card ac-guide" href="#exam-guide"><span class="ac-t">Claude Certified Architect – Foundations Exam Guide<span class="ac-go">→</span></span><span class="ac-s">{bi("Anthropic'in resmi sınav kılavuzu.","Official exam guide from Anthropic.")}</span></a>''')
 home.append(f'''<a class="action-card ac-scenarios" href="#scenarios"><span class="ac-t">{bi("Sınav senaryoları","Exam scenarios")}<span class="ac-go">→</span></span><span class="ac-s">{bi("6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?","4 of 6 are drawn at random; which domain is asked in which context?")}</span></a>''')
