@@ -171,6 +171,14 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 .practice-card:hover{transform:translateY(-2px);border-color:var(--c,#1B1F2A)}
 .practice-card h2{margin:0 0 6px;font-size:1.15rem}
 .practice-card p{margin:0;color:var(--muted);font-size:.9rem}
+.fc-domain-card{cursor:pointer;font:inherit;width:100%}
+.flashcard{perspective:1200px;max-width:520px;margin:24px auto;min-height:220px;cursor:pointer}
+.fc-inner{position:relative;width:100%;height:100%;min-height:220px;transition:transform .5s;transform-style:preserve-3d}
+.flashcard.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;padding:24px;border-radius:14px;border:1px solid var(--line);background:var(--surface);text-align:center;font-size:1.15rem}
+.fc-back{transform:rotateY(180deg);color:var(--muted);font-size:1rem}
+.fc-hint{text-align:center;color:var(--muted);font-size:.85rem;margin:10px 0}
+.fc-nav{display:flex;align-items:center;justify-content:center;gap:16px}
 .matrix{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
 .matrix th,.matrix td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:center}
 .matrix thead th{border-bottom:2px solid var(--line)}
@@ -11614,8 +11622,43 @@ if confidence &lt; 0.70: → priority human review
 <div id="full-history"></div>
 </section><section id="flashcards" class="page">
 <a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
+<div id="fc-picker">
+<p class="kicker"><span class="l-tr">Hızlı tekrar</span><span class="l-en">Quick review</span></p>
 <h1>Flashcards</h1>
-<p class="lede"><span class="l-tr">Yakında.</span><span class="l-en">Coming soon.</span></p>
+<p class="lede"><span class="l-tr">Bir domain seç; o domain'deki derslerin temel çıkarımlarını kart kart tekrar et.</span><span class="l-en">Pick a Domain; review that Domain's Lessons' key takeaways one card at a time.</span></p>
+<div class="practice-cards" id="fc-domain-list"><button type="button" class="practice-card fc-domain-card" data-domain="1" style="--c:#0F6E6E">
+<h2><span class="l-tr">Domain 1</span><span class="l-en">Domain 1</span> — <span class="l-tr">Agentic Mimari ve Orkestrasyon</span><span class="l-en">Agentic Architecture & Orchestration</span></h2>
+<p><span class="l-tr">39 kart</span><span class="l-en">39 cards</span></p>
+</button><button type="button" class="practice-card fc-domain-card" data-domain="2" style="--c:#8A4B08">
+<h2><span class="l-tr">Domain 2</span><span class="l-en">Domain 2</span> — <span class="l-tr">Araç Tasarımı ve MCP Entegrasyonu</span><span class="l-en">Tool Design & MCP Integration</span></h2>
+<p><span class="l-tr">30 kart</span><span class="l-en">30 cards</span></p>
+</button><button type="button" class="practice-card fc-domain-card" data-domain="3" style="--c:#3B4F9A">
+<h2><span class="l-tr">Domain 3</span><span class="l-en">Domain 3</span> — <span class="l-tr">Claude Code Konfigürasyonu ve İş Akışları</span><span class="l-en">Claude Code Configuration & Workflows</span></h2>
+<p><span class="l-tr">40 kart</span><span class="l-en">40 cards</span></p>
+</button><button type="button" class="practice-card fc-domain-card" data-domain="4" style="--c:#7A2E5C">
+<h2><span class="l-tr">Domain 4</span><span class="l-en">Domain 4</span> — <span class="l-tr">Prompt Engineering ve Yapılandırılmış Çıktı</span><span class="l-en">Prompt Engineering & Structured Output</span></h2>
+<p><span class="l-tr">40 kart</span><span class="l-en">40 cards</span></p>
+</button><button type="button" class="practice-card fc-domain-card" data-domain="5" style="--c:#4E6B2A">
+<h2><span class="l-tr">Domain 5</span><span class="l-en">Domain 5</span> — <span class="l-tr">Bağlam Yönetimi ve Güvenilirlik</span><span class="l-en">Context Management & Reliability</span></h2>
+<p><span class="l-tr">42 kart</span><span class="l-en">42 cards</span></p>
+</button></div>
+</div>
+<div id="fc-deck" hidden>
+<button type="button" class="back" id="fc-back"><span class="l-tr">← Flashcards</span><span class="l-en">← Flashcards</span></button>
+<p class="kicker" id="fc-domain-title"></p>
+<div class="flashcard" id="fc-card" tabindex="0" role="button">
+<div class="fc-inner">
+<div class="fc-face fc-front"></div>
+<div class="fc-face fc-back"></div>
+</div>
+</div>
+<p class="fc-hint"><span class="l-tr">Çevirmek için karta dokun</span><span class="l-en">Tap the card to flip it</span></p>
+<div class="fc-nav">
+<button type="button" class="reset" id="fc-prev">←</button>
+<span id="fc-progress"></span>
+<button type="button" class="reset" id="fc-next">→</button>
+</div>
+</div>
 </section><section id="practice-exam" class="page mock">
 <div id="mock-exam">
 <div class="exambar"><span id="mock-progress"></span><span id="mock-timer"></span><button class="reset" id="mock-finish"><span class="l-tr">Sınavı bitir</span><span class="l-en">Finish exam</span></button></div>
@@ -12235,5 +12278,44 @@ if (typeof module !== 'undefined' && module.exports) {
   });
   window.addEventListener('hashchange',refreshIntroHistory);
   refreshIntroHistory();
+
+  /* ---------- flashcards ---------- */
+  (function(){
+    if(typeof FLASHCARDS==='undefined')return;
+    var deck=null, idx=0;
+    function shuffleFC(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+    function renderCard(){
+      var lang=root.dataset.lang, card=deck.cards[idx];
+      $('fc-card').classList.remove('flipped');
+      $('fc-card').querySelector('.fc-front').innerHTML=lang==='en'?card.concept_en:card.concept_tr;
+      $('fc-card').querySelector('.fc-back').innerHTML=lang==='en'?card.remember_en:card.remember_tr;
+      $('fc-progress').textContent=(idx+1)+' / '+deck.cards.length;
+      $('fc-prev').disabled=idx===0; $('fc-next').disabled=idx===deck.cards.length-1;
+    }
+    function openDeck(domainId){
+      var cards=FLASHCARDS[domainId]||[];
+      deck={domain:domainId,cards:shuffleFC(cards)};
+      idx=0;
+      var lang=root.dataset.lang;
+      $('fc-domain-title').textContent='Domain '+domainId+' — '+(lang==='en'?MOCK_META.titles_en[domainId]:MOCK_META.titles_tr[domainId]);
+      $('fc-picker').hidden=true; $('fc-deck').hidden=false;
+      renderCard(); window.scrollTo({top:0});
+    }
+    document.querySelectorAll('.fc-domain-card').forEach(function(btn){
+      btn.addEventListener('click',function(){openDeck(btn.dataset.domain);});
+    });
+    $('fc-back').addEventListener('click',function(){$('fc-deck').hidden=true;$('fc-picker').hidden=false;});
+    $('fc-card').addEventListener('click',function(){$('fc-card').classList.toggle('flipped');});
+    $('fc-card').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fc-card').classList.toggle('flipped');}});
+    $('fc-prev').addEventListener('click',function(){if(idx>0){idx--;renderCard();}});
+    $('fc-next').addEventListener('click',function(){if(idx<deck.cards.length-1){idx++;renderCard();}});
+    updaters.push(function(){
+      if(deck&&!$('fc-deck').hidden){
+        var lang=root.dataset.lang;
+        $('fc-domain-title').textContent='Domain '+deck.domain+' — '+(lang==='en'?MOCK_META.titles_en[deck.domain]:MOCK_META.titles_tr[deck.domain]);
+        renderCard();
+      }
+    });
+  })();
 })();</script>
 </body></html>

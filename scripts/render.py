@@ -260,10 +260,38 @@ fullmock=f'''<section id="full-length-mock" class="page mock">
 </section>'''
 pages.append(fullmock)
 
+fc_domain_cards=''
+for d in D:
+    n=len(FLASHCARDS.get(d["id"],[]))
+    fc_domain_cards+=f'''<button type="button" class="practice-card fc-domain-card" data-domain="{d["id"]}" style="--c:{d["hue"]}">
+<h2>{bi(f'Domain {d["id"]}',f'Domain {d["id"]}')} — {bi(esc(d["title"]),EN_TITLE[d["id"]])}</h2>
+<p>{bi(f"{n} kart",f"{n} cards")}</p>
+</button>'''
+
 pages.append(f'''<section id="flashcards" class="page">
 <a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
+<div id="fc-picker">
+<p class="kicker">{bi("Hızlı tekrar","Quick review")}</p>
 <h1>Flashcards</h1>
-<p class="lede">{bi("Yakında.","Coming soon.")}</p>
+<p class="lede">{bi("Bir domain seç; o domain'deki derslerin temel çıkarımlarını kart kart tekrar et.","Pick a Domain; review that Domain's Lessons' key takeaways one card at a time.")}</p>
+<div class="practice-cards" id="fc-domain-list">{fc_domain_cards}</div>
+</div>
+<div id="fc-deck" hidden>
+<button type="button" class="back" id="fc-back">{bi("← Flashcards","← Flashcards")}</button>
+<p class="kicker" id="fc-domain-title"></p>
+<div class="flashcard" id="fc-card" tabindex="0" role="button">
+<div class="fc-inner">
+<div class="fc-face fc-front"></div>
+<div class="fc-face fc-back"></div>
+</div>
+</div>
+<p class="fc-hint">{bi("Çevirmek için karta dokun","Tap the card to flip it")}</p>
+<div class="fc-nav">
+<button type="button" class="reset" id="fc-prev">←</button>
+<span id="fc-progress"></span>
+<button type="button" class="reset" id="fc-next">→</button>
+</div>
+</div>
 </section>''')
 
 examrunner=f'''<section id="practice-exam" class="page mock">
