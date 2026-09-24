@@ -260,21 +260,20 @@
       again:'New attempt',home:'← Home',history:'Previous attempts',your:'Your answer',right:'Correct answer',noans:'—',
       timeused:'Time used'}};
   function MT(){return M[root.dataset.lang]||M.tr;}
-  var PER_Q=120, LIMIT=0, exam=null, tick=null;
+  var PER_Q=120, LIMIT=0, exam=null, tick=null, lastMode=null;
+  var QUICK_MODE={targets:{1:7,2:4,3:5,4:5,5:3},historyTag:'Quick',introId:'quick-mock'};
   function QF(q,f){var en=root.dataset.lang==='en';if(en&&q.en)return q.en[f];if(en&&f==='body')return NOTE_EN+q[f];return q[f];}
   var NOTE_EN='<p class="langnote">English version of this question is not available yet — showing the Turkish text.</p>';
   function scName(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?(root.dataset.lang==='en'?sc.en:sc.tr):'';}
   function scCtx(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?sc.ctx:'';}
   var $=function(id){return document.getElementById(id);};
   function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
-  function buildExam(){
-    var scs=shuffle([1,2,3,4,5,6]).slice(0,4), qs=[];
-    scs.forEach(function(sc){
-      var pool=shuffle(MOCK_POOL.filter(function(q){return q.sc===sc;}).slice()).slice(0,15);
-      qs=qs.concat(pool);
-    });
+  function buildExam(mode){
+    var combos=viableScenarioCombos(MOCK_POOL,mode.targets);
+    var combo=combos[Math.floor(Math.random()*combos.length)];
+    var qs=orderByScenario(sampleExamQuestions(MOCK_POOL,combo,mode.targets)).map(shuffleQuestionOptions);
     LIMIT=qs.length*PER_Q;
-    return {scs:scs,qs:qs,ans:new Array(qs.length).fill(null),flag:new Array(qs.length).fill(false),i:0,start:Date.now(),done:false};
+    return {scs:combo,qs:qs,ans:new Array(qs.length).fill(null),flag:new Array(qs.length).fill(false),i:0,start:Date.now(),done:false};
   }
   function fmt(s){s=Math.max(0,s);var m=Math.floor(s/60),x=s%60;return (m<10?'0':'')+m+':'+(x<10?'0':'')+x;}
   function renderQ(){
@@ -294,9 +293,11 @@
     $('mock-palette').innerHTML=p;
     $('mock-palette').querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){exam.i=+b.dataset.i;renderQ();window.scrollTo({top:0});});});
   }
-  function startExam(){
-    exam=buildExam();
-    $('mock-intro').hidden=true;$('mock-result').hidden=true;$('mock-exam').hidden=false;
+  function startExam(mode){
+    lastMode=mode;
+    exam=buildExam(mode);
+    location.hash='#practice-exam';
+    $('mock-result').hidden=true;$('mock-exam').hidden=false;
     renderQ();window.scrollTo({top:0});
     clearInterval(tick);
     tick=setInterval(function(){
@@ -320,13 +321,13 @@
     exam.done=true;clearInterval(tick);
     var used=Math.min(LIMIT,Math.floor((Date.now()-exam.start)/1000));
     var r=score();
-    try{var hist=JSON.parse(localStorage.getItem('cca-mock')||'[]');hist.unshift({t:Date.now(),s:r.scaled,used:used});localStorage.setItem('cca-mock',JSON.stringify(hist.slice(0,10)));}catch(e){}
+    try{var hist=JSON.parse(localStorage.getItem('cca-mock')||'[]');hist.unshift({t:Date.now(),s:r.scaled,used:used,mode:lastMode?lastMode.historyTag:''});localStorage.setItem('cca-mock',JSON.stringify(hist.slice(0,10)));}catch(e){}
     lastResult={r:r,used:used,auto:auto};
     renderResult(r,used,auto);
   }
   function renderResult(r,used,auto){
     var t=MT(),lang=root.dataset.lang,passed=r.scaled>=720;
-    var h='<a class="back" href="#home">'+t.home+'</a><p class="kicker">'+(lang==='en'?'Result':'Sonuç')+'</p>';
+    var h='<a class="back" href="#practice">← Practice</a><p class="kicker">'+(lang==='en'?'Result':'Sonuç')+'</p>';
     if(auto)h+='<p class="langnote">'+t.timeup+'</p>';
     h+='<div class="resultcard"><div class="bigscore">'+r.scaled+'<small>/ 1000 '+t.score+'</small></div><span class="passtag '+(passed?'ok':'bad')+'">'+(passed?t.pass:t.fail)+' · '+(passed?'≥':'<')+' 720</span>';
     h+='<p style="color:var(--muted);margin:14px 0 0">'+t.timeused+': '+fmt(used)+'</p><ul class="dombreak">';
@@ -343,26 +344,31 @@
       h+='<article class="q rev answered" data-state="'+(a?(ok?'ok':'wrong'):'unans')+'"><div class="qhead"><span class="qn">'+t.q+' '+(i+1)+'</span><span class="qts">'+q.ts+'</span></div><div class="prose qbody">'+QF(q,'body')+'</div><div class="opts">';
       ['A','B','C','D'].forEach(function(k){h+='<button class="opt'+(k===q.ans?' correct':(k===a?' wrong':''))+'" disabled><span class="k">'+k+'</span><span class="t">'+op[k]+'</span></button>';});
       h+='</div><div class="verdict '+(a?(ok?'ok':'bad'):'bad')+'">'+t.your+': '+(a||t.noans)+' · '+t.right+': '+q.ans+'</div><div class="expl prose"><div class="explhd">'+t.right+': <b>'+q.ans+'</b></div>'+QF(q,'expl')+'</div></article>';});
-    h+='</div><p class="pagenav"><a href="#home">'+t.home+'</a><a href="#mock" id="mock-again">'+t.again+' →</a></p>';
+    h+='</div><p class="pagenav"><a href="#practice">← Practice</a><a href="#'+(lastMode?lastMode.introId:'quick-mock')+'" id="mock-again">'+t.again+' →</a></p>';
     $('mock-exam').hidden=true;$('mock-result').hidden=false;$('mock-result').innerHTML=h;window.scrollTo({top:0});
     $('mock-result').querySelectorAll('.revfilter button').forEach(function(b){b.addEventListener('click',function(){
       $('mock-result').querySelectorAll('.revfilter button').forEach(function(x){x.classList.remove('on');});b.classList.add('on');
       var f=b.dataset.f;$('mock-review').querySelectorAll('.q').forEach(function(q){q.style.display=(f==='all'||(f==='wrong'&&q.dataset.state==='wrong')||(f==='unans'&&q.dataset.state==='unans'))?'':'none';});});});
-    $('mock-again').addEventListener('click',function(e){e.preventDefault();showIntro();});
   }
-  function showIntro(){
-    var t=MT();
-    $('mock-exam').hidden=true;$('mock-result').hidden=true;$('mock-intro').hidden=false;
-    var h='';try{var hist=JSON.parse(localStorage.getItem('cca-mock')||'[]');if(hist.length){h='<div class="hist"><b>'+t.history+'</b><ul>'+hist.map(function(x){var d=new Date(x.t);return '<li>'+d.toLocaleDateString(root.dataset.lang==='en'?'en-GB':'tr-TR')+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' — <b>'+x.s+'</b>/1000 · '+fmt(x.used)+'</li>';}).join('')+'</ul></div>';}}catch(e){}
-    $('mock-history').innerHTML=h; window.scrollTo({top:0});
+  function renderHistory(containerId){
+    var t=MT(), el=$(containerId); if(!el)return;
+    var h='';try{var hist=JSON.parse(localStorage.getItem('cca-mock')||'[]');if(hist.length){h='<div class="hist"><b>'+t.history+'</b><ul>'+hist.map(function(x){var d=new Date(x.t);return '<li>'+d.toLocaleDateString(root.dataset.lang==='en'?'en-GB':'tr-TR')+' '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+' — <b>'+(x.mode||'')+'</b> '+x.s+'/1000 · '+fmt(x.used)+'</li>';}).join('')+'</ul></div>';}}catch(e){}
+    el.innerHTML=h;
   }
-  $('mock-start').addEventListener('click',startExam);
+  function refreshIntroHistory(){
+    if(location.hash==='#quick-mock')renderHistory('quick-history');
+  }
+  $('quick-start').addEventListener('click',function(){startExam(QUICK_MODE);});
   $('mock-finish').addEventListener('click',function(){finish(false);});
   $('mock-prev').addEventListener('click',function(){if(exam.i>0){exam.i--;renderQ();window.scrollTo({top:0});}});
   $('mock-next').addEventListener('click',function(){if(exam.i<exam.qs.length-1){exam.i++;renderQ();window.scrollTo({top:0});}});
   $('mock-flag').addEventListener('click',function(){exam.flag[exam.i]=!exam.flag[exam.i];renderQ();});
   var lastResult=null;
-  updaters.push(function(){if(exam&&!exam.done&&!$('mock-exam').hidden)renderQ();if(!$('mock-intro').hidden)showIntro();if(exam&&exam.done&&lastResult&&!$('mock-result').hidden){var y=window.scrollY;renderResult(lastResult.r,lastResult.used,lastResult.auto);window.scrollTo({top:y});}});
-  window.addEventListener('hashchange',function(){if(location.hash==='#mock'&&(!exam||exam.done))showIntro();});
-  if(location.hash==='#mock')showIntro();
+  updaters.push(function(){
+    if(exam&&!exam.done&&location.hash==='#practice-exam'&&!$('mock-exam').hidden)renderQ();
+    refreshIntroHistory();
+    if(exam&&exam.done&&lastResult&&location.hash==='#practice-exam'&&!$('mock-result').hidden){var y=window.scrollY;renderResult(lastResult.r,lastResult.used,lastResult.auto);window.scrollTo({top:y});}
+  });
+  window.addEventListener('hashchange',refreshIntroHistory);
+  refreshIntroHistory();
 })();

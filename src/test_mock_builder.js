@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { viableScenarioCombos, sampleExamQuestions } = require('./mock-builder.js');
+const { viableScenarioCombos, sampleExamQuestions, shuffleQuestionOptions, orderByScenario } = require('./mock-builder.js');
 
 function abundantPool() {
   const pool = [];
@@ -64,4 +64,48 @@ test('never selects the same question twice', () => {
   const questions = sampleExamQuestions(pool, combo, { 1: 5, 2: 0, 3: 0, 4: 0, 5: 0 });
 
   assert.equal(new Set(questions.map((q) => q.id)).size, 5);
+});
+
+test('the returned answer letter points at the originally-correct option text', () => {
+  const question = {
+    opts: { A: 'wrong one', B: 'correct one', C: 'also wrong', D: 'still wrong' },
+    ans: 'B',
+  };
+
+  const shuffled = shuffleQuestionOptions(question);
+
+  assert.equal(shuffled.opts[shuffled.ans], 'correct one');
+});
+
+test('preserves all four option texts after shuffling', () => {
+  const question = {
+    opts: { A: 'w1', B: 'correct', C: 'w2', D: 'w3' },
+    ans: 'B',
+  };
+
+  const shuffled = shuffleQuestionOptions(question);
+
+  const texts = ['A', 'B', 'C', 'D'].map((k) => shuffled.opts[k]).sort();
+  assert.deepEqual(texts, ['correct', 'w1', 'w2', 'w3']);
+});
+
+test('orders questions into contiguous per-scenario blocks', () => {
+  const questions = [
+    { id: 'a', sc: 2 }, { id: 'b', sc: 1 }, { id: 'c', sc: 2 },
+    { id: 'd', sc: 3 }, { id: 'e', sc: 1 }, { id: 'f', sc: 3 },
+  ];
+
+  const ordered = orderByScenario(questions);
+
+  assert.equal(ordered.length, questions.length);
+  assert.deepEqual(new Set(ordered.map((q) => q.id)), new Set(questions.map((q) => q.id)));
+  const seenScenarios = new Set();
+  let lastSc = null;
+  ordered.forEach((q) => {
+    if (q.sc !== lastSc) {
+      assert.ok(!seenScenarios.has(q.sc), `scenario ${q.sc} appeared in two separate blocks`);
+      seenScenarios.add(q.sc);
+      lastSc = q.sc;
+    }
+  });
 });

@@ -39,6 +39,35 @@ function sampleExamQuestions(pool, combo, domainTargets) {
   return questions;
 }
 
+var LETTERS = ['A', 'B', 'C', 'D'];
+
+function shuffleQuestionOptions(question) {
+  var texts = LETTERS.map(function (k) { return question.opts[k]; });
+  var correctText = question.opts[question.ans];
+  var order = shuffle(LETTERS);
+  var newOpts = {};
+  var newAns = null;
+  order.forEach(function (letter, i) {
+    newOpts[letter] = texts[i];
+    if (texts[i] === correctText) newAns = letter;
+  });
+  return Object.assign({}, question, { opts: newOpts, ans: newAns });
+}
+
+function orderByScenario(questions) {
+  var byScenario = {};
+  var scenarios = [];
+  questions.forEach(function (q) {
+    if (!byScenario[q.sc]) { byScenario[q.sc] = []; scenarios.push(q.sc); }
+    byScenario[q.sc].push(q);
+  });
+  var ordered = [];
+  shuffle(scenarios).forEach(function (sc) {
+    ordered = ordered.concat(shuffle(byScenario[sc]));
+  });
+  return ordered;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { viableScenarioCombos, sampleExamQuestions };
+  module.exports = { viableScenarioCombos, sampleExamQuestions, shuffleQuestionOptions, orderByScenario };
 }

@@ -93,9 +93,9 @@ with serve_dist() as base_url:
         pg.goto(base_url)
         pg.click("#langtoggle")
         missing = pg.evaluate("MOCK_POOL.filter(q=>!q.en).length")
-        pg.goto(base_url + "#mock")
+        pg.goto(base_url + "#quick-mock")
         pg.wait_for_timeout(200)
-        pg.click("#mock-start")
+        pg.click("#quick-start")
         pg.wait_for_timeout(300)
         n = pg.evaluate("document.querySelectorAll('#mock-palette button').length")
         for i in range(n):

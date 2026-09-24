@@ -213,33 +213,6 @@ for d in D:
     p.append('</section>')
     pages.append('\n'.join(p))
 
-mock=f'''<section id="mock" class="page mock">
-<div id="mock-intro">
-<a class="back" href="#home">{bi("← Ana sayfa","← Home")}</a>
-<p class="kicker">{bi("Simülasyon","Simulation")}</p>
-<h1>{bi("Mock sınav","Mock exam")}</h1>
-<p class="lede">{bi("Gerçek sınav formatı: 6 senaryodan 4'ü rastgele seçilir, sorular seçilen senaryoların altında gruplanır, puan domain ağırlıklı ve 100–1000 ölçeğinde (geçme 720). Sınav sırasında doğru cevap gösterilmez; bitirdiğinde her sorunun açıklamasını görürsün.","Real exam format: 4 of 6 scenarios are drawn at random, questions are grouped under the drawn scenarios, scoring is domain-weighted on a 100–1000 scale (pass at 720). No answers are revealed during the exam; every explanation is shown after finishing.")}</p>
-<table class="rules"><tbody>
-<tr><th>{bi("Senaryolar","Scenarios")}</th><td>{bi("6 senaryodan rastgele 4'ü; her senaryonun soruları birlikte sunulur","4 of 6 drawn at random; each scenario's questions are presented together")}</td></tr>
-<tr><th>{bi("Soru sayısı","Questions")}</th><td>{bi(f"Gerçek sınavda 60 (senaryo başına ~15). Bu mock'ta seçilen 4 senaryonun havuzdaki tüm soruları — toplam {len(POOL)} soruluk havuzdan ~48", f"60 in the real exam (~15 per scenario). This mock uses every pooled question of the 4 drawn scenarios — about 48 from a pool of {len(POOL)}")}</td></tr>
-<tr><th>{bi("Süre","Time limit")}</th><td>{bi("Soru başına 2 dakika (gerçek sınavla aynı tempo); süre dolunca otomatik teslim","2 minutes per question (same pace as the real exam); auto-submits when time is up")}</td></tr>
-<tr><th>{bi("Puanlama","Scoring")}</th><td>{bi("Domain ağırlıklı, 100–1000 ölçeği; geçme 720","Domain-weighted, 100–1000 scale; pass at 720")}</td></tr>
-<tr><th>{bi("Sıra","Order")}</th><td>{bi("Senaryo sırası ve senaryo içindeki soru sırası her denemede karışır; soruları işaretleyip geri dönebilirsin","Scenario order and question order within each scenario are shuffled every attempt; you can flag questions and return to them")}</td></tr>
-</tbody></table>
-<button class="bigbtn" id="mock-start">{bi("Sınava başla","Start exam")}</button>
-<div id="mock-history"></div>
-</div>
-<div id="mock-exam" hidden>
-<div class="exambar"><span id="mock-progress"></span><span id="mock-timer"></span><button class="reset" id="mock-finish">{bi("Sınavı bitir","Finish exam")}</button></div>
-<details class="scenbox" id="mock-scen"><summary></summary><p></p></details>
-<div id="mock-q"></div>
-<div class="examnav"><button class="reset" id="mock-prev">←</button><button class="reset" id="mock-flag"></button><button class="reset" id="mock-next">→</button></div>
-<div class="palette" id="mock-palette"></div>
-</div>
-<div id="mock-result" hidden></div>
-</section>'''
-pages.append(mock)
-
 practice=f'''<section id="practice" class="page practice">
 <a class="back" href="#home">{bi("← Ana sayfa","← Home")}</a>
 <p class="kicker">{bi("Çalışma","Study")}</p>
@@ -253,12 +226,41 @@ practice=f'''<section id="practice" class="page practice">
 </section>'''
 pages.append(practice)
 
-for route_id,title in [("quick-mock","Quick Mock"),("full-length-mock","Full-Length Mock"),("flashcards","Flashcards")]:
+quickmock=f'''<section id="quick-mock" class="page mock">
+<a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
+<p class="kicker">{bi("Hızlı kontrol","Quick check")}</p>
+<h1>Quick Mock</h1>
+<p class="lede">{bi("Gerçek sınavdaki gibi 6 senaryodan 4'ü rastgele seçilir, sorular senaryo altında gruplanır. Kısa süreli, hedefli bir ilerleme kontrolü için.","Just like the real exam, 4 of 6 Scenarios are drawn at random and questions are grouped by Scenario. A short, focused progress check.")}</p>
+<table class="rules"><tbody>
+<tr><th>{bi("Senaryolar","Scenarios")}</th><td>{bi("6 senaryodan rastgele 4'ü; her senaryonun soruları birlikte sunulur","4 of 6 drawn at random; each scenario's questions are presented together")}</td></tr>
+<tr><th>{bi("Soru sayısı","Questions")}</th><td>{bi("24 soru, domain ağırlığına göre dağıtılır (yaklaşık 7/4/5/5/3)","24 questions, distributed by domain weight (roughly 7/4/5/5/3)")}</td></tr>
+<tr><th>{bi("Süre","Time limit")}</th><td>{bi("Soru başına 2 dakika — toplam ~48 dakika; süre dolunca otomatik teslim","2 minutes per question — ~48 minutes total; auto-submits when time is up")}</td></tr>
+<tr><th>{bi("Puanlama","Scoring")}</th><td>{bi("Domain ağırlıklı, 100–1000 ölçeği; geçme 720","Domain-weighted, 100–1000 scale; pass at 720")}</td></tr>
+<tr><th>{bi("Sıra","Order")}</th><td>{bi("Soru sırası ve her sorunun şık sırası her denemede karışır","Question order and each question's answer-option order are shuffled every attempt")}</td></tr>
+</tbody></table>
+<button class="bigbtn" id="quick-start">{bi("Sınava başla","Start exam")}</button>
+<div id="quick-history"></div>
+</section>'''
+pages.append(quickmock)
+
+for route_id,title in [("full-length-mock","Full-Length Mock"),("flashcards","Flashcards")]:
     pages.append(f'''<section id="{route_id}" class="page">
 <a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
 <h1>{title}</h1>
 <p class="lede">{bi("Yakında.","Coming soon.")}</p>
 </section>''')
+
+examrunner=f'''<section id="practice-exam" class="page mock">
+<div id="mock-exam">
+<div class="exambar"><span id="mock-progress"></span><span id="mock-timer"></span><button class="reset" id="mock-finish">{bi("Sınavı bitir","Finish exam")}</button></div>
+<details class="scenbox" id="mock-scen"><summary></summary><p></p></details>
+<div id="mock-q"></div>
+<div class="examnav"><button class="reset" id="mock-prev">←</button><button class="reset" id="mock-flag"></button><button class="reset" id="mock-next">→</button></div>
+<div class="palette" id="mock-palette"></div>
+</div>
+<div id="mock-result" hidden></div>
+</section>'''
+pages.append(examrunner)
 SEL_TR='''<p>Resmi kılavuzun tanımı şu: sınav senaryo tabanlı sorular kullanır; her senaryo, bir dizi soruyu çerçeveleyen gerçekçi bir üretim bağlamı sunar ve sınav sırasında <strong>6 senaryoluk havuzdan rastgele 4'ü</strong> sunulur. Yani:</p>
 <ul>
 <li>Sorular bağımsız birer bilgi sorusu değildir; "şu sistemi kuruyorsun" diye başlayan bir senaryo metninin altında gelir ve o senaryonun araç adları, hedef metrikleri ve kısıtları soru gövdesine gömülüdür.</li>
@@ -314,11 +316,12 @@ def scen_page():
         tr_card=card(x["ctx"],x["sig"],x["traps"],"Bağlam (kılavuzdan):","Bu senaryoda tipik olarak sınanan kararlar","Sık düşülen tuzaklar",f"Mock havuzunda bu senaryoya bağlı {n} soru var.")
         en_card=card(xe["ctx"],xe["sig"],xe["traps"],E["ctx_lbl"],E["h_sig"],E["h_traps"],E["pool"].format(n=n))
         p.append(f'<div class="prose">{bidiv(tr_card,en_card)}</div></article>')
-    p.append(f'<p class="pagenav"><a href="#home">{bi("← Ana sayfa","← Home")}</a><a href="#mock">{bi("Mock sınav →","Mock exam →")}</a></p></section>')
+    p.append(f'<p class="pagenav"><a href="#home">{bi("← Ana sayfa","← Home")}</a><a href="#practice">{bi("Practice →","Practice →")}</a></p></section>')
     return "\n".join(p)
 pages.append(scen_page())
 css=open(os.path.join(ROOT,"src","style.css"),encoding="utf-8").read(); js=open(os.path.join(ROOT,"src","app.js"),encoding="utf-8").read()
 narration_js=open(os.path.join(ROOT,"src","narration-player.js"),encoding="utf-8").read()
+mock_builder_js=open(os.path.join(ROOT,"src","mock-builder.js"),encoding="utf-8").read()
 doc=f'''<!DOCTYPE html>
 <html lang="tr" data-lang="tr">
 <head>
@@ -336,7 +339,7 @@ doc=f'''<!DOCTYPE html>
 {''.join(pages)}
 <footer class="foot">{bi(f"Claude Certified Architect (Foundations) çalışma notları · {len(D)} domain · {total_q} soru", f"Claude Certified Architect (Foundations) study notes · {len(D)} domains · {total_q} questions")}</footer>
 </div>
-<script>var MOCK_POOL={POOL_JSON};var MOCK_META={META_JSON};var MOCK_SCEN={SCEN_JSON};var FLASHCARDS={FLASHCARDS_JSON};</script>\n<script>{narration_js}</script>\n<script>{js}</script>
+<script>var MOCK_POOL={POOL_JSON};var MOCK_META={META_JSON};var MOCK_SCEN={SCEN_JSON};var FLASHCARDS={FLASHCARDS_JSON};</script>\n<script>{narration_js}</script>\n<script>{mock_builder_js}</script>\n<script>{js}</script>
 </body></html>'''
 OUT=os.path.join(ROOT,"dist","index.html")
 os.makedirs(os.path.dirname(OUT),exist_ok=True)
