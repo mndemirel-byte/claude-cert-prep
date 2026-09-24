@@ -31,7 +31,7 @@
   });
 
   var pages=document.querySelectorAll('.page');
-  var navGroups={home:'home',scenarios:'scenarios',practice:'practice','quick-mock':'practice','full-length-mock':'practice','practice-exam':'practice',flashcards:'practice','exam-guide':'exam-guide'};
+  var navGroups={home:['home','domains'],scenarios:['scenarios'],practice:['practice'],'quick-mock':['practice'],'full-length-mock':['practice'],'practice-exam':['practice'],flashcards:['practice','flashcards'],'exam-guide':['exam-guide']};
   var navLinks=document.querySelectorAll('[data-nav]');
   function route(){
     var h=(location.hash||'#home').slice(1);
@@ -43,8 +43,8 @@
     if(el===page){window.scrollTo({top:0});}
     else{el.scrollIntoView();}
     var pageId=page.id;
-    var group=navGroups[pageId] || (pageId.indexOf('domain-')===0 ? 'home' : null);
-    navLinks.forEach(function(a){a.classList.toggle('active',a.dataset.nav===group);});
+    var groups=navGroups[pageId] || (pageId.indexOf('domain-')===0 ? ['home','domains'] : []);
+    navLinks.forEach(function(a){a.classList.toggle('active',groups.indexOf(a.dataset.nav)>=0);});
   }
   window.addEventListener('hashchange',route);
   route();

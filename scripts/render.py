@@ -173,7 +173,7 @@ home.append(f'''<a class="action-card ac-guide" href="#exam-guide"><span class="
 home.append(f'''<a class="action-card ac-scenarios" href="#scenarios"><span class="ac-t">{bi("Sınav senaryoları","Exam scenarios")}<span class="ac-go">→</span></span><span class="ac-s">{bi("6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?","4 of 6 are drawn at random; which domain is asked in which context?")}</span></a>''')
 home.append(f'''<a class="action-card ac-practice" href="#practice"><span class="ac-t">Practice<span class="ac-go">→</span></span><span class="ac-s">{bi("Quick Mock, Full-Length Mock veya Flashcards ile çalış","Study with Quick Mock, Full-Length Mock, or Flashcards")}</span></a>''')
 home.append('</div>')
-home.append('<ol class="domains">')
+home.append('<ol class="domains" id="domain-list">')
 for d in D:
     home.append(f'''<li class="drow" style="--c:{d["hue"]}">
 <div class="dnum">{d["id"]}</div>
@@ -509,9 +509,9 @@ nav=f'''<nav class="topnav" data-style="apple" data-palette="A">
 <nav class="tabbar" aria-label="Primary">
 <div class="tabbar-inner">
 <a href="#home" data-nav="home"><span class="ticon">⌂</span>{bi("Ana sayfa","Home")}</a>
-<a href="#scenarios" data-nav="scenarios"><span class="ticon">◔</span>{bi("Senaryolar","Scenarios")}</a>
+<a href="#domain-list" data-nav="domains"><span class="ticon">▦</span>{bi("Domainler","Domains")}</a>
 <a href="#practice" data-nav="practice"><span class="ticon">▤</span>{bi("Practice","Practice")}</a>
-<a href="#exam-guide" data-nav="exam-guide"><span class="ticon">ⓘ</span>{bi("Kılavuz","Guide")}</a>
+<a href="#flashcards" data-nav="flashcards"><span class="ticon">◫</span>{bi("Flashcards","Flashcards")}</a>
 </div>
 </nav>'''
 doc=f'''<!DOCTYPE html>
