@@ -526,7 +526,7 @@ doc=f'''<!DOCTYPE html>
 <div class="wrap">
 {''.join(home)}
 {''.join(pages)}
-<footer class="foot">{bi(f"Claude Certified Architect (Foundations) çalışma notları · {len(D)} domain · {total_q} soru", f"Claude Certified Architect (Foundations) study notes · {len(D)} domains · {total_q} questions")}</footer>
+<footer class="foot">{bi("Yeni fikirler ya da hata raporlamak için lütfen yazın: periskopai@gmail.com", "For new ideas or bug reports, please write to: periskopai@gmail.com")}</footer>
 </div>
 <script>var MOCK_POOL={POOL_JSON};var MOCK_META={META_JSON};var MOCK_SCEN={SCEN_JSON};var FLASHCARDS={FLASHCARDS_JSON};</script>\n<script>{narration_js}</script>\n<script>{mock_builder_js}</script>\n<script>{js}</script>
 </body></html>'''
