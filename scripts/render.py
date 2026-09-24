@@ -495,7 +495,7 @@ narration_js=open(os.path.join(ROOT,"src","narration-player.js"),encoding="utf-8
 mock_builder_js=open(os.path.join(ROOT,"src","mock-builder.js"),encoding="utf-8").read()
 nav=f'''<nav class="topnav" data-style="apple" data-palette="A">
 <div class="topnav-inner">
-<a class="brand" href="#home"><img class="brand-mark" src="data:image/png;base64,{LOGO_B64}" alt="" aria-hidden="true">periskop<span class="brand-ai">ai</span></a>
+<a class="brand" href="#home"><img class="brand-mark" src="data:image/png;base64,{LOGO_B64}" alt="" aria-hidden="true"><span class="brand-text">periskop<span class="brand-ai">ai</span></span></a>
 <div class="topnav-links" id="navlinks">
 <a href="#home" data-nav="home">{bi("Domainler","Domains")}</a>
 <a href="#scenarios" data-nav="scenarios">{bi("Senaryolar","Scenarios")}</a>
