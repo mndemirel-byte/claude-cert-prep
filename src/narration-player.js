@@ -12,6 +12,14 @@ function nextLessonInDomain(currentId, orderedLessons) {
   return null;
 }
 
+function previousLessonInDomain(currentId, orderedLessons) {
+  var i = orderedLessons.findIndex(function (l) { return l.id === currentId; });
+  for (var j = i - 1; j >= 0; j--) {
+    if (orderedLessons[j].hasNarration) return orderedLessons[j].id;
+  }
+  return null;
+}
+
 function parseListeningPosition(raw) {
   if (!raw) return null;
   var parsed;
@@ -23,5 +31,5 @@ function parseListeningPosition(raw) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { resolveNarrationSrc, nextLessonInDomain, parseListeningPosition };
+  module.exports = { resolveNarrationSrc, nextLessonInDomain, previousLessonInDomain, parseListeningPosition };
 }

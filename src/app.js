@@ -27,12 +27,12 @@
   window.addEventListener('hashchange',route);
   route();
 
-  /* ---------- lesson narration + Domain Playlist + Listening Position ---------- */
+  /* ---------- lesson narration + Domain Playlist + Listening Position + Media Session ---------- */
   (function(){
-    if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function'||typeof parseListeningPosition!=='function')return;
+    if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function'||typeof previousLessonInDomain!=='function'||typeof parseListeningPosition!=='function')return;
     var audio=new Audio(); audio.preload='none';
     var registry={}; // lessonId -> {el, btn}
-    var current=null; // {id, btn, el}
+    var current=null; // {id, btn, el} - lesson loaded into `audio`, whether playing or paused
     var POSITION_KEY='cca-position';
     var lastPersistAt=0;
     var pendingResume=null;
@@ -46,11 +46,28 @@
       btn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
       btn.textContent=playing?'⏸':'▶';
     }
-    function stopCurrent(){ if(current){setBtnState(current.btn,false); current=null;} }
+    function clearCurrent(){ if(current){setBtnState(current.btn,false); current=null;} }
     function domainLessons(lessonEl){
       var page=lessonEl.closest('.page.domain');
       return Array.prototype.slice.call(page.querySelectorAll('.lesson')).map(function(el){
         return {id:el.dataset.lessonId, hasNarration:!!resolveNarrationSrc(el.dataset,root.dataset.lang)};
+      });
+    }
+    function lessonTitle(lessonEl,lang){
+      var el=lessonEl.querySelector('.ltitle .l-'+lang);
+      return el?el.textContent.trim():'';
+    }
+    function domainTitle(lessonEl,lang){
+      var el=lessonEl.closest('.page.domain').querySelector('.dhead h1 .l-'+lang);
+      return el?el.textContent.trim():'';
+    }
+    function updateMediaSessionMetadata(lessonEl){
+      if(!('mediaSession' in navigator)||typeof MediaMetadata==='undefined')return;
+      var lang=root.dataset.lang;
+      navigator.mediaSession.metadata=new MediaMetadata({
+        title:lessonTitle(lessonEl,lang),
+        artist:domainTitle(lessonEl,lang),
+        album:'Claude Certified Architect (Foundations)'
       });
     }
     function playLesson(lessonEl){
@@ -69,10 +86,18 @@
       }
       audio.play();
       current={id:lessonId,btn:reg.btn,el:lessonEl};
-      setBtnState(reg.btn,true);
+      updateMediaSessionMetadata(lessonEl);
       lastPersistAt=Date.now();
       persistPosition(lessonId,lang,startTime);
     }
+    audio.addEventListener('play',function(){
+      if(current)setBtnState(current.btn,true);
+      if('mediaSession' in navigator)navigator.mediaSession.playbackState='playing';
+    });
+    audio.addEventListener('pause',function(){
+      if(current)setBtnState(current.btn,false);
+      if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';
+    });
     audio.addEventListener('timeupdate',function(){
       if(!current)return;
       var now=Date.now();
@@ -84,9 +109,24 @@
       if(!current)return;
       var lessonEl=current.el;
       var nextId=nextLessonInDomain(current.id,domainLessons(lessonEl));
-      stopCurrent();
       if(nextId&&registry[nextId])playLesson(registry[nextId].el);
+      else clearCurrent();
     });
+
+    if('mediaSession' in navigator){
+      navigator.mediaSession.setActionHandler('play',function(){ audio.play(); });
+      navigator.mediaSession.setActionHandler('pause',function(){ audio.pause(); });
+      navigator.mediaSession.setActionHandler('previoustrack',function(){
+        if(!current)return;
+        var prevId=previousLessonInDomain(current.id,domainLessons(current.el));
+        if(prevId&&registry[prevId])playLesson(registry[prevId].el);
+      });
+      navigator.mediaSession.setActionHandler('nexttrack',function(){
+        if(!current)return;
+        var nextId=nextLessonInDomain(current.id,domainLessons(current.el));
+        if(nextId&&registry[nextId])playLesson(registry[nextId].el);
+      });
+    }
 
     document.querySelectorAll('.lesson').forEach(function(lessonEl){
       var summary=lessonEl.querySelector('summary');
@@ -98,13 +138,14 @@
       function refresh(){
         var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
         btn.hidden=!src;
-        if(!src&&current&&current.el===lessonEl){audio.pause(); stopCurrent();}
+        if(!src&&current&&current.el===lessonEl){audio.pause(); clearCurrent();}
       }
 
       btn.addEventListener('click',function(e){
         e.preventDefault();
-        if(current&&current.el===lessonEl&&!audio.paused){
-          audio.pause(); stopCurrent(); return;
+        if(current&&current.el===lessonEl){
+          if(audio.paused)audio.play(); else audio.pause();
+          return;
         }
         playLesson(lessonEl);
       });

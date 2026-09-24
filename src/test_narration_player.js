@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveNarrationSrc, nextLessonInDomain, parseListeningPosition } = require('./narration-player.js');
+const { resolveNarrationSrc, nextLessonInDomain, previousLessonInDomain, parseListeningPosition } = require('./narration-player.js');
 
 test('returns the narration url matching the active language', () => {
   const dataset = { narrationEn: 'audio/en/D2-1.mp3', narrationTr: 'audio/tr/D2-1.mp3' };
@@ -59,6 +59,45 @@ test('returns null when every remaining lesson lacks narration', () => {
   ];
 
   assert.equal(nextLessonInDomain('1.2', orderedLessons), null);
+});
+
+test('returns the previous lesson in the domain when it has narration', () => {
+  const orderedLessons = [
+    { id: '2.1', hasNarration: true },
+    { id: '2.2', hasNarration: true },
+    { id: '2.3', hasNarration: true },
+  ];
+
+  assert.equal(previousLessonInDomain('2.3', orderedLessons), '2.2');
+});
+
+test('returns null before the domain\'s first lesson', () => {
+  const orderedLessons = [
+    { id: '2.1', hasNarration: true },
+    { id: '2.2', hasNarration: true },
+    { id: '2.3', hasNarration: true },
+  ];
+
+  assert.equal(previousLessonInDomain('2.1', orderedLessons), null);
+});
+
+test('skips a lesson with no narration going backward too', () => {
+  const orderedLessons = [
+    { id: '1.1', hasNarration: true },
+    { id: '1.2', hasNarration: false },
+    { id: '1.3', hasNarration: true },
+  ];
+
+  assert.equal(previousLessonInDomain('1.3', orderedLessons), '1.1');
+});
+
+test('returns null going backward when every earlier lesson lacks narration', () => {
+  const orderedLessons = [
+    { id: '1.1', hasNarration: false },
+    { id: '1.2', hasNarration: true },
+  ];
+
+  assert.equal(previousLessonInDomain('1.2', orderedLessons), null);
 });
 
 test('parses a valid stored Listening Position', () => {
