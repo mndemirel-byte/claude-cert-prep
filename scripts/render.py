@@ -243,10 +243,26 @@ quickmock=f'''<section id="quick-mock" class="page mock">
 </section>'''
 pages.append(quickmock)
 
-for route_id,title in [("full-length-mock","Full-Length Mock"),("flashcards","Flashcards")]:
-    pages.append(f'''<section id="{route_id}" class="page">
+fullmock=f'''<section id="full-length-mock" class="page mock">
 <a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
-<h1>{title}</h1>
+<p class="kicker">{bi("Gerçek sınav koşulları","Real exam conditions")}</p>
+<h1>Full-Length Mock</h1>
+<p class="lede">{bi("Gerçek sınav formatı: 6 senaryodan 4'ü rastgele seçilir, sorular senaryo altında gruplanır, puan domain ağırlıklı. Tam süreli, gerçek sınav simülasyonu.","Real exam format: 4 of 6 Scenarios are drawn at random and questions are grouped by Scenario, scoring is domain-weighted. A full-length, real exam simulation.")}</p>
+<table class="rules"><tbody>
+<tr><th>{bi("Senaryolar","Scenarios")}</th><td>{bi("6 senaryodan rastgele 4'ü; her senaryonun soruları birlikte sunulur","4 of 6 drawn at random; each scenario's questions are presented together")}</td></tr>
+<tr><th>{bi("Soru sayısı","Questions")}</th><td>{bi("60 soru, domain ağırlığına göre dağıtılır (yaklaşık 16/11/12/12/9)","60 questions, distributed by domain weight (roughly 16/11/12/12/9)")}</td></tr>
+<tr><th>{bi("Süre","Time limit")}</th><td>{bi("Soru başına 2 dakika — toplam ~120 dakika; süre dolunca otomatik teslim","2 minutes per question — ~120 minutes total; auto-submits when time is up")}</td></tr>
+<tr><th>{bi("Puanlama","Scoring")}</th><td>{bi("Domain ağırlıklı, 100–1000 ölçeği; geçme 720","Domain-weighted, 100–1000 scale; pass at 720")}</td></tr>
+<tr><th>{bi("Sıra","Order")}</th><td>{bi("Soru sırası ve her sorunun şık sırası her denemede karışır","Question order and each question's answer-option order are shuffled every attempt")}</td></tr>
+</tbody></table>
+<button class="bigbtn" id="full-start">{bi("Sınava başla","Start exam")}</button>
+<div id="full-history"></div>
+</section>'''
+pages.append(fullmock)
+
+pages.append(f'''<section id="flashcards" class="page">
+<a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
+<h1>Flashcards</h1>
 <p class="lede">{bi("Yakında.","Coming soon.")}</p>
 </section>''')
 

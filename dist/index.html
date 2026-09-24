@@ -11598,10 +11598,20 @@ if confidence &lt; 0.70: → priority human review
 </tbody></table>
 <button class="bigbtn" id="quick-start"><span class="l-tr">Sınava başla</span><span class="l-en">Start exam</span></button>
 <div id="quick-history"></div>
-</section><section id="full-length-mock" class="page">
+</section><section id="full-length-mock" class="page mock">
 <a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
+<p class="kicker"><span class="l-tr">Gerçek sınav koşulları</span><span class="l-en">Real exam conditions</span></p>
 <h1>Full-Length Mock</h1>
-<p class="lede"><span class="l-tr">Yakında.</span><span class="l-en">Coming soon.</span></p>
+<p class="lede"><span class="l-tr">Gerçek sınav formatı: 6 senaryodan 4'ü rastgele seçilir, sorular senaryo altında gruplanır, puan domain ağırlıklı. Tam süreli, gerçek sınav simülasyonu.</span><span class="l-en">Real exam format: 4 of 6 Scenarios are drawn at random and questions are grouped by Scenario, scoring is domain-weighted. A full-length, real exam simulation.</span></p>
+<table class="rules"><tbody>
+<tr><th><span class="l-tr">Senaryolar</span><span class="l-en">Scenarios</span></th><td><span class="l-tr">6 senaryodan rastgele 4'ü; her senaryonun soruları birlikte sunulur</span><span class="l-en">4 of 6 drawn at random; each scenario's questions are presented together</span></td></tr>
+<tr><th><span class="l-tr">Soru sayısı</span><span class="l-en">Questions</span></th><td><span class="l-tr">60 soru, domain ağırlığına göre dağıtılır (yaklaşık 16/11/12/12/9)</span><span class="l-en">60 questions, distributed by domain weight (roughly 16/11/12/12/9)</span></td></tr>
+<tr><th><span class="l-tr">Süre</span><span class="l-en">Time limit</span></th><td><span class="l-tr">Soru başına 2 dakika — toplam ~120 dakika; süre dolunca otomatik teslim</span><span class="l-en">2 minutes per question — ~120 minutes total; auto-submits when time is up</span></td></tr>
+<tr><th><span class="l-tr">Puanlama</span><span class="l-en">Scoring</span></th><td><span class="l-tr">Domain ağırlıklı, 100–1000 ölçeği; geçme 720</span><span class="l-en">Domain-weighted, 100–1000 scale; pass at 720</span></td></tr>
+<tr><th><span class="l-tr">Sıra</span><span class="l-en">Order</span></th><td><span class="l-tr">Soru sırası ve her sorunun şık sırası her denemede karışır</span><span class="l-en">Question order and each question's answer-option order are shuffled every attempt</span></td></tr>
+</tbody></table>
+<button class="bigbtn" id="full-start"><span class="l-tr">Sınava başla</span><span class="l-en">Start exam</span></button>
+<div id="full-history"></div>
 </section><section id="flashcards" class="page">
 <a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
 <h1>Flashcards</h1>
@@ -12113,6 +12123,7 @@ if (typeof module !== 'undefined' && module.exports) {
   function MT(){return M[root.dataset.lang]||M.tr;}
   var PER_Q=120, LIMIT=0, exam=null, tick=null, lastMode=null;
   var QUICK_MODE={targets:{1:7,2:4,3:5,4:5,5:3},historyTag:'Quick',introId:'quick-mock'};
+  var FULL_MODE={targets:{1:16,2:11,3:12,4:12,5:9},historyTag:'Full-Length',introId:'full-length-mock'};
   function QF(q,f){var en=root.dataset.lang==='en';if(en&&q.en)return q.en[f];if(en&&f==='body')return NOTE_EN+q[f];return q[f];}
   var NOTE_EN='<p class="langnote">English version of this question is not available yet — showing the Turkish text.</p>';
   function scName(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?(root.dataset.lang==='en'?sc.en:sc.tr):'';}
@@ -12208,8 +12219,10 @@ if (typeof module !== 'undefined' && module.exports) {
   }
   function refreshIntroHistory(){
     if(location.hash==='#quick-mock')renderHistory('quick-history');
+    if(location.hash==='#full-length-mock')renderHistory('full-history');
   }
   $('quick-start').addEventListener('click',function(){startExam(QUICK_MODE);});
+  $('full-start').addEventListener('click',function(){startExam(FULL_MODE);});
   $('mock-finish').addEventListener('click',function(){finish(false);});
   $('mock-prev').addEventListener('click',function(){if(exam.i>0){exam.i--;renderQ();window.scrollTo({top:0});}});
   $('mock-next').addEventListener('click',function(){if(exam.i<exam.qs.length-1){exam.i++;renderQ();window.scrollTo({top:0});}});

@@ -262,6 +262,7 @@
   function MT(){return M[root.dataset.lang]||M.tr;}
   var PER_Q=120, LIMIT=0, exam=null, tick=null, lastMode=null;
   var QUICK_MODE={targets:{1:7,2:4,3:5,4:5,5:3},historyTag:'Quick',introId:'quick-mock'};
+  var FULL_MODE={targets:{1:16,2:11,3:12,4:12,5:9},historyTag:'Full-Length',introId:'full-length-mock'};
   function QF(q,f){var en=root.dataset.lang==='en';if(en&&q.en)return q.en[f];if(en&&f==='body')return NOTE_EN+q[f];return q[f];}
   var NOTE_EN='<p class="langnote">English version of this question is not available yet — showing the Turkish text.</p>';
   function scName(id){var sc=MOCK_SCEN.filter(function(s){return s.id===id;})[0];return sc?(root.dataset.lang==='en'?sc.en:sc.tr):'';}
@@ -357,8 +358,10 @@
   }
   function refreshIntroHistory(){
     if(location.hash==='#quick-mock')renderHistory('quick-history');
+    if(location.hash==='#full-length-mock')renderHistory('full-history');
   }
   $('quick-start').addEventListener('click',function(){startExam(QUICK_MODE);});
+  $('full-start').addEventListener('click',function(){startExam(FULL_MODE);});
   $('mock-finish').addEventListener('click',function(){finish(false);});
   $('mock-prev').addEventListener('click',function(){if(exam.i>0){exam.i--;renderQ();window.scrollTo({top:0});}});
   $('mock-next').addEventListener('click',function(){if(exam.i<exam.qs.length-1){exam.i++;renderQ();window.scrollTo({top:0});}});
