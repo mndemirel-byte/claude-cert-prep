@@ -148,24 +148,30 @@ META_JSON=json.dumps({"weights":{d["id"]:d["weight"] for d in D},"hues":{d["id"]
 
 
 home=[]
+total_q=sum(len(d["questions"]) for d in D); total_l=sum(len(d["lessons_html"]) for d in D)
 home.append('<section id="home" class="page">')
 home.append(f'''<header class="hero">
+<div class="hero-copy">
 <p class="kicker">{bi("Çalışma rehberi","Study guide")}</p>
 <h1>Claude Certified Architect<br><span>Foundations</span></h1>
 <p class="lede">{bi("Sınav beş alandan (domain) oluşur. Aşağıdaki şerit her alanın sınav içindeki ağırlığını gösterir; her alanın sayfasında önce dersler, ardından cevap anahtarlı yeterlilik testi yer alır.","The exam has five domains. The bar below shows each domain's weight in the exam; every domain page has the lessons first, followed by a practice quiz with answer key.")}</p>
+</div>
+<div class="statcells">
+<div class="statcell"><b>{len(D)}</b><small>{bi("domain","domains")}</small></div>
+<div class="statcell"><b>{total_l}</b><small>{bi("ders","lessons")}</small></div>
+<div class="statcell"><b>{total_q}</b><small>{bi("soru","questions")}</small></div>
+</div>
 </header>''')
 home.append('<div class="weightbar" role="img" aria-label="Domain ağırlıkları">')
 for d in D:
     home.append(f'<a href="#domain-{d["id"]}" class="seg" style="--c:{d["hue"]};flex:{d["weight"]}"><b>{bi(f"%{d['weight']}", f"{d['weight']}%")}</b><small>D{d["id"]}</small></a>')
 home.append('</div>')
-total_q=sum(len(d["questions"]) for d in D); total_l=sum(len(d["lessons_html"]) for d in D)
 home.append(f'<p class="meta">{bi(f"{len(D)} domain · {total_l} task statement dersi · {total_q} pratik soru", f"{len(D)} domains · {total_l} task statement lessons · {total_q} practice questions")}</p>')
-home.append(f'''<a class="scencta" href="#scenarios"><span class="scencta-t">{bi("Sınav senaryoları","Exam scenarios")}</span><span class="scencta-s">{bi("6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?","4 of 6 are drawn at random; which domain is asked in which context?")}</span><span class="scencta-go">→</span></a>''')
-home.append(f'''<a class="mockcta" href="#practice">
-<span class="mockcta-t">{bi("Practice","Practice")}</span>
-<span class="mockcta-s">{bi("Quick Mock, Full-Length Mock veya Flashcards ile çalış","Study with Quick Mock, Full-Length Mock, or Flashcards")}</span>
-<span class="mockcta-go">→</span></a>''')
-home.append(f'''<a class="regcta" href="#exam-guide">Claude Certified Architect – Foundations Exam Guide <span>→</span></a>''')
+home.append('<div class="action-cards">')
+home.append(f'''<a class="action-card ac-guide" href="#exam-guide"><span class="ac-t">Claude Certified Architect – Foundations Exam Guide<span class="ac-go">→</span></span><span class="ac-s">{bi("Anthropic'in resmi sınav kılavuzu.","Official exam guide from Anthropic.")}</span></a>''')
+home.append(f'''<a class="action-card ac-scenarios" href="#scenarios"><span class="ac-t">{bi("Sınav senaryoları","Exam scenarios")}<span class="ac-go">→</span></span><span class="ac-s">{bi("6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?","4 of 6 are drawn at random; which domain is asked in which context?")}</span></a>''')
+home.append(f'''<a class="action-card ac-practice" href="#practice"><span class="ac-t">Practice<span class="ac-go">→</span></span><span class="ac-s">{bi("Quick Mock, Full-Length Mock veya Flashcards ile çalış","Study with Quick Mock, Full-Length Mock, or Flashcards")}</span></a>''')
+home.append('</div>')
 home.append('<ol class="domains">')
 for d in D:
     home.append(f'''<li class="drow" style="--c:{d["hue"]}">
@@ -184,10 +190,10 @@ for d in D:
     p=[f'<section id="domain-{d["id"]}" class="page domain" style="--c:{d["hue"]}">']
     p.append(f'''<header class="dhead">
 <a class="back" href="#home">{bi("← Tüm alanlar","← All domains")}</a>
-<p class="kicker">{bi(f"Domain {d['id']} · Sınavın %{d['weight']}'" + {27:"si",18:"i",20:"si",15:"i"}[d["weight"]], f"Domain {d['id']} · {d['weight']}% of the exam")}</p>
+<p class="kicker dkicker"><span class="ddot"></span>{bi(f"Domain {d['id']} · Sınavın %{d['weight']}'" + {27:"si",18:"i",20:"si",15:"i"}[d["weight"]], f"Domain {d['id']} · {d['weight']}% of the exam")}</p>
 <h1>{bi(esc(d["title"]),EN_TITLE[d["id"]])}</h1>
 <p class="lede">{bi(esc(d["desc"]),EN_DESC[d["id"]])}</p>
-<nav class="jump"><a href="#domain-{d["id"]}-lessons">{bi("Dersler","Lessons")}</a><a href="#domain-{d["id"]}-quiz">{bi("Yeterlilik testi","Practice quiz")}</a></nav>
+<nav class="segctl"><a href="#domain-{d["id"]}-lessons">{bi(f"Dersler · {len(d['lessons_html'])}", f"Lessons · {len(d['lessons_html'])}")}</a><a href="#domain-{d["id"]}-quiz">{bi(f"Yeterlilik testi · {len(d['questions'])}", f"Practice quiz · {len(d['questions'])}")}</a></nav>
 </header>''')
     p.append(f'<h2 class="secttl" id="domain-{d["id"]}-lessons">{bi("Dersler","Lessons")}</h2>')
     p.append('<div class="lessons">')
@@ -219,9 +225,9 @@ practice=f'''<section id="practice" class="page practice">
 <h1>Practice</h1>
 <p class="lede">{bi("Zamana göre bir çalışma modu seç: hızlı bir kontrol, gerçek sınav koşullarında tam deneme, ya da kavramları hızlı tekrar için flashcard'lar.","Pick a study mode that fits your time: a quick check, a full-length attempt under real exam conditions, or flashcards for fast concept review.")}</p>
 <div class="practice-cards">
-<a class="practice-card" href="#quick-mock"><h2>Quick Mock</h2><p>{bi("24 soru · 2 dk/soru · ~48 dk","24 questions · 2 min/question · ~48 min")}</p></a>
-<a class="practice-card" href="#full-length-mock"><h2>Full-Length Mock</h2><p>{bi("60 soru · 2 dk/soru · gerçek sınav koşulları","60 questions · 2 min/question · real exam conditions")}</p></a>
-<a class="practice-card" href="#flashcards"><h2>Flashcards</h2><p>{bi("Domain başına kavram kartları","Concept cards per Domain")}</p></a>
+<a class="practice-card" href="#quick-mock"><h2>Quick Mock<span class="ac-go">→</span></h2><p>{bi("24 soru · 2 dk/soru · ~48 dk","24 questions · 2 min/question · ~48 min")}</p></a>
+<a class="practice-card primary" href="#full-length-mock"><h2>Full-Length Mock<span class="ac-go">→</span></h2><p>{bi("60 soru · 2 dk/soru · gerçek sınav koşulları","60 questions · 2 min/question · real exam conditions")}</p></a>
+<a class="practice-card" href="#flashcards"><h2>Flashcards<span class="ac-go">→</span></h2><p>{bi("Domain başına kavram kartları","Concept cards per Domain")}</p></a>
 </div>
 </section>'''
 pages.append(practice)
@@ -468,8 +474,8 @@ def scen_page():
     p.append(f'<h2 class="secttl">{bi("Altı senaryo",E["h_six"])}</h2>')
     for x in SCEN:
         n=sum(counts[x["id"]].values()); xe=SCEN_EN[x["id"]]
-        doms_tr=" · ".join(f'<span style="--c:{D[d-1]["hue"]}">D{d} {D[d-1]["title"]}</span>' for d in x["doms"])
-        doms_en=" · ".join(f'<span style="--c:{D[d-1]["hue"]}">D{d} {EN_TITLE[d]}</span>' for d in x["doms"])
+        doms_tr="".join(f'<span style="--c:{D[d-1]["hue"]}">D{d} {D[d-1]["title"]}</span>' for d in x["doms"])
+        doms_en="".join(f'<span style="--c:{D[d-1]["hue"]}">D{d} {EN_TITLE[d]}</span>' for d in x["doms"])
         p.append(f'<article class="scard" id="scen-{x["id"]}"><div class="shead"><span class="snum">{x["id"]}</span><div><h3>{x["tr"]}</h3><p class="sdoms">{bi("Birincil domain&#39;ler: "+doms_tr, E["prim"]+": "+doms_en)}</p></div></div>')
         def card(ctx,sig,traps,lbl,hs,ht,pool):
             return (f'<p class="sctx"><strong>{lbl}</strong> {ctx}</p><h4>{hs}</h4><dl class="sig">'+"".join(f'<dt>{a}</dt><dd>{b}</dd>' for a,b in sig)+f'</dl><h4>{ht}</h4><ul>'+"".join(f'<li>{t}</li>' for t in traps)+f'</ul><p class="sfacts">{pool}</p>')
@@ -482,8 +488,29 @@ pages.append(scen_page())
 css=open(os.path.join(ROOT,"src","style.css"),encoding="utf-8").read(); js=open(os.path.join(ROOT,"src","app.js"),encoding="utf-8").read()
 narration_js=open(os.path.join(ROOT,"src","narration-player.js"),encoding="utf-8").read()
 mock_builder_js=open(os.path.join(ROOT,"src","mock-builder.js"),encoding="utf-8").read()
+nav=f'''<nav class="topnav" data-style="apple" data-palette="A">
+<div class="topnav-inner">
+<a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span>CCA Foundations</a>
+<div class="topnav-links" id="navlinks">
+<a href="#home" data-nav="home">{bi("Domainler","Domains")}</a>
+<a href="#scenarios" data-nav="scenarios">{bi("Senaryolar","Scenarios")}</a>
+<a href="#practice" data-nav="practice">{bi("Practice","Practice")}</a>
+<a href="#exam-guide" data-nav="exam-guide">{bi("Sınav kılavuzu","Exam guide")}</a>
+</div>
+<button class="langtoggle" id="langtoggle" aria-label="Dil / Language"><span data-l="tr">TR</span><span data-l="en">EN</span></button>
+<button class="theme-toggle" id="themetoggle" aria-label="Theme"><span class="ti-light">☀</span><span class="ti-dark" hidden>☾</span></button>
+</div>
+</nav>
+<nav class="tabbar" aria-label="Primary">
+<div class="tabbar-inner">
+<a href="#home" data-nav="home"><span class="ticon">⌂</span>{bi("Ana sayfa","Home")}</a>
+<a href="#scenarios" data-nav="scenarios"><span class="ticon">◔</span>{bi("Senaryolar","Scenarios")}</a>
+<a href="#practice" data-nav="practice"><span class="ticon">▤</span>{bi("Practice","Practice")}</a>
+<a href="#exam-guide" data-nav="exam-guide"><span class="ticon">ⓘ</span>{bi("Kılavuz","Guide")}</a>
+</div>
+</nav>'''
 doc=f'''<!DOCTYPE html>
-<html lang="tr" data-lang="tr">
+<html lang="tr" data-lang="tr" data-style="apple" data-palette="A">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -493,7 +520,7 @@ doc=f'''<!DOCTYPE html>
 <style>{css}</style>
 </head>
 <body>
-<button class="langtoggle" id="langtoggle" aria-label="Dil / Language"><span data-l="tr">TR</span><span data-l="en">EN</span></button>
+{nav}
 <div class="wrap">
 {''.join(home)}
 {''.join(pages)}

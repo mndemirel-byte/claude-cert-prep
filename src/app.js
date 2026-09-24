@@ -13,7 +13,26 @@
   root.lang=root.dataset.lang;
   document.getElementById('langtoggle').addEventListener('click',function(){setLang(root.dataset.lang==='tr'?'en':'tr');});
 
+  var themeBtn=document.getElementById('themetoggle');
+  function applyTheme(t){
+    if(t){root.dataset.theme=t;} else {delete root.dataset.theme;}
+    var dark = t ? t==='dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    themeBtn.querySelector('.ti-light').hidden=dark;
+    themeBtn.querySelector('.ti-dark').hidden=!dark;
+  }
+  var savedTheme=null;
+  try{savedTheme=localStorage.getItem('cca-theme');}catch(e){}
+  applyTheme(savedTheme==='light'||savedTheme==='dark'?savedTheme:null);
+  themeBtn.addEventListener('click',function(){
+    var current = root.dataset.theme || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next = current==='dark'?'light':'dark';
+    applyTheme(next);
+    try{localStorage.setItem('cca-theme',next);}catch(e){}
+  });
+
   var pages=document.querySelectorAll('.page');
+  var navGroups={home:'home',scenarios:'scenarios',practice:'practice','quick-mock':'practice','full-length-mock':'practice','practice-exam':'practice',flashcards:'practice','exam-guide':'exam-guide'};
+  var navLinks=document.querySelectorAll('[data-nav]');
   function route(){
     var h=(location.hash||'#home').slice(1);
     var target=h, el=document.getElementById(h);
@@ -23,6 +42,9 @@
     pages.forEach(function(p){p.classList.toggle('active',p===page);});
     if(el===page){window.scrollTo({top:0});}
     else{el.scrollIntoView();}
+    var pageId=page.id;
+    var group=navGroups[pageId] || (pageId.indexOf('domain-')===0 ? 'home' : null);
+    navLinks.forEach(function(a){a.classList.toggle('active',a.dataset.nav===group);});
   }
   window.addEventListener('hashchange',route);
   route();

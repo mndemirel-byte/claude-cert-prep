@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#D9D9D6;font-family:'Plus Jakarta Sans',sans-serif}a{color:inherit;text-decoration:none}a:hover{opacity:.8}*{box-sizing:border-box}</style>
+</helmet>
+<section style="padding:40px 56px 80px;display:flex;flex-direction:column;gap:32px">
+
+<div style="position:sticky;top:16px;z-index:5;align-self:flex-start;display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#1b1b19;color:#fff;padding:10px 12px 10px 18px;border-radius:99px;box-shadow:0 10px 30px rgba(0,0,0,.25)">
+<span style="font-size:13px;font-weight:700">Turn 2 · Claude Cert Prep</span>
+<div style="display:flex;gap:4px;background:#2b2b28;padding:4px;border-radius:99px">
+<sc-for list="{{ styleBtns }}" as="b" hint-placeholder-count="4"><div onClick="{{ b.pick }}" style="padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;background:{{ b.bg }};color:{{ b.fg }}">{{ b.label }}</div></sc-for>
+</div>
+<div style="display:flex;gap:4px;background:#2b2b28;padding:4px;border-radius:99px">
+<sc-for list="{{ themeBtns }}" as="b" hint-placeholder-count="2"><div onClick="{{ b.pick }}" style="padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;background:{{ b.bg }};color:{{ b.fg }}">{{ b.label }}</div></sc-for>
+</div>
+<div style="display:flex;gap:4px;background:#2b2b28;padding:4px;border-radius:99px">
+<sc-for list="{{ palBtns }}" as="b" hint-placeholder-count="2"><div onClick="{{ b.pick }}" style="display:flex;gap:6px;align-items:center;padding:7px 12px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;background:{{ b.bg }};color:{{ b.fg }}"><span style="width:12px;height:12px;border-radius:50%;background:{{ b.swatch }}"></span>{{ b.label }}</div></sc-for>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:4px;max-width:720px">
+<div style="font-size:26px;font-weight:800;color:#1b1b19">{{ t.name }} · {{ t.themeName }} · Palette {{ t.palName }}</div>
+<div style="font-size:14px;color:#4a4a45;line-height:1.5">{{ t.blurb }} Web home + domain page above, mobile below. Lessons and domain rows expand on click.</div>
+<div style="display:flex;gap:6px;margin-top:8px"><sc-for list="{{ t.swatches }}" as="s" hint-placeholder-count="7"><div style="width:28px;height:28px;border-radius:8px;background:{{ s }};border:1px solid rgba(0,0,0,.1)"></div></sc-for></div>
+</div>
+
+<!-- WEB ROW -->
+<div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+
+<!-- WEB HOME -->
+<div style="width:1180px;flex:none;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.25);background:{{ t.bg }};font-family:{{ t.font }};color:{{ t.text }}">
+<div style="height:40px;background:{{ t.surface }};border-bottom:1px solid {{ t.border }};display:flex;align-items:center;padding:0 16px;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#FF5F57"></span><span style="width:10px;height:10px;border-radius:50%;background:#FEBC2E"></span><span style="width:10px;height:10px;border-radius:50%;background:#28C840"></span><span style="margin-left:16px;font-size:12px;color:{{ t.muted }};font-family:{{ t.mono }}">claude-cert-prep.app</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 48px;border-bottom:1px solid {{ t.border }}">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:{{ t.rs }};background:{{ t.accent }};box-shadow:{{ t.glow }}"></span><span style="font-weight:700;font-size:15px;letter-spacing:{{ t.ls }}">CCA Foundations</span></div>
+<div style="display:flex;gap:24px;font-size:14px;color:{{ t.muted }};font-weight:500"><span style="color:{{ t.text }}">Domains</span><span>Scenarios</span><span>Practice</span><span>Exam guide</span></div>
+<div style="display:flex;gap:10px;align-items:center"><div style="display:flex;border:1px solid {{ t.border }};border-radius:99px;overflow:hidden;font-size:12px;font-weight:700;font-family:{{ t.mono }}"><span style="padding:5px 10px;color:{{ t.muted }}">TR</span><span style="padding:5px 10px;background:{{ t.text }};color:{{ t.bg }}">EN</span></div><div style="width:32px;height:32px;border-radius:50%;border:1px solid {{ t.border }};display:flex;align-items:center;justify-content:center;font-size:14px">{{ t.themeIcon }}</div></div>
+</div>
+<div style="padding:56px 48px 64px;display:flex;flex-direction:column;gap:40px">
+<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:56px;align-items:end">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:12px;font-weight:600;color:{{ t.accentText }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">Study guide</div>
+<div style="font-size:56px;font-weight:{{ t.hw }};line-height:1;letter-spacing:{{ t.lsH }}">Claude Certified Architect<br><span style="color:{{ t.muted }};font-weight:500">Foundations</span></div>
+<div style="font-size:16px;line-height:1.6;color:{{ t.muted }};max-width:560px;text-wrap:pretty">The exam has five domains. The bar below shows each domain’s weight in the exam; every domain page has the lessons first, followed by a practice quiz with answer key.</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:{{ t.border }};border:1px solid {{ t.border }};border-radius:{{ t.r }};overflow:hidden">
+<div style="background:{{ t.surface }};padding:20px;display:flex;flex-direction:column;gap:4px"><span style="font-size:32px;font-weight:{{ t.hw }};font-family:{{ t.numFont }}">5</span><span style="font-size:12px;color:{{ t.muted }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};font-family:{{ t.labelFont }}">domains</span></div>
+<div style="background:{{ t.surface }};padding:20px;display:flex;flex-direction:column;gap:4px"><span style="font-size:32px;font-weight:{{ t.hw }};font-family:{{ t.numFont }}">30</span><span style="font-size:12px;color:{{ t.muted }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};font-family:{{ t.labelFont }}">lessons</span></div>
+<div style="background:{{ t.surface }};padding:20px;display:flex;flex-direction:column;gap:4px"><span style="font-size:32px;font-weight:{{ t.hw }};font-family:{{ t.numFont }}">45</span><span style="font-size:12px;color:{{ t.muted }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};font-family:{{ t.labelFont }}">questions</span></div>
+</div>
+</div>
+<div style="display:flex;gap:{{ t.barGap }};height:64px">
+<sc-for list="{{ domains }}" as="d" hint-placeholder-count="5"><div style="flex:{{ d.weight }};background:{{ d.color }};border-radius:{{ t.rs }};padding:12px 16px;display:flex;flex-direction:column;justify-content:center;color:{{ t.onDomain }};box-shadow:{{ d.glow }}"><span style="font-size:20px;font-weight:700;font-family:{{ t.numFont }}">{{ d.weight }}%</span><span style="font-size:11px;opacity:.85;font-family:{{ t.labelFont }}">D{{ d.n }}</span></div></sc-for>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+<sc-for list="{{ actions }}" as="a" hint-placeholder-count="3"><div style="background:{{ a.bg }};color:{{ a.fg }};border:1px solid {{ a.border }};border-radius:{{ t.r }};padding:22px;display:flex;flex-direction:column;gap:8px;min-height:140px;box-shadow:{{ a.shadow }}"><div style="display:flex;justify-content:space-between;align-items:center;font-size:18px;font-weight:700;letter-spacing:{{ t.ls }}"><span>{{ a.title }}</span><span>→</span></div><div style="font-size:13px;line-height:1.5;opacity:.8">{{ a.desc }}</div></div></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:{{ t.listGap }}">
+<sc-for list="{{ domains }}" as="d" hint-placeholder-count="5">
+<div onClick="{{ d.toggle }}" style="display:grid;grid-template-columns:72px 1fr 56px;gap:24px;align-items:center;padding:24px;background:{{ t.rowBg }};border:1px solid {{ t.rowBorder }};border-radius:{{ t.r }};cursor:pointer;box-shadow:{{ t.shadow }}">
+<div style="font-size:40px;font-weight:{{ t.hw }};color:{{ d.color }};font-family:{{ t.numFont }};line-height:1">{{ d.label }}</div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font-size:20px;font-weight:700;letter-spacing:{{ t.ls }}">{{ d.title }}</div><div style="font-size:14px;line-height:1.55;color:{{ t.muted }}">{{ d.desc }}</div><div style="font-size:12px;color:{{ t.muted }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">Weight {{ d.weight }}% · {{ d.lessons }} lessons · {{ d.q }} questions</div></div>
+<div style="width:44px;height:44px;border-radius:{{ t.btnR }};background:{{ d.color }};color:{{ t.onDomain }};display:flex;align-items:center;justify-content:center;font-size:22px;justify-self:end;box-shadow:{{ d.glow }}">{{ d.icon }}</div>
+</div>
+</sc-for>
+</div>
+<div style="font-size:12px;color:{{ t.muted }};text-align:center;font-family:{{ t.labelFont }}">Claude Certified Architect (Foundations) study notes · 5 domains · 45 questions</div>
+</div>
+</div>
+
+<!-- WEB DOMAIN -->
+<div style="width:1180px;flex:none;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.25);background:{{ t.bg }};font-family:{{ t.font }};color:{{ t.text }}">
+<div style="height:40px;background:{{ t.surface }};border-bottom:1px solid {{ t.border }};display:flex;align-items:center;padding:0 16px;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#FF5F57"></span><span style="width:10px;height:10px;border-radius:50%;background:#FEBC2E"></span><span style="width:10px;height:10px;border-radius:50%;background:#28C840"></span><span style="margin-left:16px;font-size:12px;color:{{ t.muted }};font-family:{{ t.mono }}">claude-cert-prep.app/#domain-1</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 48px;border-bottom:1px solid {{ t.border }}">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:{{ t.rs }};background:{{ t.accent }};box-shadow:{{ t.glow }}"></span><span style="font-weight:700;font-size:15px;letter-spacing:{{ t.ls }}">CCA Foundations</span></div>
+<div style="display:flex;gap:24px;font-size:14px;color:{{ t.muted }};font-weight:500"><span style="color:{{ t.text }}">Domains</span><span>Scenarios</span><span>Practice</span><span>Exam guide</span></div>
+<div style="display:flex;border:1px solid {{ t.border }};border-radius:99px;overflow:hidden;font-size:12px;font-weight:700;font-family:{{ t.mono }}"><span style="padding:5px 10px;color:{{ t.muted }}">TR</span><span style="padding:5px 10px;background:{{ t.text }};color:{{ t.bg }}">EN</span></div>
+</div>
+<div style="padding:40px 48px 64px;display:flex;flex-direction:column;gap:32px">
+<div style="font-size:13px;color:{{ t.muted }};font-weight:600">← All domains</div>
+<div style="display:flex;flex-direction:column;gap:12px;max-width:820px">
+<div style="display:flex;align-items:center;gap:10px;font-size:12px;font-weight:600;font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};color:{{ d1.color }}"><span style="width:10px;height:10px;border-radius:{{ t.dotR }};background:{{ d1.color }};box-shadow:{{ d1.glow }}"></span>Domain 1 · 27% of the exam</div>
+<div style="font-size:44px;font-weight:{{ t.hw }};line-height:1.05;letter-spacing:{{ t.lsH }}">Agentic Architecture &amp; Orchestration</div>
+<div style="font-size:16px;line-height:1.6;color:{{ t.muted }};text-wrap:pretty">Agentic loops, multi-agent orchestration, subagent invocation and context passing, workflow enforcement and hooks, task decomposition, session state.</div>
+</div>
+<div style="display:flex;gap:4px;padding:4px;background:{{ t.surface2 }};border-radius:{{ t.rs }};align-self:flex-start;border:1px solid {{ t.border }}">
+<div style="padding:8px 18px;border-radius:{{ t.rsIn }};background:{{ t.tabActiveBg }};color:{{ t.tabActiveFg }};font-size:14px;font-weight:600;box-shadow:{{ t.tabShadow }}">Lessons · 7</div>
+<div style="padding:8px 18px;font-size:14px;font-weight:600;color:{{ t.muted }}">Practice quiz · 10</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 440px;gap:32px;align-items:start">
+<div style="display:flex;flex-direction:column;gap:{{ t.listGap }}">
+<sc-for list="{{ lessons }}" as="l" hint-placeholder-count="7">
+<div onClick="{{ l.toggle }}" style="background:{{ t.rowBg }};border:1px solid {{ t.rowBorder }};border-radius:{{ t.r }};padding:18px 22px;display:flex;flex-direction:column;gap:14px;cursor:pointer;box-shadow:{{ t.shadow }}">
+<div style="display:flex;gap:16px;align-items:center"><span style="font-family:{{ t.mono }};font-size:13px;font-weight:600;color:{{ d1.color }};width:32px">{{ l.n }}</span><span style="flex:1;font-size:17px;font-weight:600;letter-spacing:{{ t.ls }}">{{ l.title }}</span><span style="width:32px;height:32px;border-radius:50%;border:1.5px solid {{ t.border }};display:flex;align-items:center;justify-content:center;flex:none;color:{{ d1.color }};font-size:11px;line-height:1;cursor:pointer;background:{{ l.playBg }}" onClick="{{ l.play }}">▶</span><span style="color:{{ t.muted }};font-size:18px">{{ l.icon }}</span></div>
+<sc-if value="{{ l.playing }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:10px;padding:12px 0 0;border-top:1px solid {{ t.border }};font-family:{{ t.mono }};font-size:12px;color:{{ t.muted }}"><span style="font-size:10px">⏮</span><span>0:04</span><div style="flex:1;height:6px;border-radius:99px;background:{{ t.surface2 }};position:relative"><div style="width:2%;height:100%;background:{{ d1.color }};border-radius:99px"></div><span style="position:absolute;left:2%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:{{ d1.color }}"></span></div><span>5:43</span><span style="font-size:10px">⏭</span><span style="padding:3px 10px;border:1px solid {{ t.border }};border-radius:{{ t.rs }};color:{{ d1.color }};font-weight:600">1x</span></div></sc-if>
+<sc-if value="{{ l.open }}" hint-placeholder-val="{{ false }}">
+<div style="padding-left:48px;display:flex;flex-direction:column;gap:12px;font-size:14px;line-height:1.65;color:{{ t.text }}">
+<div style="font-size:16px;font-weight:700">The Core Idea</div>
+<div style="color:{{ t.muted }}">Normally, when you use Claude, it's a single exchange: you send a message, you get a response, done. An <b style="color:{{ t.text }}">agentic loop</b> turns Claude into something that can <i>act</i> — it can call tools, look at the results, think again, call more tools, and keep going until the job is finished.</div>
+<div style="background:{{ t.codeBg }};color:{{ t.codeFg }};border:1px solid {{ t.border }};border-radius:{{ t.rs }};padding:14px 16px;font-family:{{ t.mono }};font-size:12.5px;line-height:1.6;white-space:pre">{{ code }}</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;background:{{ t.chipBg }};color:{{ t.chipFg }};font-family:{{ t.labelFont }}">EXAM TRAP</span><span style="font-size:13px;color:{{ t.muted }}">Never use natural-language parsing, iteration caps, or content-type checks as the primary stopping mechanism.</span></div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<div style="background:{{ t.surface }};border:1px solid {{ t.border }};border-radius:{{ t.r }};padding:24px;display:flex;flex-direction:column;gap:16px;box-shadow:{{ t.shadow }}">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:700;font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};color:{{ t.muted }}">Practice quiz · Question 1 / 10</span><span style="font-size:11px;font-family:{{ t.mono }};color:{{ d1.color }}">TS 1.1</span></div>
+<div style="height:4px;background:{{ t.surface2 }};border-radius:99px;overflow:hidden"><div style="width:10%;height:100%;background:{{ t.accent }};box-shadow:{{ t.glow }}"></div></div>
+<div style="font-size:14px;line-height:1.55">A customer support agent runs with the following loop logic. Users report two different problems: it sometimes stops after 10 iterations without answering, and it sometimes stops even though it said “Here's my final answer so far, let me search for more details”. <b>Which approach fixes both problems?</b></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ options }}" as="o" hint-placeholder-count="4"><div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:{{ t.rs }};border:1px solid {{ o.border }};background:{{ o.bg }};font-size:13px;line-height:1.5;cursor:pointer"><span style="width:24px;height:24px;border-radius:{{ t.dotR }};flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:{{ o.badgeBg }};color:{{ o.badgeFg }};font-family:{{ t.mono }}">{{ o.k }}</span><span>{{ o.text }}</span></div></sc-for>
+</div>
+<div style="display:flex;gap:10px"><div style="flex:1;padding:12px;border-radius:{{ t.rs }};background:{{ t.accent }};color:{{ t.onAccent }};font-size:14px;font-weight:700;text-align:center;box-shadow:{{ t.glow }}">Check answer</div><div style="padding:12px 16px;border-radius:{{ t.rs }};border:1px solid {{ t.border }};font-size:14px;font-weight:600;color:{{ t.muted }}">Skip</div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- WEB SCENARIOS -->
+<div style="width:1180px;flex:none;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.25);background:{{ t.bg }};font-family:{{ t.font }};color:{{ t.text }}">
+<div style="height:40px;background:{{ t.surface }};border-bottom:1px solid {{ t.border }};display:flex;align-items:center;padding:0 16px;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#FF5F57"></span><span style="width:10px;height:10px;border-radius:50%;background:#FEBC2E"></span><span style="width:10px;height:10px;border-radius:50%;background:#28C840"></span><span style="margin-left:16px;font-size:12px;color:{{ t.muted }};font-family:{{ t.mono }}">claude-cert-prep.app/#scenarios</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 48px;border-bottom:1px solid {{ t.border }}">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:{{ t.rs }};background:{{ t.accent }};box-shadow:{{ t.glow }}"></span><span style="font-weight:700;font-size:15px;letter-spacing:{{ t.ls }}">CCA Foundations</span></div>
+<div style="display:flex;gap:24px;font-size:14px;color:{{ t.muted }};font-weight:500"><span>Domains</span><span style="color:{{ t.text }}">Scenarios</span><span>Practice</span><span>Exam guide</span></div>
+<div style="display:flex;border:1px solid {{ t.border }};border-radius:99px;overflow:hidden;font-size:12px;font-weight:700;font-family:{{ t.mono }}"><span style="padding:5px 10px;color:{{ t.muted }}">TR</span><span style="padding:5px 10px;background:{{ t.text }};color:{{ t.bg }}">EN</span></div>
+</div>
+<div style="padding:40px 48px 64px;display:flex;flex-direction:column;gap:32px">
+<div style="font-size:13px;color:{{ t.muted }};font-weight:600">← Home</div>
+<div style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+<div style="font-size:12px;font-weight:600;color:{{ t.accentText }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">Exam scenarios</div>
+<div style="font-size:44px;font-weight:{{ t.hw }};line-height:1.05;letter-spacing:{{ t.lsH }}">6 scenarios, 4 on your exam</div>
+<div style="font-size:16px;line-height:1.6;color:{{ t.muted }};text-wrap:pretty">4 of 6 are drawn at random; questions are grouped under the scenario they belong to. Each scenario below lists which domains it tends to test.</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+<sc-for list="{{ scenarios }}" as="sc" hint-placeholder-count="6">
+<div style="background:{{ t.surface }};border:1px solid {{ t.border }};border-radius:{{ t.r }};padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:{{ t.shadow }}">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:{{ t.mono }};font-size:12px;font-weight:600;color:{{ t.muted }}">Scenario {{ sc.n }}</span><div style="display:flex;gap:6px"><sc-for list="{{ sc.tags }}" as="tg" hint-placeholder-count="2"><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:{{ tg.color }};color:{{ t.onDomain }}">{{ tg.label }}</span></sc-for></div></div>
+<div style="font-size:20px;font-weight:700;letter-spacing:{{ t.ls }}">{{ sc.title }}</div>
+<div style="font-size:14px;line-height:1.55;color:{{ t.muted }}">{{ sc.desc }}</div>
+<div style="font-size:13px;font-weight:600;color:{{ t.accentText }}">Read scenario →</div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<!-- WEB PRACTICE -->
+<div style="width:1180px;flex:none;border-radius:14px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.25);background:{{ t.bg }};font-family:{{ t.font }};color:{{ t.text }}">
+<div style="height:40px;background:{{ t.surface }};border-bottom:1px solid {{ t.border }};display:flex;align-items:center;padding:0 16px;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#FF5F57"></span><span style="width:10px;height:10px;border-radius:50%;background:#FEBC2E"></span><span style="width:10px;height:10px;border-radius:50%;background:#28C840"></span><span style="margin-left:16px;font-size:12px;color:{{ t.muted }};font-family:{{ t.mono }}">claude-cert-prep.app/#practice</span></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 48px;border-bottom:1px solid {{ t.border }}">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:28px;height:28px;border-radius:{{ t.rs }};background:{{ t.accent }};box-shadow:{{ t.glow }}"></span><span style="font-weight:700;font-size:15px;letter-spacing:{{ t.ls }}">CCA Foundations</span></div>
+<div style="display:flex;gap:24px;font-size:14px;color:{{ t.muted }};font-weight:500"><span>Domains</span><span>Scenarios</span><span style="color:{{ t.text }}">Practice</span><span>Exam guide</span></div>
+<div style="display:flex;border:1px solid {{ t.border }};border-radius:99px;overflow:hidden;font-size:12px;font-weight:700;font-family:{{ t.mono }}"><span style="padding:5px 10px;color:{{ t.muted }}">TR</span><span style="padding:5px 10px;background:{{ t.text }};color:{{ t.bg }}">EN</span></div>
+</div>
+<div style="padding:40px 48px 64px;display:flex;flex-direction:column;gap:32px">
+<div style="font-size:13px;color:{{ t.muted }};font-weight:600">← Home</div>
+<div style="display:flex;flex-direction:column;gap:12px;max-width:760px">
+<div style="font-size:12px;font-weight:600;color:{{ t.accentText }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">Practice</div>
+<div style="font-size:44px;font-weight:{{ t.hw }};line-height:1.05;letter-spacing:{{ t.lsH }}">Study with Quick Mock, Full-Length Mock, or Flashcards</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+<sc-for list="{{ modes }}" as="md" hint-placeholder-count="3">
+<div style="background:{{ md.bg }};color:{{ md.fg }};border:1px solid {{ md.border }};border-radius:{{ t.r }};padding:24px;display:flex;flex-direction:column;gap:10px;min-height:170px;box-shadow:{{ md.shadow }}">
+<div style="display:flex;justify-content:space-between;align-items:center;font-size:20px;font-weight:700;letter-spacing:{{ t.ls }}"><span>{{ md.title }}</span><span>→</span></div>
+<div style="font-size:12px;font-weight:600;color:{{ md.sub }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">{{ md.meta }}</div>
+<div style="font-size:14px;line-height:1.5;opacity:.85;flex:1">{{ md.desc }}</div>
+</div>
+</sc-for>
+</div>
+<div style="display:grid;grid-template-columns:1fr 420px;gap:24px;align-items:start">
+<div style="background:{{ t.surface }};border:1px solid {{ t.border }};border-radius:{{ t.r }};padding:28px;display:flex;flex-direction:column;gap:18px;box-shadow:{{ t.shadow }}">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:10px;align-items:center"><span style="font-size:12px;font-weight:700;font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};color:{{ t.muted }}">Full-Length Mock · 12 / 45</span><span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:{{ d1.color }};color:{{ t.onDomain }}">Scenario 1</span></div><span style="font-family:{{ t.mono }};font-size:13px;font-weight:600;color:{{ t.accentText }}">01:34:12</span></div>
+<div style="height:4px;background:{{ t.surface2 }};border-radius:99px;overflow:hidden"><div style="width:27%;height:100%;background:{{ t.accent }}"></div></div>
+<div style="font-size:15px;line-height:1.6">Production data shows that in 8% of cases, a customer support agent processes a refund without verifying account ownership. This has occasionally led to refunds being issued to the wrong account. <b>How do you fix this?</b></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:{{ t.rs }};border:1px solid {{ t.accent }};background:{{ t.chipBg }};font-size:14px;line-height:1.5"><span style="width:24px;height:24px;border-radius:{{ t.dotR }};flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:{{ t.accent }};color:{{ t.onAccent }};font-family:{{ t.mono }}">A</span><span>Add a programmatic prerequisite gate that requires the verify_identity tool to have completed successfully before the refund tool can run.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:{{ t.rs }};border:1px solid {{ t.border }};font-size:14px;line-height:1.5"><span style="width:24px;height:24px;border-radius:{{ t.dotR }};flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:{{ t.surface2 }};color:{{ t.muted }};font-family:{{ t.mono }}">B</span><span>Strengthen the system prompt: add "never process a refund without identity verification" and emphasize it in bold.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:{{ t.rs }};border:1px solid {{ t.border }};font-size:14px;line-height:1.5"><span style="width:24px;height:24px;border-radius:{{ t.dotR }};flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:{{ t.surface2 }};color:{{ t.muted }};font-family:{{ t.mono }}">C</span><span>Add few-shot examples — 3-4 example conversations showing the correct sequence.</span></div>
+<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:{{ t.rs }};border:1px solid {{ t.border }};font-size:14px;line-height:1.5"><span style="width:24px;height:24px;border-radius:{{ t.dotR }};flex:none;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:{{ t.surface2 }};color:{{ t.muted }};font-family:{{ t.mono }}">D</span><span>Add a routing classifier that routes refund requests to a verification flow first.</span></div>
+</div>
+<div style="display:flex;gap:10px;justify-content:space-between"><div style="padding:12px 16px;border-radius:{{ t.rs }};border:1px solid {{ t.border }};font-size:14px;font-weight:600;color:{{ t.muted }}">← Previous</div><div style="padding:12px 24px;border-radius:{{ t.rs }};background:{{ t.accent }};color:{{ t.onAccent }};font-size:14px;font-weight:700;box-shadow:{{ t.glow }}">Next →</div></div>
+</div>
+<div onClick="{{ flip }}" style="background:{{ t.text }};color:{{ t.bg }};border-radius:{{ t.r }};padding:28px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;gap:16px;cursor:pointer">
+<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};opacity:.7"><span>Flashcard 1 / 30</span><span>TS 1.1</span></div>
+<sc-if value="{{ flipped }}" hint-placeholder-val="{{ false }}"><div style="font-size:20px;line-height:1.45;font-weight:500">{{ cardBack }}</div></sc-if>
+<sc-if value="{{ notFlipped }}" hint-placeholder-val="{{ true }}"><div style="font-size:24px;line-height:1.3;font-weight:700;letter-spacing:{{ t.ls }}">{{ cardFront }}</div></sc-if>
+<div style="font-size:13px;opacity:.7">Tap to flip</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MOBILE ROW -->
+<div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap">
+
+<!-- MOBILE HOME -->
+<div style="width:390px;flex:none;height:844px;border-radius:48px;overflow:hidden;background:{{ t.bg }};border:8px solid #111;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;font-family:{{ t.font }};color:{{ t.text }};position:relative">
+<div style="height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:14px;font-weight:600;flex:none"><span>9:41</span><span style="width:60px;height:6px;border-radius:99px;background:{{ t.border }}"></span></div>
+<div style="flex:1;overflow-y:auto;padding:8px 20px 110px;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:{{ t.rs }};background:{{ t.accent }};box-shadow:{{ t.glow }}"></span><span style="font-weight:700;font-size:14px">CCA Foundations</span></div><div style="display:flex;border:1px solid {{ t.border }};border-radius:99px;overflow:hidden;font-size:11px;font-weight:700;font-family:{{ t.mono }}"><span style="padding:4px 8px;color:{{ t.muted }}">TR</span><span style="padding:4px 8px;background:{{ t.text }};color:{{ t.bg }}">EN</span></div></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font-size:11px;font-weight:600;color:{{ t.accentText }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">Study guide</div>
+<div style="font-size:32px;font-weight:{{ t.hw }};line-height:1.02;letter-spacing:{{ t.lsH }}">Claude Certified Architect <span style="color:{{ t.muted }};font-weight:500">Foundations</span></div>
+<div style="font-size:14px;line-height:1.55;color:{{ t.muted }};text-wrap:pretty">The exam has five domains. The bar below shows each domain’s weight in the exam; every domain page has the lessons first, followed by a practice quiz with answer key.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;gap:{{ t.barGap }};height:14px"><sc-for list="{{ domains }}" as="d" hint-placeholder-count="5"><div style="flex:{{ d.weight }};background:{{ d.color }};border-radius:{{ t.rs }};box-shadow:{{ d.glow }}"></div></sc-for></div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px"><sc-for list="{{ domains }}" as="d" hint-placeholder-count="5"><div style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:700;color:{{ d.color }};font-family:{{ t.numFont }}">{{ d.weight }}%</span><span style="font-size:10px;color:{{ t.muted }};font-family:{{ t.labelFont }}">D{{ d.n }}</span></div></sc-for></div>
+<div style="font-size:12px;color:{{ t.muted }};font-family:{{ t.labelFont }}">5 domains · 30 task statement lessons · 45 practice questions</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ actions }}" as="a" hint-placeholder-count="3"><div style="background:{{ a.bg }};color:{{ a.fg }};border:1px solid {{ a.border }};border-radius:{{ t.r }};padding:16px;display:flex;flex-direction:column;gap:6px;box-shadow:{{ a.shadow }}"><div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700"><span>{{ a.title }}</span><span>→</span></div><div style="font-size:12px;line-height:1.45;opacity:.8">{{ a.desc }}</div></div></sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:{{ t.listGap }}">
+<sc-for list="{{ domains }}" as="d" hint-placeholder-count="5">
+<div onClick="{{ d.toggle }}" style="background:{{ t.rowBg }};border:1px solid {{ t.rowBorder }};border-radius:{{ t.r }};padding:16px;display:flex;flex-direction:column;gap:10px;cursor:pointer;box-shadow:{{ t.shadow }}">
+<div style="display:flex;gap:12px;align-items:center">
+<div style="width:40px;height:40px;border-radius:{{ t.btnR }};background:{{ d.color }};color:{{ t.onDomain }};font-weight:700;font-size:17px;display:flex;align-items:center;justify-content:center;flex:none;font-family:{{ t.numFont }};box-shadow:{{ d.glow }}">{{ d.n }}</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:2px"><div style="font-size:15px;font-weight:700;line-height:1.25;letter-spacing:{{ t.ls }}">{{ d.title }}</div><div style="font-size:11px;color:{{ t.muted }};font-family:{{ t.labelFont }}">{{ d.weight }}% · {{ d.lessons }} lessons · {{ d.q }} questions</div></div>
+<div style="font-size:20px;color:{{ t.muted }}">{{ d.icon }}</div>
+</div>
+<sc-if value="{{ d.open }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;line-height:1.5;color:{{ t.muted }};padding-left:52px">{{ d.desc }}</div></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:10px 20px 28px;background:{{ t.tabbarBg }};border-top:1px solid {{ t.border }};display:flex;justify-content:space-around;backdrop-filter:blur(12px)">
+<sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:600;color:{{ tb.color }};font-family:{{ t.labelFont }}"><span style="width:22px;height:22px;border-radius:{{ t.dotR }};border:2px solid {{ tb.color }};background:{{ tb.fill }}"></span>{{ tb.label }}</div></sc-for>
+</div>
+</div>
+
+<!-- MOBILE DOMAIN -->
+<div style="width:390px;flex:none;height:844px;border-radius:48px;overflow:hidden;background:{{ t.bg }};border:8px solid #111;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;font-family:{{ t.font }};color:{{ t.text }};position:relative">
+<div style="height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:14px;font-weight:600;flex:none"><span>9:41</span><span style="width:60px;height:6px;border-radius:99px;background:{{ t.border }}"></span></div>
+<div style="flex:1;overflow-y:auto;padding:8px 20px 120px;display:flex;flex-direction:column;gap:20px">
+<div style="font-size:13px;color:{{ t.muted }};font-weight:600">← All domains</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};color:{{ d1.color }}"><span style="width:8px;height:8px;border-radius:{{ t.dotR }};background:{{ d1.color }};box-shadow:{{ d1.glow }}"></span>Domain 1 · 27% of the exam</div>
+<div style="font-size:28px;font-weight:{{ t.hw }};line-height:1.08;letter-spacing:{{ t.lsH }}">Agentic Architecture &amp; Orchestration</div>
+<div style="font-size:13px;line-height:1.55;color:{{ t.muted }};text-wrap:pretty">Agentic loops, multi-agent orchestration, subagent invocation and context passing, workflow enforcement and hooks, task decomposition, session state.</div>
+</div>
+<div style="display:flex;gap:4px;padding:4px;background:{{ t.surface2 }};border-radius:{{ t.rs }};border:1px solid {{ t.border }}">
+<div style="flex:1;text-align:center;padding:8px;border-radius:{{ t.rsIn }};background:{{ t.tabActiveBg }};color:{{ t.tabActiveFg }};font-size:13px;font-weight:600;box-shadow:{{ t.tabShadow }}">Lessons · 7</div>
+<div style="flex:1;text-align:center;padding:8px;font-size:13px;font-weight:600;color:{{ t.muted }}">Quiz · 10</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:{{ t.listGap }}">
+<sc-for list="{{ lessons }}" as="l" hint-placeholder-count="7">
+<div onClick="{{ l.toggle }}" style="background:{{ t.rowBg }};border:1px solid {{ t.rowBorder }};border-radius:{{ t.r }};padding:14px 16px;display:flex;flex-direction:column;gap:12px;cursor:pointer;box-shadow:{{ t.shadow }}">
+<div style="display:flex;gap:12px;align-items:center"><span style="font-family:{{ t.mono }};font-size:12px;font-weight:600;color:{{ d1.color }};width:26px">{{ l.n }}</span><span style="flex:1;font-size:14px;font-weight:600;line-height:1.3">{{ l.title }}</span><span style="width:28px;height:28px;border-radius:50%;border:1.5px solid {{ t.border }};display:flex;align-items:center;justify-content:center;flex:none;color:{{ d1.color }};font-size:10px;line-height:1;cursor:pointer;background:{{ l.playBg }}" onClick="{{ l.play }}">▶</span><span style="color:{{ t.muted }};font-size:16px">{{ l.icon }}</span></div>
+<sc-if value="{{ l.playing }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:10px;padding:10px 0 0;border-top:1px solid {{ t.border }};font-family:{{ t.mono }};font-size:11px;color:{{ t.muted }}"><span style="font-size:10px">⏮</span><span>0:04</span><div style="flex:1;height:6px;border-radius:99px;background:{{ t.surface2 }};position:relative"><div style="width:2%;height:100%;background:{{ d1.color }};border-radius:99px"></div><span style="position:absolute;left:2%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:{{ d1.color }}"></span></div><span>5:43</span><span style="font-size:10px">⏭</span><span style="padding:3px 10px;border:1px solid {{ t.border }};border-radius:{{ t.rs }};color:{{ d1.color }};font-weight:600">1x</span></div></sc-if>
+<sc-if value="{{ l.open }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.6">
+<div style="font-size:15px;font-weight:700">The Core Idea</div>
+<div style="color:{{ t.muted }}">Normally, when you use Claude, it's a single exchange: you send a message, you get a response, done. An <b style="color:{{ t.text }}">agentic loop</b> turns Claude into something that can <i>act</i>.</div>
+<div style="background:{{ t.codeBg }};color:{{ t.codeFg }};border:1px solid {{ t.border }};border-radius:{{ t.rs }};padding:12px;font-family:{{ t.mono }};font-size:11px;line-height:1.6;white-space:pre;overflow-x:auto">{{ code }}</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<div style="background:{{ t.surface }};border:1px solid {{ t.border }};border-radius:{{ t.r }};padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:{{ t.shadow }}">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};color:{{ t.muted }}">Question 1 / 10</span><span style="font-size:11px;font-family:{{ t.mono }};color:{{ d1.color }}">TS 1.1</span></div>
+<div style="font-size:13px;line-height:1.55">Users report the agent sometimes stops after 10 iterations without answering, and sometimes stops mid-task after saying “let me search for more details”. <b>Which approach fixes both problems?</b></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ options }}" as="o" hint-placeholder-count="4"><div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:{{ t.rs }};border:1px solid {{ o.border }};background:{{ o.bg }};font-size:12px;line-height:1.45"><span style="width:22px;height:22px;border-radius:{{ t.dotR }};flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:{{ o.badgeBg }};color:{{ o.badgeFg }};font-family:{{ t.mono }}">{{ o.k }}</span><span>{{ o.text }}</span></div></sc-for>
+</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 30px;background:{{ t.tabbarBg }};border-top:1px solid {{ t.border }};display:flex;gap:8px;backdrop-filter:blur(12px)">
+<div style="flex:1;padding:14px;border-radius:{{ t.rs }};background:{{ t.accent }};color:{{ t.onAccent }};font-size:14px;font-weight:700;text-align:center;box-shadow:{{ t.glow }}">Check answer</div>
+<div style="padding:14px 18px;border-radius:{{ t.rs }};border:1px solid {{ t.border }};font-size:14px;font-weight:600;color:{{ t.muted }}">Skip</div>
+</div>
+</div>
+
+
+<!-- MOBILE SCENARIOS -->
+<div style="width:390px;flex:none;height:844px;border-radius:48px;overflow:hidden;background:{{ t.bg }};border:8px solid #111;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;font-family:{{ t.font }};color:{{ t.text }};position:relative">
+<div style="height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:14px;font-weight:600;flex:none"><span>9:41</span><span style="width:60px;height:6px;border-radius:99px;background:{{ t.border }}"></span></div>
+<div style="flex:1;overflow-y:auto;padding:8px 20px 110px;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:13px;color:{{ t.muted }};font-weight:600">← Home</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-size:11px;font-weight:600;color:{{ t.accentText }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">Exam scenarios</div>
+<div style="font-size:30px;font-weight:{{ t.hw }};line-height:1.05;letter-spacing:{{ t.lsH }}">6 scenarios, 4 on your exam</div>
+<div style="font-size:13px;line-height:1.55;color:{{ t.muted }};text-wrap:pretty">4 of 6 are drawn at random; questions are grouped under the scenario they belong to.</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:{{ t.listGap }}">
+<sc-for list="{{ scenarios }}" as="sc" hint-placeholder-count="6">
+<div style="background:{{ t.rowBg }};border:1px solid {{ t.rowBorder }};border-radius:{{ t.r }};padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:{{ t.shadow }}">
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:{{ t.mono }};font-size:11px;font-weight:600;color:{{ t.muted }}">Scenario {{ sc.n }}</span><div style="display:flex;gap:4px"><sc-for list="{{ sc.tags }}" as="tg" hint-placeholder-count="2"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:{{ tg.color }};color:{{ t.onDomain }}">{{ tg.label }}</span></sc-for></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-size:15px;font-weight:700;letter-spacing:{{ t.ls }}">{{ sc.title }}</span><span style="color:{{ t.muted }}">›</span></div>
+<div style="font-size:12px;line-height:1.5;color:{{ t.muted }}">{{ sc.desc }}</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:10px 20px 28px;background:{{ t.tabbarBg }};border-top:1px solid {{ t.border }};display:flex;justify-content:space-around;backdrop-filter:blur(12px)">
+<sc-for list="{{ tabsScen }}" as="tb" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:600;color:{{ tb.color }};font-family:{{ t.labelFont }}"><span style="width:22px;height:22px;border-radius:{{ t.dotR }};border:2px solid {{ tb.color }};background:{{ tb.fill }}"></span>{{ tb.label }}</div></sc-for>
+</div>
+</div>
+
+<!-- MOBILE PRACTICE -->
+<div style="width:390px;flex:none;height:844px;border-radius:48px;overflow:hidden;background:{{ t.bg }};border:8px solid #111;box-shadow:0 20px 60px rgba(0,0,0,.3);display:flex;flex-direction:column;font-family:{{ t.font }};color:{{ t.text }};position:relative">
+<div style="height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:14px;font-weight:600;flex:none"><span>9:41</span><span style="width:60px;height:6px;border-radius:99px;background:{{ t.border }}"></span></div>
+<div style="flex:1;overflow-y:auto;padding:8px 20px 110px;display:flex;flex-direction:column;gap:18px">
+<div style="font-size:13px;color:{{ t.muted }};font-weight:600">← Home</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="font-size:11px;font-weight:600;color:{{ t.accentText }};font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }}">Practice</div>
+<div style="font-size:30px;font-weight:{{ t.hw }};line-height:1.05;letter-spacing:{{ t.lsH }}">Quick Mock, Full-Length Mock, or Flashcards</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{ modes }}" as="md" hint-placeholder-count="3">
+<div style="background:{{ md.bg }};color:{{ md.fg }};border:1px solid {{ md.border }};border-radius:{{ t.r }};padding:16px;display:flex;flex-direction:column;gap:6px;box-shadow:{{ md.shadow }}">
+<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700"><span>{{ md.title }}</span><span>→</span></div>
+<div style="font-size:11px;font-weight:600;color:{{ md.sub }};font-family:{{ t.labelFont }}">{{ md.meta }}</div>
+</div>
+</sc-for>
+</div>
+<div onClick="{{ flip }}" style="background:{{ t.text }};color:{{ t.bg }};border-radius:{{ t.r }};padding:20px;min-height:200px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;cursor:pointer">
+<div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;font-family:{{ t.labelFont }};text-transform:{{ t.upper }};letter-spacing:{{ t.lsLabel }};opacity:.7"><span>Flashcard 1 / 30</span><span>TS 1.1</span></div>
+<sc-if value="{{ flipped }}" hint-placeholder-val="{{ false }}"><div style="font-size:15px;line-height:1.5;font-weight:500">{{ cardBack }}</div></sc-if>
+<sc-if value="{{ notFlipped }}" hint-placeholder-val="{{ true }}"><div style="font-size:19px;line-height:1.3;font-weight:700;letter-spacing:{{ t.ls }}">{{ cardFront }}</div></sc-if>
+<div style="font-size:12px;opacity:.7">Tap to flip</div>
+</div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;padding:10px 20px 28px;background:{{ t.tabbarBg }};border-top:1px solid {{ t.border }};display:flex;justify-content:space-around;backdrop-filter:blur(12px)">
+<sc-for list="{{ tabsPrac }}" as="tb" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:600;color:{{ tb.color }};font-family:{{ t.labelFont }}"><span style="width:22px;height:22px;border-radius:{{ t.dotR }};border:2px solid {{ tb.color }};background:{{ tb.fill }}"></span>{{ tb.label }}</div></sc-for>
+</div>
+</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;style&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;apple&quot;,&quot;options&quot;:[&quot;saas&quot;,&quot;futur&quot;,&quot;dev&quot;,&quot;apple&quot;],&quot;tsType&quot;:&quot;'saas'|'futur'|'dev'|'apple'&quot;,&quot;section&quot;:&quot;Direction&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;light&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Direction&quot;},&quot;palette&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;A&quot;,&quot;options&quot;:[&quot;A&quot;,&quot;B&quot;],&quot;tsType&quot;:&quot;'A'|'B'&quot;,&quot;section&quot;:&quot;Direction&quot;}}">
+const D = [
+  { n: 1, title: 'Agentic Architecture & Orchestration', desc: 'Agentic loops, multi-agent orchestration, subagent invocation and context passing, workflow enforcement and hooks, task decomposition, session state.', weight: 27, lessons: 7, q: 10 },
+  { n: 2, title: 'Tool Design & MCP Integration', desc: 'Tool interface design, structured error responses, tool distribution and tool_choice, MCP server integration, built-in tools.', weight: 18, lessons: 5, q: 7 },
+  { n: 3, title: 'Claude Code Configuration & Workflows', desc: 'CLAUDE.md hierarchy, custom slash commands and skills, path-specific rules, plan mode vs direct execution, iterative refinement, CI/CD integration.', weight: 20, lessons: 6, q: 8 },
+  { n: 4, title: 'Prompt Engineering & Structured Output', desc: 'Explicit criteria, few-shot prompting, structured output with tool_use, validation-retry loops, batch processing, multi-instance review.', weight: 20, lessons: 6, q: 10 },
+  { n: 5, title: 'Context Management & Reliability', desc: 'Context preservation, escalation and ambiguity resolution, error propagation, codebase exploration, human review and confidence calibration, information provenance.', weight: 15, lessons: 6, q: 10 }
+];
+const LESSONS = ['Agentic Loops', 'Multi-Agent Orchestration', 'Subagent Invocation and Context Passing', 'Workflow Enforcement and Handoff', 'Agent SDK Hooks', 'Task Decomposition Strategies', 'Session State and Resumption'];
+const OPTS = [
+  ['A', 'Raise the iteration cap from 10 to 25 and check for "task complete" instead of "final answer".'],
+  ['B', 'Check the response.stop_reason field — exit on "end_turn", execute the tool and continue on "tool_use".'],
+  ['C', 'Ask Claude "Are you done?" every iteration and parse the answer.'],
+  ['D', 'Remove the iteration cap and check only response.content[0].type == "text".']
+];
+const CODE = `# CORRECT — stop_reason is the only reliable signal
+if response.stop_reason == "end_turn":
+    return response
+elif response.stop_reason == "tool_use":
+    # execute tool, append result, loop`;
+
+const SCEN = [
+  ['Customer support agent', 'Refund flow, identity verification gates, handoff to a human agent.', [1, 4]],
+  ['Multi-agent research system', 'Coordinator + subagents, narrow decomposition, structured metadata.', [1, 5]],
+  ['Code review agent', '14-file PR, attention dilution, multi-pass architecture.', [1, 3]],
+  ['Legacy codebase testing', 'Claude Code config, plan mode, CLAUDE.md hierarchy, CI/CD.', [3, 5]],
+  ['International transfers', 'Compliance hooks, tool call interception, MCP server design.', [1, 2]],
+  ['Document extraction pipeline', 'Structured output with tool_use, validation-retry, batch processing.', [4, 2]]
+];
+const MODES = [
+  ['Quick Mock', '10 questions · 2 scenarios · ~20 min', 'Fast check before a study session.'],
+  ['Full-Length Mock', '45 questions · 4 of 6 scenarios · 90 min · 720/1000 to pass', 'Same shape as the real exam, grouped by scenario.'],
+  ['Flashcards', '30 cards · one per task statement', 'Flip through key exam takeaways.']
+];
+const S = {
+  saas: { name: 'SaaS', blurb: 'Product-dashboard feel: soft surfaces, rounded cards, one confident accent, generous whitespace.',
+    font: "'Plus Jakarta Sans',sans-serif", mono: "'JetBrains Mono',monospace", r: '16px', rs: '10px', rsIn: '7px', btnR: '12px', dotR: '6px', hw: 800, ls: '-0.01em', lsH: '-0.03em', upper: 'none', lsLabel: '0', labelMono: false, barGap: '6px', listGap: '12px', cards: true,
+    light: { bg: '#F5F6FA', surface: '#FFFFFF', surface2: '#EDEFF5', text: '#12142B', muted: '#646A85', border: '#E3E6EF', shadow: '0 1px 2px rgba(18,20,43,.05),0 10px 30px -14px rgba(18,20,43,.12)', codeBg: '#12142B', codeFg: '#E6E8F2', chroma: 0.15, L: 0.55 },
+    dark: { bg: '#0B0D15', surface: '#141726', surface2: '#1C2033', text: '#F2F3F9', muted: '#8C92AD', border: '#252A40', shadow: 'none', codeBg: '#080910', codeFg: '#DDE0EE', chroma: 0.14, L: 0.74 },
+    pal: { A: { name: 'Indigo', hue: 275, hues: [275, 200, 330, 150, 50] }, B: { name: 'Teal', hue: 175, hues: [175, 250, 25, 300, 95] } } },
+  futur: { name: 'Futuristic', blurb: 'HUD-like: hairline borders, mono labels in caps, sharp corners, glowing neon accents on near-black.',
+    font: "'Space Grotesk',sans-serif", mono: "'JetBrains Mono',monospace", r: '4px', rs: '2px', rsIn: '2px', btnR: '2px', dotR: '0', hw: 700, ls: '0', lsH: '-0.02em', upper: 'uppercase', lsLabel: '0.14em', labelMono: true, barGap: '2px', listGap: '0px', cards: false, glow: true,
+    light: { bg: '#E9EDF0', surface: '#F6F8F9', surface2: '#DDE3E8', text: '#0B1014', muted: '#5A6672', border: '#B9C3CC', shadow: 'none', codeBg: '#0B1014', codeFg: '#C8F2FF', chroma: 0.18, L: 0.5 },
+    dark: { bg: '#04060A', surface: '#0A0E14', surface2: '#10161E', text: '#E8F1F7', muted: '#7A8A99', border: '#1C2632', shadow: 'none', codeBg: '#02040A', codeFg: '#9BE8FF', chroma: 0.2, L: 0.78 },
+    pal: { A: { name: 'Cyan', hue: 200, hues: [200, 320, 130, 280, 70] }, B: { name: 'Acid', hue: 120, hues: [120, 200, 30, 300, 60] } } },
+  dev: { name: 'Developer', blurb: 'Docs/terminal style: monospace everywhere, tight radii, restrained color, content density first.',
+    font: "'IBM Plex Mono',monospace", mono: "'IBM Plex Mono',monospace", r: '6px', rs: '4px', rsIn: '4px', btnR: '4px', dotR: '4px', hw: 600, ls: '-0.02em', lsH: '-0.04em', upper: 'lowercase', lsLabel: '0', labelMono: true, barGap: '3px', listGap: '0px', cards: false,
+    light: { bg: '#FFFFFF', surface: '#F6F8FA', surface2: '#EAEEF2', text: '#1F2328', muted: '#656D76', border: '#D0D7DE', shadow: 'none', codeBg: '#F6F8FA', codeFg: '#1F2328', chroma: 0.13, L: 0.5 },
+    dark: { bg: '#0D1117', surface: '#161B22', surface2: '#21262D', text: '#E6EDF3', muted: '#8B949E', border: '#30363D', shadow: 'none', codeBg: '#010409', codeFg: '#E6EDF3', chroma: 0.13, L: 0.74 },
+    pal: { A: { name: 'Green', hue: 150, hues: [150, 250, 40, 300, 200] }, B: { name: 'Amber', hue: 70, hues: [70, 210, 330, 150, 260] } } },
+  apple: { name: 'Apple', blurb: 'iOS/macOS grouped lists: large rounded insets, system type, translucent bars, system-color domains.',
+    font: "-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif", mono: "ui-monospace,'SF Mono',Menlo,monospace", r: '20px', rs: '12px', rsIn: '9px', btnR: '50%', dotR: '50%', hw: 700, ls: '-0.02em', lsH: '-0.035em', upper: 'uppercase', lsLabel: '0.04em', labelMono: false, barGap: '4px', listGap: '10px', cards: true,
+    light: { bg: '#F2F2F7', surface: '#FFFFFF', surface2: '#E5E5EA', text: '#000000', muted: '#6C6C70', border: '#E0E0E5', shadow: 'none', codeBg: '#1C1C1E', codeFg: '#F2F2F7', chroma: 0.19, L: 0.58 },
+    dark: { bg: '#000000', surface: '#1C1C1E', surface2: '#2C2C2E', text: '#FFFFFF', muted: '#98989F', border: '#2C2C2E', shadow: 'none', codeBg: '#0A0A0B', codeFg: '#F2F2F7', chroma: 0.17, L: 0.72 },
+    pal: { A: { name: 'Blue', hue: 255, hues: [255, 150, 30, 300, 70] }, B: { name: 'Graphite', hue: 275, hues: [275, 275, 275, 275, 275], mono: true } } }
+};
+
+class Component extends DCLogic {
+  state = { style: null, theme: null, pal: null, d: -1, l: 0, play: -1 };
+  renderVals() {
+    const sk = this.state.style ?? this.props.style ?? 'apple';
+    const tk = this.state.theme ?? this.props.theme ?? 'light';
+    const pk = this.state.pal ?? this.props.palette ?? 'A';
+    const s = S[sk], m = s[tk], p = s.pal[pk], dark = tk === 'dark';
+    const col = (h, i) => p.mono ? `oklch(${(dark ? 0.82 : 0.32) + (dark ? -0.09 : 0.09) * i} 0.06 ${h})` : `oklch(${m.L} ${m.chroma} ${h})`;
+    const accent = `oklch(${m.L} ${m.chroma + 0.02} ${p.hue})`;
+    const accentText = dark ? `oklch(0.8 0.12 ${p.hue})` : `oklch(0.45 0.14 ${p.hue})`;
+    const glowOf = c => s.glow ? `0 0 0 1px ${c}, 0 0 18px -2px ${c}` : 'none';
+    const btn = (label, on, pick, extra = {}) => ({ label, pick, bg: on ? '#fff' : 'transparent', fg: on ? '#1b1b19' : '#c9c9c4', ...extra });
+    const t = {
+      ...m, name: s.name, blurb: s.blurb, themeName: dark ? 'Dark' : 'Light', palName: `${pk} (${p.name})`, themeIcon: dark ? '☾' : '☀',
+      font: s.font, mono: s.mono, numFont: s.labelMono ? s.mono : s.font, labelFont: s.labelMono ? s.mono : s.font,
+      r: s.r, rs: s.rs, rsIn: s.rsIn, btnR: s.btnR, dotR: s.dotR, hw: s.hw, ls: s.ls, lsH: s.lsH, upper: s.upper, lsLabel: s.lsLabel, barGap: s.barGap, listGap: s.listGap,
+      accent, accentText, onAccent: dark && !s.glow ? '#0b0d15' : (s.glow && dark ? '#04060A' : '#fff'), onDomain: dark ? '#0b0d15' : '#fff', glow: glowOf(accent),
+      rowBg: s.cards ? m.surface : 'transparent', rowBorder: s.cards ? m.border : m.border,
+      tabActiveBg: sk === 'apple' ? m.surface : (sk === 'futur' ? accent : m.text), tabActiveFg: sk === 'apple' ? m.text : (sk === 'futur' && dark ? '#04060A' : m.bg), tabShadow: sk === 'apple' ? '0 1px 3px rgba(0,0,0,.12)' : 'none',
+      tabbarBg: dark ? 'rgba(20,22,30,.85)' : 'rgba(255,255,255,.85)',
+      chipBg: dark ? `oklch(0.3 0.08 ${p.hue})` : `oklch(0.93 0.05 ${p.hue})`, chipFg: dark ? `oklch(0.9 0.1 ${p.hue})` : `oklch(0.35 0.12 ${p.hue})`,
+      swatches: [m.bg, m.surface, m.text, accent, ...p.hues.slice(0, 5).map(col)]
+    };
+    if (sk === 'dev') { t.rowBg = 'transparent'; t.rowBorder = m.border; }
+    const domains = D.map((d, i) => {
+      const open = this.state.d === i, color = col(p.hues[i], i);
+      return { ...d, color, glow: glowOf(color), open, icon: open ? '−' : '+', label: sk === 'dev' ? `0${d.n}` : d.n, toggle: () => this.setState({ d: open ? -1 : i }) };
+    });
+    const lessons = LESSONS.map((title, i) => { const open = this.state.l === i, playing = this.state.play === i; return { n: `1.${i + 1}`, title, open, playing, playBg: playing ? (dark ? `oklch(0.28 0.06 ${p.hues[0]})` : `oklch(0.94 0.04 ${p.hues[0]})`) : 'transparent', icon: open ? '−' : '+', toggle: () => this.setState({ l: open ? -1 : i }), play: e => { e.stopPropagation(); this.setState({ play: playing ? -1 : i }); } }; });
+    const options = OPTS.map(([k, text]) => { const sel = k === 'B'; return { k, text, border: sel ? accent : m.border, bg: sel ? (dark ? `oklch(0.22 0.05 ${p.hue})` : `oklch(0.96 0.03 ${p.hue})`) : 'transparent', badgeBg: sel ? accent : m.surface2, badgeFg: sel ? t.onAccent : m.muted }; });
+    const dk = dark;
+    const actions = [
+      { title: 'Claude Certified Architect – Foundations Exam Guide', desc: 'Official exam guide from Anthropic.', bg: m.surface, fg: m.text, border: m.border, shadow: m.shadow },
+      { title: 'Exam scenarios', desc: '4 of 6 are drawn at random; which domain is asked in which context?', bg: dk ? `oklch(0.24 0.04 ${p.hue})` : `oklch(0.94 0.04 ${p.hue})`, fg: m.text, border: dk ? `oklch(0.32 0.05 ${p.hue})` : `oklch(0.88 0.05 ${p.hue})`, shadow: 'none' },
+      { title: 'Practice', desc: 'Study with Quick Mock, Full-Length Mock, or Flashcards', bg: sk === 'futur' ? 'transparent' : m.text, fg: sk === 'futur' ? accent : m.bg, border: sk === 'futur' ? accent : m.text, shadow: glowOf(accent) }
+    ];
+    const mkTabs = on => ['Home', 'Domains', 'Scenarios', 'Practice'].map((label, i) => ({ label, color: i === on ? accent : m.muted, fill: i === on ? accent : 'transparent' }));
+    const tabs = mkTabs(0), tabsScen = mkTabs(2), tabsPrac = mkTabs(3);
+    const scenarios = SCEN.map(([title, desc, ds], i) => ({ n: i + 1, title, desc, tags: ds.map(k => ({ label: 'D' + k, color: domains[k - 1].color })) }));
+    const modes = MODES.map(([title, meta, desc], i) => ({ title, meta, desc, primary: i === 1, bg: i === 1 ? accent : m.surface, fg: i === 1 ? t.onAccent : m.text, sub: i === 1 ? t.onAccent : m.muted, border: i === 1 ? accent : m.border, shadow: i === 1 ? glowOf(accent) : m.shadow }));
+    const flipped = !!this.state.flip;
+    return {
+      scenarios, modes, flipped, notFlipped: !flipped, tabsScen, tabsPrac, flip: () => this.setState({ flip: !flipped }), cardFront: 'What is the only reliable termination signal for an agentic loop?', cardBack: 'response.stop_reason — "end_turn" exits, "tool_use" executes the tool, appends the result and loops.',
+      t, d1: domains[0], domains, lessons, options, actions, tabs, code: CODE,
+      styleBtns: Object.keys(S).map(k => btn(S[k].name, k === sk, () => this.setState({ style: k }))),
+      themeBtns: ['light', 'dark'].map(k => btn(k === 'light' ? 'Light' : 'Dark', k === tk, () => this.setState({ theme: k }))),
+      palBtns: ['A', 'B'].map(k => btn(`${k} · ${s.pal[k].name}`, k === pk, () => this.setState({ pal: k }), { swatch: `oklch(${m.L} ${m.chroma} ${s.pal[k].hue})` }))
+    };
+  }
+}
+</script>
+</body>
+</html>
