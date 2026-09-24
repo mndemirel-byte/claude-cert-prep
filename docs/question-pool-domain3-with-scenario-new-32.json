@@ -1,0 +1,834 @@
+[
+  {
+    "index": 281,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.1",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Destek agent'ı repo'sunda çalışan bir mühendis, kendi sandbox ortamına özgü notları (\"process_refund'u her zaman mock refund sunucusuna karşı çalıştır\", \"testlerde müşteri ID'si olarak CUST-9001 kullan\") repo'nun kök .claude/CLAUDE.md dosyasına ekleyip commit'ledi. Ertesi gün üç takım arkadaşı, Claude Code'un escalate_to_human regresyon testlerini yazarken CUST-9001'i kullandığını ve gerçek staging'e değil mock sunucuya işaret eden kod ürettiğini fark etti. Mühendis bu notları kendisi için korumak istiyor ama takımı etkilememeli.\nDoğru düzeltme hangisidir?",
+    "options_tr": {
+      "A": "Notları `~/.claude/CLAUDE.md` dosyasına taşı — kullanıcı seviyesi dosya paylaşılmaz.",
+      "B": "Notları kök CLAUDE.md'de tut ama başına \"Sadece [mühendis adı] için\" ibaresi ekle; Claude bunu diğerleri için yok sayar.",
+      "C": "Notları repo kökündeki `CLAUDE.local.md` dosyasına taşı — projeye özgü, otomatik gitignore'lanan kişisel dosya; paylaşılan .claude/CLAUDE.md'den sandbox satırlarını kaldır.",
+      "D": "Notları `.claude/rules/sandbox.md` dosyasına taşı; rules dizinindeki dosyalar yalnızca oluşturan kişi için yüklenir."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: CLAUDE.local.md proje kökünde durur, Claude Code tarafından otomatik olarak .gitignore'a eklenir ve yalnızca o makinedeki mühendis için yüklenir. Sandbox mock sunucusu ve CUST-9001 gibi kişisel, projeye özgü ayarlar tam olarak bu dosya içindir; paylaşılan .claude/CLAUDE.md ise takımın ortak kurallarına döner.\nWhy A is wrong: ~/.claude/CLAUDE.md gerçekten paylaşılmaz, ama mühendisin çalıştığı her projede yüklenir. Mock refund sunucusu talimatı, başka bir repo'da anlamsız hatta zararlıdır — ayar projeye bağlı olmalı.\nWhy B is wrong: CLAUDE.md'deki her satır, dosyayı yükleyen herkesin bağlamına girer ve talimat olarak yorumlanır. \"Sadece X için\" ibaresi deterministik bir kapsam sınırı değildir; token maliyeti ve tutarsız davranış devam eder.\nWhy D is wrong: .claude/rules/ dosyaları repo'nun parçasıdır ve tüm takım için yüklenir; oluşturan kişiyle sınırlı değildir. Frontmatter'sız bir kural dosyası her zaman yüklenir — sorunu çözmez, yayar.",
+    "question_en": "An engineer on the support-agent repo added notes specific to their own sandbox (\"always run process_refund against the mock refund server\", \"use CUST-9001 as the customer ID in tests\") to the repo's root .claude/CLAUDE.md and committed it. The next day three teammates notice that Claude Code uses CUST-9001 when writing escalate_to_human regression tests and generates code that points at the mock server instead of real staging. The engineer wants to keep these notes for themselves without affecting the team.\nWhat is the correct fix?",
+    "options_en": {
+      "A": "Move the notes to ~/.claude/CLAUDE.md — the user-level file is not shared.",
+      "B": "Keep the notes in the root CLAUDE.md but prefix them with \"Only for [engineer name]\"; Claude will ignore them for everyone else.",
+      "C": "Move the notes to CLAUDE.local.md at the repo root — a project-specific, automatically gitignored personal file — and remove the sandbox lines from the shared .claude/CLAUDE.md.",
+      "D": "Move the notes to .claude/rules/sandbox.md; files in the rules directory are loaded only for the person who created them."
+    },
+    "explanation_en": "Why C is correct: CLAUDE.local.md lives at the project root, is automatically added to .gitignore by Claude Code, and loads only for the engineer on that machine. Personal, project-bound settings like the sandbox mock server and CUST-9001 are exactly what this file is for; the shared .claude/CLAUDE.md goes back to holding the team's common rules.\nWhy A is wrong: ~/.claude/CLAUDE.md is indeed not shared, but it loads in every project the engineer works on. A mock-refund-server instruction is meaningless or harmful in another repo — the setting must be bound to this project.\nWhy B is wrong: every line in CLAUDE.md enters the context of everyone who loads the file and is interpreted as an instruction. \"Only for X\" is not a deterministic scope boundary; the token cost and inconsistent behaviour remain.\nWhy D is wrong: .claude/rules/ files are part of the repo and load for the whole team; they are not restricted to their author. A rule file without frontmatter loads always — it spreads the problem rather than fixing it."
+  },
+  {
+    "index": 282,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.1",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Destek agent'ı repo'sunun .claude/CLAUDE.md dosyası, agent'ın çalışma zamanında okuduğu 1.800 satırlık iade politikası belgesini `@docs/refund-policy-full.md` ile import ediyor; gerekçe \"Claude Code politikayı bilsin\". Takım, her Claude Code oturumunun daha ilk komuttan önce yaklaşık 20k token tükettiğini ve lookup_order aracının hata yapısını (isError/errorCategory/isRetryable) düzenlerken bile Claude'un iade politikasından alakasız kısıtlar uydurmaya başladığını fark ediyor.\nEn uygun ilk adım hangisidir?",
+    "options_tr": {
+      "A": "Import'u kaldır: politika belgesi agent'ın çalışma zamanı verisidir, geliştirme talimatı değil. CLAUDE.md'de yalnızca kısa konvansiyonlar ve belgenin yolunu belirten tek satır kalsın; `/memory` ile yüklenen dosyaları doğrula.",
+      "B": "Import'u `~/.claude/CLAUDE.md` dosyasına taşı; böylece proje dosyası küçülür ve takım arkadaşları maliyeti paylaşmaz.",
+      "C": "Her oturumun başında `/compact` çalıştırarak politika belgesini özetlet; token maliyeti düşer.",
+      "D": "Daha büyük context window'a sahip bir model seç; 20k token o zaman önemsiz kalır."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: CLAUDE.md ve @import ile getirilen her şey her oturumda, her istekte bağlama girer. Agent'ın runtime'da okuduğu politika belgesi, kod tabanını geliştiren Claude Code için bir talimat değildir; hem token israfına hem de alakasız dosyalarda politika kaynaklı halüsinasyonlara yol açar. Doğru hareket import'u kaldırıp gerektiğinde belgeyi okumasını sağlamak ve /memory ile gerçekten neyin yüklendiğini doğrulamaktır.\nWhy B is wrong: Kullanıcı seviyesi dosya sorunu yalnızca bir kişiye taşır; o kişi hâlâ her projede 20k token öder ve takımın geri kalanı için davranış farkı oluşur (paylaşılan/kişisel karışıklığı).\nWhy C is wrong: /compact konuşma geçmişini özetler; CLAUDE.md içeriği bir sonraki turda yeniden yüklenir. Kök nedene (her zaman yüklenen büyük import) dokunmaz.\nWhy D is wrong: Daha büyük model/context, her oturumda gereksiz yükün maliyetini artırır ve alakasız politika içeriğinin edit'lere sızmasını engellemez. Klasik tuzak.",
+    "question_en": "The support-agent repo's .claude/CLAUDE.md imports the 1,800-line refund policy document the agent reads at runtime via `@docs/refund-policy-full.md`, on the grounds that \"Claude Code should know the policy\". The team notices every Claude Code session consumes about 20k tokens before the first command, and that even while editing the error structure of the lookup_order tool (isError/errorCategory/isRetryable) Claude starts inventing unrelated constraints drawn from the refund policy.\nWhat is the most appropriate first step?",
+    "options_en": {
+      "A": "Remove the import: the policy document is runtime data for the agent, not a development instruction. Keep only concise conventions and a one-line pointer to the document's path in CLAUDE.md; verify what is loaded with /memory.",
+      "B": "Move the import into ~/.claude/CLAUDE.md so the project file shrinks and teammates don't share the cost.",
+      "C": "Run /compact at the start of every session to have the policy document summarised; the token cost drops.",
+      "D": "Pick a model with a larger context window; 20k tokens become negligible."
+    },
+    "explanation_en": "Why A is correct: everything in CLAUDE.md and everything pulled in via @import enters the context in every session, on every request. A policy document the agent reads at runtime is not an instruction for the Claude Code that develops the codebase; it wastes tokens and causes policy-driven hallucinations in unrelated files. The right move is to drop the import, let Claude read the document only when needed, and confirm with /memory what is actually loaded.\nWhy B is wrong: the user-level file merely moves the problem to one person, who still pays 20k tokens in every project, and it creates a behaviour gap for the rest of the team (the shared-vs-personal confusion).\nWhy C is wrong: /compact summarises the conversation history; CLAUDE.md content is reloaded on the next turn. It does not touch the root cause (a large import that always loads).\nWhy D is wrong: a bigger model/context raises the cost of unnecessary load in every session and does not stop irrelevant policy content leaking into edits. Classic trap."
+  },
+  {
+    "index": 283,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.2",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Takım, eskalasyon akışlarının regresyon prosedürünü (ilgili fixture'ları oku, `npm run test:escalation -- <flow>` çalıştır, transcript çıktısını 5 kriterle karşılaştır, sonucu rapor et) 60 satır hâlinde kök CLAUDE.md'ye yazdı. Şimdi iki sorun var: lookup_order açıklamasında tek kelimelik bir düzeltme istendiğinde bile Claude bazen tüm regresyon suite'ini çalıştırıyor, ve suite'in yüzlerce satırlık transcript çıktısı ana konuşmayı dolduruyor. Prosedür tüm takımda aynı olmalı ve prosedürün src/tools/ altındaki MCP araç tanımlarını değiştirmesi asla istenmiyor.\nDoğru yapılandırma hangisidir?",
+    "options_tr": {
+      "A": "Prosedürü CLAUDE.md'de tut ama başına \"Sadece kullanıcı açıkça istediğinde çalıştır\" ekle; çıktı için `/compact` kullan.",
+      "B": "Prosedürü her mühendisin `~/.claude/skills/test-escalation/SKILL.md` dosyasına koy; `context: fork` ile çıktıyı izole et.",
+      "C": "Prosedürü `.claude/commands/test-escalation.md` yerine bir PostToolUse hook'una taşı; Bash her çalıştığında suite otomatik koşsun.",
+      "D": "Prosedürü repo'daki `.claude/skills/test-escalation/SKILL.md` dosyasına taşı; frontmatter'da `context: fork`, `allowed-tools: Read, Bash(npm run test:escalation:*)` ve `argument-hint: [flow-name]` tanımla; CLAUDE.md'den 60 satırı kaldır."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: Bu isteğe bağlı bir iş akışıdır, her zaman yüklü bir standart değil — dolayısıyla skill'e aittir. Repo içindeki .claude/skills/ takımla paylaşılır; context: fork gürültülü transcript çıktısını ayrı bir bağlamda tutar; allowed-tools Edit/Write'ı dışarıda bırakarak araç tanımlarının değiştirilmesini deterministik olarak engeller; argument-hint akış adını ister. CLAUDE.md'den kaldırmak hem token yükünü hem de istenmeyen tetiklenmeyi giderir.\nWhy A is wrong: CLAUDE.md'deki bir talimat her oturumda yüklenir ve \"sadece istendiğinde\" ifadesi olasılıksal bir kısıttır; suite'in yanlışlıkla çalışmasını garanti altına almaz. /compact çıktıyı geriye dönük özetler, konuşmaya girmesini engellemez.\nWhy B is wrong: ~/.claude/skills kişiseldir; her mühendisin kopyalaması gerekir ve prosedür değiştiğinde sürümler ayrışır. Takım standardı repo'da olmalı.\nWhy C is wrong: Hook'lar deterministik uygulama içindir, iş akışı tanımlamak için değil; her Bash çağrısından sonra suite koşturmak maliyetli ve saçmadır. Ayrıca soru \"komut yerine hook\" ikilemi değil; ihtiyaç isteğe bağlı bir skill.",
+    "question_en": "The team wrote the regression procedure for escalation flows (read the relevant fixtures, run `npm run test:escalation -- <flow>`, compare the transcript output against 5 criteria, report the result) as 60 lines in the root CLAUDE.md. Two problems have appeared: even when asked for a one-word fix in the lookup_order description, Claude sometimes runs the whole regression suite, and the suite's hundreds of lines of transcript output flood the main conversation. The procedure must be identical for the whole team, and it must never be able to modify the MCP tool definitions under src/tools/.\nWhat is the correct configuration?",
+    "options_en": {
+      "A": "Keep the procedure in CLAUDE.md but prefix it with \"Run only when the user explicitly asks\"; use /compact for the output.",
+      "B": "Put the procedure in each engineer's ~/.claude/skills/test-escalation/SKILL.md; isolate the output with context: fork.",
+      "C": "Move the procedure into a PostToolUse hook instead of .claude/commands/test-escalation.md so the suite runs automatically after every Bash call.",
+      "D": "Move the procedure to .claude/skills/test-escalation/SKILL.md in the repo; declare `context: fork`, `allowed-tools: Read, Bash(npm run test:escalation:*)` and `argument-hint: [flow-name]` in the frontmatter; remove the 60 lines from CLAUDE.md."
+    },
+    "explanation_en": "Why D is correct: this is an on-demand workflow, not an always-loaded standard — so it belongs in a skill. .claude/skills/ inside the repo is shared with the team; context: fork keeps the noisy transcript output in a separate context; allowed-tools leaves out Edit/Write, deterministically preventing changes to tool definitions; argument-hint prompts for the flow name. Removing it from CLAUDE.md fixes both the token load and the unwanted triggering.\nWhy A is wrong: an instruction in CLAUDE.md loads in every session, and \"only when asked\" is a probabilistic constraint that does not guarantee the suite won't run by accident. /compact summarises output after the fact; it does not keep it out of the conversation.\nWhy B is wrong: ~/.claude/skills is personal; every engineer would have to copy it and versions drift when the procedure changes. A team standard belongs in the repo.\nWhy C is wrong: hooks are for deterministic enforcement, not for defining workflows; running the suite after every Bash call is costly and absurd. The question is not a command-vs-hook dilemma; the need is an on-demand skill."
+  },
+  {
+    "index": 284,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.3",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Destek agent'ı repo'sunda MCP araç tanımları `src/tools/*.ts` ve `packages/*/tools/*.ts` altında dağınık; sistem prompt'u ve eskalasyon şablonları ise `prompts/**/*.md` altında. Takım iki ayrı kural seti istiyor: araç dosyalarında \"her araç isError + errorCategory + isRetryable döndürmeli, iş kuralı hataları retry edilmez\"; prompt dosyalarında \"eskalasyon tetikleyicileri yalnızca: müşteri insan istedi, politika boşluğu, ilerleme imkânsız — duygu tetikleyici değildir\". Şu anda her ikisi de kök CLAUDE.md'de ve prompt düzenlerken Claude, Markdown dosyalarına errorCategory alanları eklemeye çalışıyor.\nEn uygun yapılandırma hangisidir?",
+    "options_tr": {
+      "A": "`src/tools/CLAUDE.md` ve `prompts/CLAUDE.md` dizin seviyesi dosyaları oluştur; her biri kendi dizinine bağlıdır.",
+      "B": "`.claude/rules/tool-definitions.md` (frontmatter: `paths: [\"src/tools/**/*.ts\", \"packages/*/tools/**/*.ts\"]`) ve `.claude/rules/prompts.md` (frontmatter: `paths: [\"prompts/**/*.md\"]`) oluştur; iki kural setini kök CLAUDE.md'den çıkar.",
+      "C": "Her iki kural setini `.claude/rules/` altına frontmatter'sız iki dosya olarak koy; Claude dosya adından hangisinin uygulanacağını anlar.",
+      "D": "Kök CLAUDE.md'de kalsın ama her kuralın başına \"Yalnızca .ts dosyalarında\" / \"Yalnızca .md dosyalarında\" ibaresi ekle."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: Araç dosyaları birden fazla dizine dağılmış; bu yüzden glob tabanlı .claude/rules/ dosyaları doğru mekanizmadır. paths frontmatter'ı her kuralı yalnızca eşleşen dosyalar üzerinde çalışılırken yükler: prompt düzenlerken errorCategory kuralı bağlama girmez, araç düzenlerken eskalasyon kuralı girmez. Token yükü düşer, çapraz kirlenme biter; dosyalar repo'da olduğu için takım paylaşır.\nWhy A is wrong: Dizin seviyesi CLAUDE.md tek dizine bağlıdır; src/tools/CLAUDE.md, packages/*/tools/ altındaki araç dosyalarını kapsamaz. Her paket için ayrı dosya kopyalamak sürdürülemez.\nWhy C is wrong: Frontmatter'sız kural dosyaları her zaman yüklenir — mevcut durumdan farkı yoktur; dosya adı kapsam belirlemez.\nWhy D is wrong: Düzyazı kapsam ibareleri olasılıksaldır ve her iki kural seti her oturumda yüklenmeye devam eder; token maliyeti ve tutarsızlık sürer.",
+    "question_en": "In the support-agent repo the MCP tool definitions are scattered under `src/tools/*.ts` and `packages/*/tools/*.ts`, while the system prompt and escalation templates live under `prompts/**/*.md`. The team wants two separate rule sets: for tool files, \"every tool must return isError + errorCategory + isRetryable; business-rule errors are never retried\"; for prompt files, \"escalation triggers are only: customer asks for a human, policy gap, cannot make progress — sentiment is not a trigger\". Both currently sit in the root CLAUDE.md, and while editing prompts Claude tries to add errorCategory fields to Markdown files.\nWhat is the most appropriate configuration?",
+    "options_en": {
+      "A": "Create directory-level files src/tools/CLAUDE.md and prompts/CLAUDE.md; each is bound to its own directory.",
+      "B": "Create .claude/rules/tool-definitions.md (frontmatter: `paths: [\"src/tools/**/*.ts\", \"packages/*/tools/**/*.ts\"]`) and .claude/rules/prompts.md (frontmatter: `paths: [\"prompts/**/*.md\"]`); remove both rule sets from the root CLAUDE.md.",
+      "C": "Put both rule sets under .claude/rules/ as two files without frontmatter; Claude infers from the file name which one applies.",
+      "D": "Keep them in the root CLAUDE.md but prefix each rule with \"Only in .ts files\" / \"Only in .md files\"."
+    },
+    "explanation_en": "Why B is correct: the tool files are spread over several directories, so glob-based .claude/rules/ files are the right mechanism. The paths frontmatter loads each rule only while matching files are being worked on: the errorCategory rule stays out of context while editing prompts and the escalation rule stays out while editing tools. Token load drops, cross-contamination stops, and because the files are in the repo the team shares them.\nWhy A is wrong: a directory-level CLAUDE.md is bound to one directory; src/tools/CLAUDE.md does not cover the tool files under packages/*/tools/. Copying a file into every package is unsustainable.\nWhy C is wrong: rule files without frontmatter load always — no different from the current situation; a file name does not define scope.\nWhy D is wrong: prose scope phrases are probabilistic, and both rule sets keep loading in every session; the token cost and inconsistency continue."
+  },
+  {
+    "index": 285,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.4",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Ürün sahibi, ilk temasta çözüm oranı %71'de takıldığı için mühendise \"agent daha az eskale etsin\" diyor; başka ayrıntı vermiyor. Mühendis, hangi eskalasyon türlerinin fazla olduğunu (müşteri insan istedi mi, politika boşluğu mu, kızgın müşteriye otomatik eskalasyon mu), %80 hedefinin hangi kategorilerde ölçüldüğünü ve 500$ üzeri iade eskalasyonunun kapsam dışı olup olmadığını bilmiyor. Bu değişiklik prompts/escalation.md, escalate_to_human aracı ve regresyon suite'ini etkileyecek.\nMühendis Claude Code ile nasıl başlamalı?",
+    "options_tr": {
+      "A": "Doğrudan çalıştırma: prompts/escalation.md'de eskalasyon eşiğini gevşet, regresyon suite'ini çalıştır, oran yükselene kadar yinele.",
+      "B": "Mülakat deseni: Claude'dan işe başlamadan önce gereksinimleri netleştiren sorular sormasını iste (hangi eskalasyon kategorileri hedefte, 500$ kuralı korunacak mı, başarı ölçütü ne); cevaplar netleşince plan moduna geç.",
+      "C": "Plan modu: Claude hemen üç dosyayı kapsayan bir uygulama planı üretsin; belirsizlikler planda varsayım olarak listelenir.",
+      "D": "Explore subagent'ı: eskalasyonla ilgili tüm dosyaları taratıp özet çıkar; özet gereksinimleri de netleştirir."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: Sorun teknik karmaşıklık değil, gereksinim belirsizliği. \"Daha az eskale etsin\" hangi tetikleyicilerin fazla olduğunu, hangi güvenlik kurallarının (500$ gate, müşteri insan istedi) dokunulmaz olduğunu söylemiyor. Mülakat deseni bu boşlukları önce doldurur; ancak ondan sonra çok dosyalı değişiklik için plan modu anlamlıdır.\nWhy A is wrong: Hedef belirsizken eşiği gevşetmek, geçerli tetikleyicileri (müşteri insan istedi, politika boşluğu) de kırabilir ve regresyon suite'i \"oran yükseldi\" derken güvenlik kuralları sessizce bozulur. Finansal risk taşıyan akışta deneme-yanılma tuzaktır.\nWhy C is wrong: Plan modu mimari/çok dosyalı işler için doğrudur ama varsayımlara dayalı bir plan yanlış soruyu çözebilir; gereksinimler netleşmeden plan yapmak yanlış yönde doğru bir plan üretir.\nWhy D is wrong: Explore subagent'ı gürültülü kod keşfi içindir; kod tabanı okumak ürün sahibinin niyetini ve hedef metriğin tanımını ortaya çıkarmaz.",
+    "question_en": "Because the first-contact resolution rate is stuck at 71%, the product owner tells an engineer \"make the agent escalate less\" and gives no other detail. The engineer does not know which escalation types are excessive (customer asked for a human, policy gap, or auto-escalating angry customers), in which categories the 80% target is measured, or whether the over-$500 refund escalation is out of scope. The change will touch prompts/escalation.md, the escalate_to_human tool and the regression suite.\nHow should the engineer start with Claude Code?",
+    "options_en": {
+      "A": "Direct execution: loosen the escalation threshold in prompts/escalation.md, run the regression suite, iterate until the rate rises.",
+      "B": "Interview pattern: ask Claude to pose requirement-clarifying questions before starting (which escalation categories are targeted, is the $500 rule preserved, what is the success metric); once answers are clear, switch to plan mode.",
+      "C": "Plan mode: have Claude immediately produce an implementation plan covering the three files; uncertainties are listed as assumptions in the plan.",
+      "D": "Explore subagent: scan every escalation-related file and produce a summary; the summary will also clarify the requirements."
+    },
+    "explanation_en": "Why B is correct: the problem is requirement ambiguity, not technical complexity. \"Escalate less\" does not say which triggers are excessive or which safety rules (the $500 gate, customer asks for a human) are untouchable. The interview pattern fills those gaps first; only then does plan mode make sense for the multi-file change.\nWhy A is wrong: loosening the threshold while the goal is unclear can also break valid triggers (customer asks for a human, policy gap), and while the regression suite reports \"rate went up\" safety rules degrade silently. Trial and error in a flow with financial risk is a trap.\nWhy C is wrong: plan mode is right for architectural/multi-file work, but a plan built on assumptions may solve the wrong problem; planning before the requirements are clear yields a good plan in the wrong direction.\nWhy D is wrong: the Explore subagent is for noisy code discovery; reading the codebase does not reveal the product owner's intent or the definition of the target metric."
+  },
+  {
+    "index": 286,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.5",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Destek agent'ının üretim iade politikası `policies/refund-policy.prod.yaml` ve `policies/escalation-limits.prod.yaml` dosyalarında tutuluyor; bu dosyalar yalnızca uyum ekibinin onayıyla değişebilir. Kök CLAUDE.md'de büyük harflerle \"ASLA *.prod.yaml dosyalarını düzenleme\" yazıyor. Buna rağmen bir mühendis, Claude'a process_refund akışını yeniden yapılandırmasını istediğinde Claude 500$ limitini 750$'a çıkararak refund-policy.prod.yaml'ı düzenledi; değişiklik code review'da yakalandı.\nBu ihlali deterministik olarak önleyen yapılandırma hangisidir?",
+    "options_tr": {
+      "A": "`.claude/settings.json` içinde `permissions.deny` altına `\"Edit(policies/**/*.prod.yaml)\"` ve `\"Write(policies/**/*.prod.yaml)\"` ekle (veya eşdeğer olarak yolu eşleyen ve exit code 2 ile engelleyen bir PreToolUse hook'u yaz); CLAUDE.md satırı yalnızca açıklama olarak kalsın.",
+      "B": "CLAUDE.md'deki uyarıyı üç farklı yerde tekrarla ve kalın yaz; ayrıca aynı satırı ~/.claude/CLAUDE.md'ye de ekle.",
+      "C": "PostToolUse hook'u yaz: bir *.prod.yaml düzenlemesi tespit edilirse `git checkout -- policies/` ile geri al.",
+      "D": "Refund akışı için daha güçlü bir model kullan; büyük modeller CLAUDE.md talimatlarına daha iyi uyar."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: CLAUDE.md talimatları olasılıksaldır; para ve uyum riski olan bir kural deterministik uygulanmalı. permissions.deny kuralları Edit/Write araç çağrılarını yol desenine göre araç çalışmadan reddeder; PreToolUse hook'u da (exit code 2) aynı garantiyi verir. Her iki mekanizma da settings.json/hooks üzerinden repo'da paylaşılabilir.\nWhy B is wrong: Talimatı tekrarlamak ve kalın yazmak yine prompt tabanlı bir umut; ihlal kanıtlanmışken aynı mekanizmaya yüklenmek klasik tuzaktır. ~/.claude/CLAUDE.md ise sadece o mühendise uygulanır.\nWhy C is wrong: PostToolUse düzenlemeden sonra çalışır; dosya bir an için değişmiş olur, hook başarısız olabilir ve düzenlenmiş içerik Claude'un bağlamında \"yapıldı\" olarak kalır. Önleme, geri alma değil.\nWhy D is wrong: Daha büyük model uyumu artırabilir ama garanti vermez; finansal politika dosyası için garanti şart.",
+    "question_en": "The support agent's production refund policy lives in `policies/refund-policy.prod.yaml` and `policies/escalation-limits.prod.yaml`; these files may change only with compliance-team approval. The root CLAUDE.md says in capitals \"NEVER edit *.prod.yaml files\". Nevertheless, when an engineer asked Claude to restructure the process_refund flow, Claude edited refund-policy.prod.yaml, raising the $500 limit to $750; the change was caught in code review.\nWhich configuration prevents this violation deterministically?",
+    "options_en": {
+      "A": "Add `\"Edit(policies/**/*.prod.yaml)\"` and `\"Write(policies/**/*.prod.yaml)\"` under permissions.deny in .claude/settings.json (or, equivalently, a PreToolUse hook that matches the path and blocks with exit code 2); keep the CLAUDE.md line only as an explanation.",
+      "B": "Repeat the CLAUDE.md warning in three places in bold, and also add the same line to ~/.claude/CLAUDE.md.",
+      "C": "Write a PostToolUse hook: if an edit to a *.prod.yaml is detected, revert it with `git checkout -- policies/`.",
+      "D": "Use a stronger model for the refund flow; larger models follow CLAUDE.md instructions better."
+    },
+    "explanation_en": "Why A is correct: CLAUDE.md instructions are probabilistic; a rule with money and compliance risk must be enforced deterministically. permissions.deny rules reject Edit/Write tool calls by path pattern before the tool runs; a PreToolUse hook (exit code 2) gives the same guarantee. Both mechanisms are shareable through the repo via settings.json/hooks.\nWhy B is wrong: repeating and bolding the instruction is still prompt-based hope; leaning on the same mechanism after a proven violation is the classic trap. ~/.claude/CLAUDE.md applies only to that one engineer.\nWhy C is wrong: PostToolUse runs after the edit; the file is briefly changed, the hook can fail, and the edited content stays in Claude's context as \"done\". Prevention, not rollback.\nWhy D is wrong: a bigger model may improve compliance but gives no guarantee; a financial policy file needs a guarantee."
+  },
+  {
+    "index": 287,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.5",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Bir mühendis Claude Code ile escalate_to_human'ın handoff özetini üreten kodu yineliyor. Son çıktıda üç sorun buldu: (1) özette sipariş numarası ve iade tutarı eksik, (2) özet \"yukarıda konuşulduğu gibi\" şeklinde transcript'e atıf yapıyor, oysa insan temsilci transcript'i göremez, (3) bundan bağımsız olarak lookup_order aracının açıklaması hâlâ \"Sipariş bilgisi getirir\" gibi minimal ve yanlış yönlendirmeye yol açıyor. (1) ve (2) aynı özet şablonunu ilgilendiriyor; (3) farklı bir dosyada.\nGeri bildirimi Claude'a nasıl vermeli?",
+    "options_tr": {
+      "A": "Üç sorunu tek mesajda ver; Claude hepsini birlikte düzeltir ve tur sayısı azalır.",
+      "B": "Her sorunu ayrı ayrı, sırayla ver: önce (1), test et, sonra (2), test et, sonra (3).",
+      "C": "Önce (3)'ü düzelt çünkü araç açıklaması kök neden; (1) ve (2) muhtemelen kendiliğinden çözülür.",
+      "D": "(1) ve (2)'yi tek mesajda, self-contained özetin somut before/after örneğiyle birlikte ver ve test et; ardından (3)'ü ayrı bir mesajda ele al."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: Etkileşen sorunlar (aynı özet şablonunu değiştiren 1 ve 2) tek mesajda verilmeli; ayrı verilirse ilk düzeltme ikincisini bozabilir ya da iki kez yeniden yazılır. Bağımsız sorun (3) ayrı bir dosyada, ayrı bir turda ele alınır ki hangi değişikliğin neyi etkilediği net kalsın. Somut before/after örneği, \"self-contained\" gibi düzyazı ifadelerin tutarsız yorumlanmasını önler.\nWhy A is wrong: Bağımsız sorunu etkileşen sorunlarla karıştırmak, hata çıktığında hangi değişikliğin neden olduğunu izlemeyi zorlaştırır.\nWhy B is wrong: (1) ve (2) etkileşir; sırayla vermek gereksiz yeniden yazımlara ve birbirini geri alan düzenlemelere yol açar.\nWhy C is wrong: Araç açıklaması araç seçimini (misrouting) etkiler, handoff özetinin içeriğini değil; (1) ve (2) kendiliğinden çözülmez.",
+    "question_en": "An engineer is iterating with Claude Code on the code that produces escalate_to_human's handoff summary. In the latest output they found three issues: (1) the summary omits the order number and refund amount, (2) the summary refers to the transcript with \"as discussed above\", although the human agent cannot see the transcript, (3) independently, the lookup_order tool description is still minimal (\"Retrieves order info\") and causes misrouting. (1) and (2) concern the same summary template; (3) is in a different file.\nHow should the feedback be given to Claude?",
+    "options_en": {
+      "A": "Give all three issues in one message; Claude fixes them together and fewer turns are needed.",
+      "B": "Give each issue separately, in sequence: first (1), test, then (2), test, then (3).",
+      "C": "Fix (3) first because the tool description is the root cause; (1) and (2) will probably resolve on their own.",
+      "D": "Give (1) and (2) in one message together with a concrete before/after example of a self-contained summary, then test; handle (3) in a separate message afterwards."
+    },
+    "explanation_en": "Why D is correct: interacting issues (1 and 2 change the same summary template) should be given in one message; given separately, the first fix may break the second or the template is rewritten twice. The independent issue (3) is in another file and is handled in its own turn so it stays clear which change caused what. A concrete before/after example prevents prose like \"self-contained\" from being interpreted inconsistently.\nWhy A is wrong: mixing the independent issue with the interacting ones makes it harder to trace which change caused a regression.\nWhy B is wrong: (1) and (2) interact; giving them one at a time leads to unnecessary rewrites and edits that undo each other.\nWhy C is wrong: the tool description affects tool selection (misrouting), not the content of the handoff summary; (1) and (2) will not resolve on their own."
+  },
+  {
+    "index": 288,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.6",
+    "scenario": 1,
+    "scenario_title": "Customer Support Resolution Agent",
+    "question_tr": "Destek agent'ı repo'sunda iki CI işi var: (1) prompts/** dosyalarına dokunan her PR'da, `claude -p` ile eskalasyon tetikleyicilerinin ve 500$ kuralının bozulup bozulmadığını inceleyip merge'i engelleyen zorunlu bir kontrol; (2) her gece 400 kayıtlı destek transcript'ini geçirip ilk temasta çözüm oranını ve eskalasyon dağılımını raporlayan bir iş. Finans, Claude API maliyetini düşürmek için \"her iki işi Batch API'ye taşıyın, %50 tasarruf\" diyor.\nDoğru karar hangisidir?",
+    "options_tr": {
+      "A": "Her iki işi de Batch API'ye taşı; tasarruf %50 ve CI zaten asenkron çalışır.",
+      "B": "Hiçbirini taşıma; CI işleri her zaman senkron olmalıdır.",
+      "C": "Yalnızca gece raporunu Batch API'ye taşı (bloklamıyor, 24 saatlik pencere kabul edilebilir); PR kontrolü `claude -p --output-format json` ile senkron kalsın çünkü merge'i bloklayan bir adımın SLA'sız bir gecikmeyi beklemesi mümkün değil.",
+      "D": "PR kontrolünü Batch API'ye taşı ve merge'i sonuca kadar beklet; gece raporu zaten ucuz olduğu için senkron kalsın."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: Batch API ~%50 indirim sunar ama sonuçlar 24 saate kadar sürebilir ve gecikme SLA'sı yoktur. Bu, gece transcript analizi gibi bloklamayan, gecikmeye toleranslı işler için idealdir. PR'daki prompt incelemesi ise merge'i bloklar; geliştiriciler dakikalar içinde yanıt bekler, dolayısıyla senkron claude -p (yapılandırılmış çıktı için --output-format json) doğru araçtır.\nWhy A is wrong: Bloklayan akışı batch'e taşımak klasik tuzaktır: PR'lar bir güne kadar bekler, ekip kontrolü devre dışı bırakmaya yönelir.\nWhy B is wrong: CI'nin tamamı senkron olmak zorunda değil; gece raporu zamanlanmış, sonuç bekleyen kimse yok — batch için mükemmel aday. Tasarruf fırsatını kaçırmak gereksiz.\nWhy D is wrong: Tam tersi eşleştirme: bloklayan işi yavaş kanala, toleranslı işi pahalı kanala koyar.",
+    "question_en": "The support-agent repo has two CI jobs: (1) on every PR touching prompts/**, a required check that uses `claude -p` to review whether the escalation triggers or the $500 rule were broken, and blocks the merge; (2) a nightly job that runs 400 recorded support transcripts and reports the first-contact resolution rate and escalation distribution. To cut Claude API cost, Finance says \"move both jobs to the Batch API, 50% saving\".\nWhat is the correct decision?",
+    "options_en": {
+      "A": "Move both jobs to the Batch API; the saving is 50% and CI is asynchronous anyway.",
+      "B": "Move neither; CI jobs must always be synchronous.",
+      "C": "Move only the nightly report to the Batch API (non-blocking, a 24-hour window is acceptable); keep the PR check synchronous with `claude -p --output-format json`, because a merge-blocking step cannot wait on a delay with no SLA.",
+      "D": "Move the PR check to the Batch API and hold the merge until the result arrives; keep the nightly report synchronous since it is already cheap."
+    },
+    "explanation_en": "Why C is correct: the Batch API offers about a 50% discount, but results can take up to 24 hours and there is no latency SLA. That is ideal for non-blocking, latency-tolerant work such as the nightly transcript analysis. The prompt review on the PR blocks the merge; developers expect an answer within minutes, so synchronous claude -p (with --output-format json for structured output) is the right tool.\nWhy A is wrong: moving a blocking workflow to batch is the classic trap: PRs wait up to a day and the team ends up disabling the check.\nWhy B is wrong: not all of CI has to be synchronous; the nightly report is scheduled and nobody is waiting on it — a perfect batch candidate. Missing the saving is unnecessary.\nWhy D is wrong: the exact inverse pairing: it puts the blocking job on the slow channel and the tolerant job on the expensive one."
+  },
+  {
+    "index": 289,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.1",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Agent SDK ile kurulan çok agent'lı araştırma sisteminin repo'sunda, coordinator'ın delege ettiği subagent'lar (web-search, doc-analysis, synthesis, report) AgentDefinition nesneleri olarak tanımlanıyor. Tech lead, \"her AgentDefinition en fazla 5 araç alır, description alanı 'ne zaman kullanılır' cümlesiyle başlar, prompt dosyası agents/<isim>/prompt.md yoluna konur\" kurallarını yazdı ve Claude Code kendi makinesinde bunlara kusursuz uyuyor. İki yeni takım üyesi repo'yu klonladıktan sonra Claude Code'a yeni bir verify_fact subagent'ı yazdırdı; sonuç 12 araçlı, prompt'u inline string olarak gömülü bir tanım. Tech lead kuralların proje kökündeki CLAUDE.local.md dosyasında olduğunu fark ediyor.\nKök neden ve en doğru düzeltme nedir?",
+    "options_tr": {
+      "A": "Yeni üyelerin Claude Code oturumları kuralları önbelleğe almamış — `/memory` komutuyla belleği yeniden yükletmeleri yeterli.",
+      "B": "Kurallar Git'te ama Claude Code yalnızca `.claude/CLAUDE.md`'yi okur, kök dizindeki dosyaları okumaz — dosyayı `.claude/` altına taşı.",
+      "C": "`CLAUDE.local.md` kişisel bir dosyadır ve otomatik olarak `.gitignore`'a eklenir; klonlayanlara ulaşmaz. AgentDefinition kuralları paylaşılan `./CLAUDE.md`'ye (gerekirse `@docs/agent-conventions.md` importuyla) taşınmalı, `CLAUDE.local.md` yalnızca kişisel notlar için kalmalı.",
+      "D": "Kurallar doğru yerde; yeni üyelerin `~/.claude/CLAUDE.md` dosyasındaki kişisel tercihleri projeyi eziyor — kişisel dosyalarını silmeliler."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: CLAUDE.local.md proje dizininde durur ama kişisel, paylaşılmayan bir katmandır — Claude Code onu otomatik olarak .gitignore'a ekler. Bu yüzden tech lead'in makinesinde çalışan kurallar klonlayan üyelere hiç ulaşmaz. Takım standardı olan AgentDefinition kuralları ./CLAUDE.md (veya .claude/CLAUDE.md) gibi versiyon kontrolündeki paylaşılan dosyaya taşınmalı; uzunsa @path importuyla modüler tutulabilir. CLAUDE.local.md, kişisel sandbox URL'si veya yerel test topic'i gibi bireysel notlar için kalır.\nWhy A is wrong: /memory hangi bellek dosyalarının yüklendiğini gösteren bir teşhis aracıdır; var olmayan bir dosyayı yükleyemez. Yeni üyelerin makinesinde dosya yoktur.\nWhy B is wrong: Claude Code hem ./CLAUDE.md hem .claude/CLAUDE.md'yi okur; sorun konum değil, dosyanın Git'e girmemesidir.\nWhy D is wrong: Kullanıcı seviyesi dosya proje kurallarını 'ezmez'; asıl sorun proje kurallarının yeni üyelerde hiç yüklenmemesidir. Kişisel dosyaları silmek sorunu çözmez.",
+    "question_en": "In the repo of a multi-agent research system built with the Agent SDK, the subagents the coordinator delegates to (web-search, doc-analysis, synthesis, report) are defined as AgentDefinition objects. The tech lead wrote the rules \"every AgentDefinition gets at most 5 tools, the description starts with a 'use when' sentence, the prompt file lives at agents/<name>/prompt.md\", and Claude Code follows them perfectly on her machine. Two new teammates cloned the repo and had Claude Code write a new verify_fact subagent; the result has 12 tools and an inline prompt string. The tech lead notices the rules live in CLAUDE.local.md at the project root.\nWhat are the root cause and the correct fix?",
+    "options_en": {
+      "A": "The new members' Claude Code sessions haven't cached the rules — running /memory to reload memory is enough.",
+      "B": "The rules are in Git but Claude Code only reads .claude/CLAUDE.md, not files at the project root — move the file under .claude/.",
+      "C": "CLAUDE.local.md is a personal file that is automatically added to .gitignore; it never reaches people who clone. Move the AgentDefinition rules to the shared ./CLAUDE.md (via an @docs/agent-conventions.md import if needed) and keep CLAUDE.local.md for personal notes only.",
+      "D": "The rules are in the right place; the new members' personal preferences in ~/.claude/CLAUDE.md are overriding the project — they should delete their personal files."
+    },
+    "explanation_en": "Why C is correct: CLAUDE.local.md sits in the project directory but is a personal, unshared layer — Claude Code adds it to .gitignore automatically. So the rules that work on the tech lead's machine never reach teammates who clone. Team standards such as the AgentDefinition conventions belong in a version-controlled shared file like ./CLAUDE.md (or .claude/CLAUDE.md); if long, keep it modular with an @path import. CLAUDE.local.md stays for individual notes such as a personal sandbox URL or a local test topic.\nWhy A is wrong: /memory is a diagnostic that shows which memory files are loaded; it cannot load a file that does not exist on the new members' machines.\nWhy B is wrong: Claude Code reads both ./CLAUDE.md and .claude/CLAUDE.md; the problem is not the location but that the file is not in Git.\nWhy D is wrong: a user-level file does not 'override' project rules; the real issue is that the project rules are never loaded for the new members. Deleting personal files fixes nothing."
+  },
+  {
+    "index": 290,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.2",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Araştırma sistemi takımı, bir subagent prompt'u değiştirildikten sonra uçtan uca bir 'smoke test' çalıştırmak istiyor: `npm run research:smoke -- --topic \"<konu>\"` komutu coordinator'ı başlatır, dört subagent'ı çalıştırır ve atıf kapsamı raporu üretir. Verbose modda çıktı 3.000+ satır subagent trace içeriyor ve ana konuşmanın bağlamını dolduruyor. Takım şunları istiyor: herkes repo'yu klonladığında `/smoke-test` komutunu bulsun, komut konu parametresi istesin, yalnızca bu npm script'ini ve dosya okumayı çalıştırabilsin, başka bash komutu çalıştıramasın.\nDoğru konfigürasyon hangisidir?",
+    "options_tr": {
+      "A": "Repo'da `.claude/skills/smoke-test/SKILL.md` oluştur; frontmatter'da `context: fork`, `allowed-tools: Bash(npm run research:smoke:*), Read`, `argument-hint: [topic]` ve `description` alanlarını tanımla.",
+      "B": "Her geliştirici `~/.claude/skills/smoke-test/SKILL.md` dosyasını oluştursun; `allowed-tools: Bash` ile bash erişimi ver, verbose çıktı için `/compact` çalıştırsınlar.",
+      "C": "Smoke test adımlarını kök `CLAUDE.md`'ye yaz ki her oturumda hazır olsun; trace gürültüsünü azaltmak için `--max-turns 5` kullan.",
+      "D": "`.claude/commands/smoke-test.md` oluştur ve içine 'yalnızca npm run research:smoke çalıştır, başka komut çalıştırma' talimatını yaz; parametre için kullanıcıya konuyu sormasını iste."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: .claude/skills/ altındaki SKILL.md repo ile paylaşılır — klonlayan herkes /smoke-test'i görür. context: fork skill'i ayrı bir alt-agent bağlamında çalıştırır; 3.000 satırlık trace ana konuşmayı kirletmez, yalnızca özet döner. allowed-tools ile Bash, npm run research:smoke deseniyle sınırlanır ve Read eklenir — başka bash komutları izin dışı kalır (deterministik kısıt, talimat değil). argument-hint: [topic] ise kullanıcıya konu parametresini gösterir.\nWhy B is wrong: ~/.claude/skills kişiseldir, paylaşılmaz; allowed-tools: Bash tüm bash komutlarına izin verir; /compact verbose çıktıyı önlemez, sonradan sıkıştırır.\nWhy C is wrong: CLAUDE.md her oturumda yüklenir — nadiren çalıştırılan bir prosedür için token israfıdır. Skill isteğe bağlı iş akışı, CLAUDE.md her zaman geçerli standart içindir. --max-turns çıktı gürültüsünü değil tur sayısını sınırlar.\nWhy D is wrong: Komut dosyası paylaşılır ama 'başka komut çalıştırma' bir prompt talimatıdır, deterministik kısıt değildir; allowed-tools frontmatter'ı ve context: fork olmadan hem güvenlik hem bağlam sorunu sürer.",
+    "question_en": "The research-system team wants an end-to-end smoke test after any subagent prompt change: `npm run research:smoke -- --topic \"<topic>\"` starts the coordinator, runs the four subagents and prints a citation-coverage report. In verbose mode the output contains 3,000+ lines of subagent traces and floods the main conversation's context. The team wants: everyone who clones the repo sees a /smoke-test command, the command asks for a topic parameter, and it may only run this npm script and read files — no other bash commands.\nWhich configuration is correct?",
+    "options_en": {
+      "A": "Create .claude/skills/smoke-test/SKILL.md in the repo; in the frontmatter set context: fork, allowed-tools: Bash(npm run research:smoke:*), Read, argument-hint: [topic] and a description.",
+      "B": "Each developer creates ~/.claude/skills/smoke-test/SKILL.md; grant bash with allowed-tools: Bash and run /compact to handle the verbose output.",
+      "C": "Write the smoke-test steps into the root CLAUDE.md so they are ready in every session; use --max-turns 5 to reduce trace noise.",
+      "D": "Create .claude/commands/smoke-test.md containing the instruction 'only run npm run research:smoke, never run other commands'; tell it to ask the user for the topic."
+    },
+    "explanation_en": "Why A is correct: a SKILL.md under .claude/skills/ is shared through the repo — everyone who clones sees /smoke-test. context: fork runs the skill in a separate subagent context, so the 3,000-line trace never pollutes the main conversation; only a summary comes back. allowed-tools restricts Bash to the npm run research:smoke pattern and adds Read — other bash commands stay out (a deterministic restriction, not an instruction). argument-hint: [topic] shows the user the expected parameter.\nWhy B is wrong: ~/.claude/skills is personal and not shared; allowed-tools: Bash permits every bash command; /compact compresses afterwards, it does not prevent the verbose output.\nWhy C is wrong: CLAUDE.md is loaded in every session — a token waste for a rarely-run procedure. A skill is an on-demand workflow, CLAUDE.md is for always-applicable standards. --max-turns limits turns, not output noise.\nWhy D is wrong: the command file is shared, but 'never run other commands' is a prompt instruction, not a deterministic restriction; without the allowed-tools frontmatter and context: fork both the safety and the context problem remain."
+  },
+  {
+    "index": 291,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.3",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Araştırma sisteminin repo'sunda subagent prompt dosyaları `agents/*/prompt.md` ve `prompts/shared/**/*.md` altında, orkestrasyon kodu ise `src/coordinator/**/*.ts` altında. Prompt dosyaları için kurallar (atıf formatı `[n](url)`, çıktı şeması tanımı zorunlu, prompt içinde araç listesi yazılmaz) ve orkestrasyon kodu için kurallar (Task çağrıları tek yanıtta paralel gönderilir, subagent'a coordinator geçmişi verilmez, hata nesneleri type/partial/alternatives alanlarıyla döner) kök CLAUDE.md'de 600 satıra ulaştı. Geliştiriciler Claude Code'un TypeScript dosyalarını düzenlerken atıf formatı kurallarını yorum satırı olarak eklediğini ve prompt dosyalarına Task-paralellik notları yazdığını görüyor.\nEn doğru yeniden yapılandırma hangisidir?",
+    "options_tr": {
+      "A": "Kök CLAUDE.md'yi bölmeden başına 'Bu kurallar yalnızca ilgili dosya türüne uygulanır' başlığı ekle ve her kuralı hangi dosyaya ait olduğunu belirten bir etiketle işaretle.",
+      "B": "`agents/CLAUDE.md` dosyası oluştur ve tüm prompt kurallarını oraya taşı; orkestrasyon kuralları kök CLAUDE.md'de kalsın.",
+      "C": "`.claude/rules/prompts.md` ve `.claude/rules/orchestration.md` oluştur ama frontmatter ekleme — Claude Code dosya adından hangi kuralın nereye ait olduğunu çıkarır.",
+      "D": "`.claude/rules/prompts.md` dosyasına `paths: [\"agents/**/prompt.md\", \"prompts/shared/**/*.md\"]`, `.claude/rules/orchestration.md` dosyasına `paths: [\"src/coordinator/**/*.ts\"]` frontmatter'ı ekle; kök CLAUDE.md'de yalnızca evrensel standartlar kalsın."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: .claude/rules/ altındaki dosyalar YAML frontmatter'daki paths glob'larıyla yalnızca eşleşen dosyalar üzerinde çalışılırken yüklenir. Prompt kuralları iki farklı ağaca (agents/ ve prompts/shared/) yayıldığı için glob listesi bunu tek kural dosyasıyla kapsar; orkestrasyon kuralları yalnızca src/coordinator/ altındaki .ts dosyalarında devreye girer. Böylece hem çapraz sızıntı biter hem her oturumda 600 satır yüklenmez.\nWhy A is wrong: Etiketler ve başlıklar yine her oturumda tamamen yüklenir; token maliyeti düşmez ve modelin 'hangi kural nereye' ayrımı prompt yorumuna kalır — tam da yaşanan sorun.\nWhy B is wrong: Dizin CLAUDE.md tek bir dizine bağlıdır; prompts/shared/ altındaki dosyalar agents/CLAUDE.md'den etkilenmez. Orkestrasyon kurallarının kökte kalması da .ts dışı dosyalarda sızıntıyı sürdürür.\nWhy C is wrong: Frontmatter'sız kural dosyaları her zaman yüklenir; dosya adı kapsam belirlemez. Kök dosyayı bölmek görünüşte düzen sağlar ama davranış olarak kök CLAUDE.md ile aynıdır.",
+    "question_en": "In the research system's repo, subagent prompt files live under agents/*/prompt.md and prompts/shared/**/*.md, while orchestration code lives under src/coordinator/**/*.ts. Rules for prompt files (citation format [n](url), output-schema definition required, no tool lists inside prompts) and rules for orchestration code (Task calls dispatched in parallel in one response, never pass coordinator history to a subagent, error objects carry type/partial/alternatives) have grown the root CLAUDE.md to 600 lines. Developers see Claude Code adding citation-format rules as comments while editing TypeScript files, and writing Task-parallelism notes into prompt files.\nWhat is the best restructuring?",
+    "options_en": {
+      "A": "Keep the root CLAUDE.md in one piece, add a heading 'these rules apply only to the matching file type' and tag every rule with the file type it belongs to.",
+      "B": "Create agents/CLAUDE.md and move all prompt rules there; leave the orchestration rules in the root CLAUDE.md.",
+      "C": "Create .claude/rules/prompts.md and .claude/rules/orchestration.md without frontmatter — Claude Code infers from the file name which rules apply where.",
+      "D": "Give .claude/rules/prompts.md the frontmatter paths: [\"agents/**/prompt.md\", \"prompts/shared/**/*.md\"] and .claude/rules/orchestration.md the frontmatter paths: [\"src/coordinator/**/*.ts\"]; keep only universal standards in the root CLAUDE.md."
+    },
+    "explanation_en": "Why D is correct: files under .claude/rules/ with paths globs in their YAML frontmatter are loaded only while files matching those globs are being worked on. The prompt rules span two separate trees (agents/ and prompts/shared/), which one glob list in a single rule file covers; the orchestration rules kick in only for .ts files under src/coordinator/. Cross-contamination stops and 600 lines are no longer loaded in every session.\nWhy A is wrong: tags and headings are still fully loaded in every session; the token cost does not drop and 'which rule applies where' is left to the model's interpretation — exactly the problem observed.\nWhy B is wrong: a directory CLAUDE.md is bound to one directory; files under prompts/shared/ are not affected by agents/CLAUDE.md. Leaving orchestration rules at the root also keeps them leaking into non-.ts files.\nWhy C is wrong: rule files without frontmatter always load; the file name does not scope anything. Splitting looks tidier but behaves exactly like the root CLAUDE.md."
+  },
+  {
+    "index": 292,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.4",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Araştırma raporları bazı alt konuları hiç kapsamıyor; kök neden coordinator'ın dar decomposition stratejisi olarak tespit edildi. Yeniden tasarım coordinator prompt'unu, web-search AgentDefinition'ını, `src/coordinator/dispatch.ts` içindeki paralel Task gönderim mantığını ve synthesis subagent'ının girdi şemasını etkiliyor; ekipte üç geçerli strateji tartışılıyor (önce alt konu ağacı çıkarma, yinelemeli boşluk doldurma, soru-ağacı). Geliştirici işe başlamadan önce alt konu listesinin kodda nerede üretildiğini, nerede tüketildiğini ve nerede kırpıldığını bulmalı; 300+ dosyalık repoda bu keşif düzinelerce Grep ve Read çağrısı gerektiriyor.\nEn etkili yaklaşım hangisidir?",
+    "options_tr": {
+      "A": "Doğrudan yürütme ile coordinator prompt'unu düzenleyerek başla, smoke test sonucuna göre diğer dosyalara geç; karmaşıklaşırsa plan moduna geç.",
+      "B": "Keşfi Explore subagent'ına delege et (ana bağlam temiz kalır, özet döner), ardından çok dosyalı ve birden fazla geçerli stratejisi olan yeniden tasarım için plan moduna gir ve onaylı planla uygula.",
+      "C": "Tüm keşif Grep/Read çağrılarını ana oturumda yap ve bağlam dolmasın diye daha büyük context window'lu bir modele geç; sonra doğrudan uygula.",
+      "D": "Tüm işi plan modunda yap: keşif okumaları dahil her adımı plan içinde belgele, ardından planı üç strateji için üç kez ayrı ayrı yeniden yaz."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: İki farklı ihtiyaç var. Gürültülü keşif (düzinelerce Grep/Read) ana bağlamı tüketir; Explore subagent'ı bunu kendi bağlamında yapıp yalnızca bulguları (üretim/tüketim/kırpma noktaları) döndürür. Yeniden tasarım ise mimari bir karar, çok dosyalı ve birden fazla geçerli stratejisi olan bir iş — plan modunun tam ölçütleri. Plan onaylandıktan sonra uygulama başlar.\nWhy A is wrong: Karmaşıklık baştan bellidir (4 bileşen, 3 strateji). 'Önce doğrudan başla, gerekirse plana geç' klasik tuzaktır; yarım kalmış değişiklikler ve strateji geçişi maliyeti üretir.\nWhy C is wrong: Daha büyük context window keşif gürültüsünü ortadan kaldırmaz, sadece erteler ve maliyeti artırır; asıl çözüm delegasyondur. Ayrıca çok stratejili yeniden tasarımın doğrudan uygulanması planlama adımını atlar.\nWhy D is wrong: Plan modu keşif için değil karar için; keşif okumalarını plan içine yığmak bağlamı yine doldurur. Üç planı ayrı ayrı yazmak yerine plan aşamasında strateji karşılaştırılıp biri seçilir.",
+    "question_en": "Research reports miss whole subtopics; the root cause was traced to the coordinator's narrow decomposition strategy. The redesign touches the coordinator prompt, the web-search AgentDefinition, the parallel Task dispatch logic in src/coordinator/dispatch.ts and the synthesis subagent's input schema; the team is debating three valid strategies (subtopic tree first, iterative gap-filling, question tree). Before starting, the developer must find where the subtopic list is produced, consumed and truncated in the code; in a 300+ file repo that discovery needs dozens of Grep and Read calls.\nWhat is the most effective approach?",
+    "options_en": {
+      "A": "Start in direct execution by editing the coordinator prompt, move to the other files based on smoke-test results, and switch to plan mode if it gets complicated.",
+      "B": "Delegate the discovery to the Explore subagent (main context stays clean, a summary comes back), then enter plan mode for the multi-file redesign with several valid strategies and implement from the approved plan.",
+      "C": "Do all discovery Grep/Read calls in the main session and switch to a model with a bigger context window so context doesn't fill up; then implement directly.",
+      "D": "Do everything in plan mode: document every step including discovery reads inside the plan, then rewrite the plan three separate times, once per strategy."
+    },
+    "explanation_en": "Why B is correct: there are two different needs. Noisy discovery (dozens of Grep/Read calls) eats the main context; the Explore subagent does it in its own context and returns only the findings (production/consumption/truncation points). The redesign is an architectural decision, multi-file, with several valid strategies — exactly the criteria for plan mode. Implementation starts once the plan is approved.\nWhy A is wrong: the complexity is known up front (4 components, 3 strategies). 'Start direct, switch to plan mode if needed' is the classic trap; it produces half-done changes and strategy-switch cost.\nWhy C is wrong: a bigger context window does not remove discovery noise, it only postpones it and raises cost; delegation is the fix. Implementing a multi-strategy redesign directly also skips the planning step.\nWhy D is wrong: plan mode is for decisions, not discovery; piling discovery reads into the plan still fills context. Rather than three separate plans, the strategies are compared and one is chosen within the planning phase."
+  },
+  {
+    "index": 293,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.5",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Araştırma sisteminde atıf şeması `schemas/citation.schema.json` dosyasında, örnek atıflar ise `tests/fixtures/citations/*.json` altında tutuluyor; report subagent'ı bu şemaya göre doğrulanıyor. Kök CLAUDE.md'de 'atıf dosyalarını yazdıktan sonra `npm run validate:citations` çalıştır' kuralı var. Buna rağmen ayda birkaç kez `source_url` alanı eksik ya da `accessed_at` formatı bozuk fixture'lar commit'leniyor ve smoke test CI'da patlıyor. Takım bu hatanın Claude Code oturumu içinde, dosya yazıldığı anda ve istisnasız yakalanmasını istiyor.\nEn doğru çözüm hangisidir?",
+    "options_tr": {
+      "A": "CLAUDE.md'deki kuralı büyük harflerle ve 'ÇOK ÖNEMLİ' etiketiyle en üste taşı; ayrıca kuralı `.claude/rules/citations.md` içinde tekrar et.",
+      "B": "`.claude/settings.json`'a `matcher: \"Write|Edit\"` ile bir PostToolUse hook'u ekle; hook script'i dosya yolu `schemas/citation*.json` veya `tests/fixtures/citations/` ile eşleşiyorsa şema doğrulamasını çalıştırsın ve hata durumunda exit code 2 ile stderr'e hatayı yazsın ki Claude anında düzeltsin.",
+      "C": "Report subagent'ının prompt'una 'her zaman geçerli atıf üret' talimatını ekle ve subagent'a daha güçlü bir model ata.",
+      "D": "Doğrulamayı PreCompact hook'una bağla; böylece bağlam sıkıştırılmadan önce tüm atıf dosyaları kontrol edilir."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: CLAUDE.md talimatı olasılıksaldır — model bazen unutur. Hook ise deterministik çalışır: Write|Edit matcher'lı PostToolUse hook her dosya yazımında tetiklenir, script yolu filtreleyip yalnızca atıf dosyalarında validator'ı çalıştırır. Exit code 2 ile stderr'e yazılan mesaj Claude'a geri beslenir; Claude hatayı aynı oturumda düzeltir. Hook .claude/settings.json'da olduğu için takımla paylaşılır ve CI'a ulaşmadan yakalanır.\nWhy A is wrong: Talimatı vurgulamak veya tekrarlamak yine prompt tabanlı, olasılıksal zorlamadır; 'istisnasız' garantisi vermez ve token maliyetini artırır.\nWhy C is wrong: Sorun geliştirme sırasında Claude Code'un yazdığı fixture ve şema dosyalarıdır, çalışma zamanındaki subagent değil; daha güçlü model deterministik doğrulama sağlamaz.\nWhy D is wrong: PreCompact yalnızca sıkıştırma öncesinde çalışır — dosya yazımı anında değil; sıkıştırma hiç olmazsa doğrulama hiç çalışmaz.",
+    "question_en": "In the research system the citation schema lives in schemas/citation.schema.json and sample citations under tests/fixtures/citations/*.json; the report subagent is validated against this schema. The root CLAUDE.md contains the rule 'after writing citation files run npm run validate:citations'. Despite this, a few times a month fixtures with a missing source_url field or a malformed accessed_at get committed and the smoke test fails in CI. The team wants this caught inside the Claude Code session, at the moment the file is written, without exception.\nWhat is the correct solution?",
+    "options_en": {
+      "A": "Move the CLAUDE.md rule to the top in capital letters with a 'VERY IMPORTANT' tag, and repeat the rule in .claude/rules/citations.md.",
+      "B": "Add a PostToolUse hook with matcher \"Write|Edit\" to .claude/settings.json; the hook script runs schema validation when the file path matches schemas/citation*.json or tests/fixtures/citations/, and on failure exits with code 2 writing the error to stderr so Claude fixes it immediately.",
+      "C": "Add 'always produce valid citations' to the report subagent's prompt and assign the subagent a stronger model.",
+      "D": "Attach the validation to a PreCompact hook so all citation files are checked before context is compacted."
+    },
+    "explanation_en": "Why B is correct: a CLAUDE.md instruction is probabilistic — the model sometimes forgets. A hook is deterministic: a PostToolUse hook with the Write|Edit matcher fires on every file write, the script filters by path and runs the validator only for citation files. Exit code 2 with a message on stderr is fed back to Claude, which fixes the error in the same session. Because the hook lives in .claude/settings.json it is shared with the team and the error is caught before CI.\nWhy A is wrong: emphasising or repeating the instruction is still prompt-based, probabilistic enforcement; it gives no 'without exception' guarantee and adds token cost.\nWhy C is wrong: the problem is the fixture and schema files Claude Code writes during development, not the runtime subagent; a stronger model does not provide deterministic validation.\nWhy D is wrong: PreCompact runs only before compaction — not when a file is written; if compaction never happens the validation never runs."
+  },
+  {
+    "index": 294,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.5",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Araştırma sistemi takımında her Claude Code oturumu `npm run research:smoke` ve `npm test` komutları için tek tek izin istiyor; geliştiriciler hızlanmak için oturumu 'tüm bash komutlarına izin ver' ile açmaya başladı. Geçen hafta bir oturum, düzeltme denerken `rm -rf reports/` ile 40 üretilmiş referans raporu sildi ve `agents/synthesis/prompt.md` dosyasını 'temizlik' amacıyla yeniden yazdı. Takım şunu istiyor: bu iki test komutu onaysız çalışsın, reports/ altında silme ve `agents/*/prompt.md` düzenlemesi her oturumda deterministik olarak engellensin, ayar tüm takımda aynı olsun.\nDoğru konfigürasyon hangisidir?",
+    "options_tr": {
+      "A": "Repo'daki `.claude/settings.json` içinde `permissions.allow`'a `Bash(npm run research:smoke:*)` ve `Bash(npm test:*)`, `permissions.deny`'a `Bash(rm -rf reports/*)` ve `Edit(agents/*/prompt.md)` kurallarını ekle.",
+      "B": "Her geliştirici `.claude/settings.local.json` dosyasına aynı allow/deny kurallarını kopyalasın; bu dosya kişisel olduğu için daha güvenlidir.",
+      "C": "CLAUDE.md'ye 'reports/ altında asla rm çalıştırma ve prompt dosyalarını izinsiz düzenleme' kuralı ekle; test komutları için oturum başında 'always allow' seç.",
+      "D": "Prompt dosyalarını git'te salt-okunur işaretle ve Claude Code'u her zaman `--allowedTools Read` ile başlat; test komutlarını geliştiriciler elle çalıştırsın."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: settings.json'daki permissions.allow/deny kuralları Claude Code'un araç kullanımını deterministik olarak yönetir — model 'unutamaz'. Belirli bash desenlerine izin verilirken (npm run research:smoke:*, npm test:*) tehlikeli silme ve prompt düzenleme deny ile engellenir; deny kuralları allow'a göre önceliklidir. Dosya repo'da .claude/settings.json olduğu için versiyon kontrolündedir ve takımın tamamına aynı şekilde uygulanır.\nWhy B is wrong: .claude/settings.local.json kişiseldir ve Git'e girmez; her geliştiricinin manuel kopyalaması tutarsızlık yaratır ve yeni üyeler korumasız kalır.\nWhy C is wrong: CLAUDE.md kuralı olasılıksal bir talimattır — tam da geçen hafta yaşanan olay bunun yeterli olmadığını gösterir. Oturum başı 'always allow' seçimi de paylaşılmaz ve kişiseldir.\nWhy D is wrong: Yalnızca Read izni geliştirmeyi imkânsız kılar; git salt-okunur işareti Claude Code izin sistemine bağlı değildir ve test komutlarını elle çalıştırmak otomasyon ihtiyacını çözmez.",
+    "question_en": "In the research-system team every Claude Code session asks for permission separately for npm run research:smoke and npm test; to speed up, developers started opening sessions with 'allow all bash commands'. Last week a session, while attempting a fix, deleted 40 generated reference reports with rm -rf reports/ and rewrote agents/synthesis/prompt.md as 'cleanup'. The team wants: these two test commands run without approval, deletion under reports/ and edits to agents/*/prompt.md are deterministically blocked in every session, and the setting is identical across the team.\nWhich configuration is correct?",
+    "options_en": {
+      "A": "In the repo's .claude/settings.json add Bash(npm run research:smoke:*) and Bash(npm test:*) to permissions.allow, and Bash(rm -rf reports/*) and Edit(agents/*/prompt.md) to permissions.deny.",
+      "B": "Each developer copies the same allow/deny rules into .claude/settings.local.json; since that file is personal it is safer.",
+      "C": "Add the rule 'never run rm under reports/ and never edit prompt files without permission' to CLAUDE.md; choose 'always allow' for the test commands at session start.",
+      "D": "Mark the prompt files read-only in git and always start Claude Code with --allowedTools Read; developers run the test commands by hand."
+    },
+    "explanation_en": "Why A is correct: permissions.allow/deny rules in settings.json govern Claude Code's tool use deterministically — the model cannot 'forget'. Specific bash patterns are allowed (npm run research:smoke:*, npm test:*) while the dangerous deletion and prompt edits are blocked with deny; deny rules take precedence over allow. Because the file is .claude/settings.json in the repo, it is version-controlled and applies identically to the whole team.\nWhy B is wrong: .claude/settings.local.json is personal and not committed; manual copying by each developer creates inconsistency and new members are unprotected.\nWhy C is wrong: a CLAUDE.md rule is a probabilistic instruction — last week's incident shows exactly that it is not enough. Per-session 'always allow' choices are also personal and unshared.\nWhy D is wrong: Read-only permission makes development impossible; a git read-only flag is unrelated to Claude Code's permission system, and running test commands by hand defeats the automation need."
+  },
+  {
+    "index": 295,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.6",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Araştırma sistemi için iki CI ihtiyacı var: (1) `agents/**/prompt.md` veya `src/coordinator/**` değişen her PR'da smoke test çalışıp atıf kapsamı %90'ın altındaysa merge'i engelleyen bir kapı; (2) her gece 400 sabit konu üzerinde çalışıp atıf kalitesini puanlayan, sonucu ertesi sabah dashboard'a yazan bir denetim. Şu an ikisi de PR akışında `claude` ile senkron çalışıyor; PR'lar 35 dakika bekliyor ve API maliyeti hedefin 3 katı.\nEn doğru yeniden düzenleme hangisidir?",
+    "options_tr": {
+      "A": "Her iki işi de Batch API'ye taşı — %50 tasarruf sağlar; PR merge kapısı batch sonucu geldiğinde otomatik açılır.",
+      "B": "Her iki işi de senkron tut ama daha küçük bir model ve `--max-turns 3` kullanarak süreyi kısalt.",
+      "C": "PR kapısını `claude -p` ile senkron, `--output-format json` çıktı ve `--allowedTools` ile sınırlı tut; 400 konulu gece denetimini bloklayıcı olmadığı için Batch API'ye taşı ve dashboard'u batch sonuçlarından besle.",
+      "D": "PR kapısını kaldır, yalnızca gece denetimini bırak; PR'lardaki prompt değişiklikleri ertesi sabahki dashboard'da görülür."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: Batch API yalnızca bloklayıcı olmayan işler içindir — 24 saate kadar süre, SLA yok, %50 indirim. Gece 400 konuluk denetim tam bu profildedir: gecikmeye toleranslı, yüksek hacimli, sabaha hazır olması yeterli. PR merge kapısı ise dakikalar içinde cevap istemelidir; claude -p headless çalışır, --output-format json ile kapsam yüzdesi CI'da makine-okunur şekilde ayrıştırılıp eşik kontrolü yapılır, --allowedTools ise pipeline'ın yalnızca smoke script'ini çalıştırmasını garanti eder. Pahalı yükün batch'e taşınması maliyeti ve PR süresini birlikte düşürür.\nWhy A is wrong: Bloklayıcı bir kapıyı batch'e taşımak klasik tuzaktır — merge kararı 24 saate kadar bekleyebilir, PR akışı fiilen durur.\nWhy B is wrong: 400 konuluk denetimi her PR'da senkron çalıştırmak yapısal hatadır; küçük model ve tur sınırı sadece kaliteyi düşürür, asıl maliyet kaynağını ortadan kaldırmaz.\nWhy D is wrong: PR kapısını kaldırmak, hatalı prompt değişikliklerinin main'e girmesine izin verir; denetim ertesi sabah sorunu yalnızca raporlar, engellemez.",
+    "question_en": "The research system has two CI needs: (1) on every PR touching agents/**/prompt.md or src/coordinator/**, a gate that runs the smoke test and blocks the merge if citation coverage is below 90%; (2) a nightly audit that runs 400 fixed topics, scores citation quality and writes the result to a dashboard the next morning. Both currently run synchronously with claude in the PR workflow; PRs wait 35 minutes and API cost is 3x the target.\nWhat is the correct restructuring?",
+    "options_en": {
+      "A": "Move both jobs to the Batch API — 50% saving; the PR merge gate opens automatically when the batch result arrives.",
+      "B": "Keep both synchronous but shorten the time with a smaller model and --max-turns 3.",
+      "C": "Keep the PR gate synchronous with claude -p, --output-format json output and --allowedTools restrictions; move the 400-topic nightly audit to the Batch API because it is non-blocking, and feed the dashboard from the batch results.",
+      "D": "Remove the PR gate and keep only the nightly audit; prompt changes in PRs show up on the next morning's dashboard."
+    },
+    "explanation_en": "Why C is correct: the Batch API is only for non-blocking jobs — up to 24 hours, no SLA, 50% discount. The 400-topic nightly audit fits that profile exactly: latency-tolerant, high-volume, ready-by-morning is enough. The PR merge gate must answer within minutes; claude -p runs headless, --output-format json lets CI parse the coverage percentage and apply the threshold, and --allowedTools guarantees the pipeline only runs the smoke script. Moving the expensive load to batch cuts both cost and PR time.\nWhy A is wrong: moving a blocking gate to batch is the classic trap — the merge decision can wait up to 24 hours and the PR flow effectively stops.\nWhy B is wrong: running a 400-topic audit synchronously on every PR is a structural error; a smaller model and a turn limit only reduce quality without removing the actual cost driver.\nWhy D is wrong: removing the PR gate lets broken prompt changes reach main; the audit only reports the problem the next morning, it does not prevent it."
+  },
+  {
+    "index": 296,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.6",
+    "scenario": 3,
+    "scenario_title": "Multi-Agent Research System",
+    "question_tr": "Takım, `agents/**/prompt.md` dosyalarını değiştiren PR'larda `anthropics/claude-code-action@v1` ile smoke testi çalıştırıp sonucu PR'a yorum olarak yazdırmak istiyor. İlk denemede workflow'a şunu yazdılar:\n```yaml\nprompt: \"Run npm run research:smoke on the changed agents. Use at most 20 turns, only use Bash and Read, and post the coverage as a PR comment.\"\n```\nÇalıştırmada Claude kabuk erişimi olmadığını bildiriyor, bazı koşularda 60+ tur sürüyor ve yorum hiç gönderilmiyor.\nDoğru konfigürasyon hangisidir?",
+    "options_tr": {
+      "A": "Prompt'u daha net yaz: 'Bash'i KESİNLİKLE kullan, 20 turdan sonra DUR' ifadelerini ekle ve `trigger_phrase: \"@claude\"` tanımla.",
+      "B": "`prompt` yerine `claude_args: \"--allowedTools Bash,Read --max-turns 20\"` kullan; prompt girdisini tamamen kaldır ki action otomatik modda çalışsın.",
+      "C": "Workflow'a `actions/checkout` ekle ve prompt'u `.claude/commands/smoke-test.md` içine taşı; komut dosyaları CI'da araç izinlerini otomatik verir.",
+      "D": "`prompt` girdisinde yalnızca görevi bırak; araç izinlerini ve tur sınırını `claude_args: '--allowedTools \"Bash(npm run research:smoke:*),Read,mcp__github_inline_comment__create_inline_comment\" --max-turns 20'` ile CLI argümanı olarak ver."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: claude-code-action'da prompt yalnızca görevi anlatır; araç izinleri ve tur bütçesi CLI argümanlarıdır ve claude_args ile geçirilir. Otomasyon modunda (prompt verildiğinde) Claude'un kabuk erişimi yoktur — --allowedTools ile Bash deseni ve Read açılmalı, PR yorumu için de yorum aracı allowedTools'ta listelenmelidir; aksi halde action o MCP sunucusunu başlatmaz. --max-turns 20 tur sınırını deterministik yapar. Prompt içindeki 'en fazla 20 tur' ve 'yalnızca Bash' ifadeleri model tarafından izin gibi uygulanamaz.\nWhy A is wrong: Prompt'u vurgulamak izin sistemini değiştirmez; trigger_phrase interaktif mod içindir, prompt verilen otomasyon modunda anlamsızdır.\nWhy B is wrong: claude_args doğru yöndedir ama prompt kaldırılırsa action interaktif moda geçer ve PR'da @claude mention'ı bekler; smoke test otomatik çalışmaz. Ayrıca yorum aracı listede yoktur.\nWhy C is wrong: actions/checkout gereklidir ama komut dosyaları CI'da tek başına araç izni vermez; izinler yine claude_args (veya settings girdisi) ile açılmalıdır.",
+    "question_en": "The team wants anthropics/claude-code-action@v1 to run the smoke test on PRs that change agents/**/prompt.md and post the result as a PR comment. Their first attempt in the workflow:\n```yaml\nprompt: \"Run npm run research:smoke on the changed agents. Use at most 20 turns, only use Bash and Read, and post the coverage as a PR comment.\"\n```\nAt run time Claude reports it has no shell access, some runs take 60+ turns, and no comment is ever posted.\nWhich configuration is correct?",
+    "options_en": {
+      "A": "Write the prompt more forcefully: add 'You MUST use Bash, STOP after 20 turns' and set trigger_phrase: \"@claude\".",
+      "B": "Use claude_args: \"--allowedTools Bash,Read --max-turns 20\" instead of prompt; remove the prompt input entirely so the action runs in automation mode.",
+      "C": "Add actions/checkout to the workflow and move the prompt into .claude/commands/smoke-test.md; command files grant tool permissions automatically in CI.",
+      "D": "Keep only the task in the prompt input; pass tool permissions and the turn limit as CLI arguments with claude_args: '--allowedTools \"Bash(npm run research:smoke:*),Read,mcp__github_inline_comment__create_inline_comment\" --max-turns 20'."
+    },
+    "explanation_en": "Why D is correct: in claude-code-action the prompt only describes the task; tool permissions and the turn budget are CLI arguments passed through claude_args. In automation mode (when a prompt is given) Claude has no shell access — the Bash pattern and Read must be opened with --allowedTools, and the comment tool must be listed there too, otherwise the action does not start that MCP server. --max-turns 20 makes the turn limit deterministic. 'At most 20 turns' and 'only Bash' inside the prompt cannot be enforced by the model as permissions.\nWhy A is wrong: emphasising the prompt does not change the permission system; trigger_phrase is for interactive mode and is meaningless in automation mode with a prompt.\nWhy B is wrong: claude_args is the right direction, but removing the prompt switches the action to interactive mode waiting for an @claude mention on the PR; the smoke test never runs automatically. The comment tool is also missing from the list.\nWhy C is wrong: actions/checkout is needed, but command files alone do not grant tool permissions in CI; permissions must still be opened through claude_args (or the settings input)."
+  },
+  {
+    "index": 297,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.1",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir monorepo'da legacy/billing/ modülü 15 yıllık bir kod tabanı: özel bir ORM katmanı kullanıyor, tarih alanları epoch-saniye olarak saklanıyor ve bazı tablolar sadece stored procedure üzerinden yazılabiliyor. Bu modülü ilk keşfeden mühendis, Claude Code'un bu tuzaklara düşmemesi için notlarını repo kökündeki CLAUDE.local.md dosyasına yazdı ve Claude Code kendi oturumlarında bu kurallara uyuyor. Modüle sonradan gelen iki mühendis, Claude Code'un tarih alanlarına ISO string yazmaya çalıştığını ve ORM'i atlayıp doğrudan SQL ürettiğini bildiriyor.\nKök neden ve en uygun düzeltme nedir?",
+    "options_tr": {
+      "A": "Yeni mühendisler Claude Code oturumlarını legacy/billing/ dizini yerine repo kökünden başlatıyor; oturumu alt dizinden başlatmalılar.",
+      "B": "Notlar çok uzun olduğu için Claude Code onları yok sayıyor; notları kısaltıp kök CLAUDE.md'nin başına taşımalı.",
+      "C": "CLAUDE.local.md kişisel ve .gitignore'da tutulan bir dosyadır — diğer klonlara ulaşmaz. Notlar legacy/billing/CLAUDE.md dosyasına (dizin seviyesi, git'e commit edilen) taşınmalı; böylece Claude o dizindeki dosyaları okuduğunda herkes için yüklenir.",
+      "D": "Her yeni mühendis /memory komutuyla ilk mühendisin CLAUDE.local.md dosyasını içe aktarmalı."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: CLAUDE.local.md proje köküne konan, .gitignore'a eklenmesi beklenen kişisel bir dosyadır; sadece onu yazan mühendisin klonunda vardır. Kuralların takıma ulaşması için versiyon kontrolündeki bir dosyada olması gerekir. legacy/billing/CLAUDE.md dizin seviyesi bir dosyadır: git ile paylaşılır ve Claude o alt dizindeki dosyaları okuduğunda isteğe bağlı yüklenir — kök CLAUDE.md'yi modern servislerde çalışanlar için şişirmez.\nWhy A is wrong: Oturumun nereden başlatıldığı, dosyanın hiç var olmamasını düzeltmez; diğer klonlarda CLAUDE.local.md yoktur.\nWhy B is wrong: Sorun uzunluk değil, dosyanın paylaşılmamasıdır. Ayrıca legacy modüle özgü kuralları kök CLAUDE.md'ye taşımak her oturumda gereksiz token yükü yaratır.\nWhy D is wrong: /memory bellek dosyalarını listeleyip düzenlemeye yarayan bir inceleme aracıdır; başka bir geliştiricinin gitignore'lu dosyasını içe aktarmaz.",
+    "question_en": "In a monorepo, the legacy/billing/ module is a 15-year-old codebase: it uses a custom ORM layer, stores date fields as epoch seconds and some tables can only be written through stored procedures. The engineer who first explored the module wrote notes in a CLAUDE.local.md at the repo root so Claude Code avoids these pitfalls, and Claude Code follows them in their sessions. Two engineers who joined the module later report that Claude Code tries to write ISO strings into date fields and bypasses the ORM with raw SQL.\nWhat is the root cause and the most appropriate fix?",
+    "options_en": {
+      "A": "The new engineers start Claude Code from the repo root instead of legacy/billing/; they should launch the session from the subdirectory.",
+      "B": "The notes are too long so Claude Code ignores them; shorten them and move them to the top of the root CLAUDE.md.",
+      "C": "CLAUDE.local.md is a personal, gitignored file — it never reaches other clones. Move the notes to legacy/billing/CLAUDE.md (directory level, committed to git) so they load for everyone whenever Claude reads files in that directory.",
+      "D": "Each new engineer should import the first engineer's CLAUDE.local.md with the /memory command."
+    },
+    "explanation_en": "Why C is correct: CLAUDE.local.md is a personal file placed at the project root and meant to be gitignored; it exists only in the clone of the engineer who wrote it. For rules to reach the team they must live in a version-controlled file. legacy/billing/CLAUDE.md is a directory-level file: shared via git and loaded on demand when Claude reads files in that subtree — it doesn't bloat the root CLAUDE.md for people working in modern services.\nWhy A is wrong: where the session is launched can't fix a file that doesn't exist in the other clones.\nWhy B is wrong: the problem is sharing, not length. Moving legacy-specific rules into the root CLAUDE.md also adds token cost to every session.\nWhy D is wrong: /memory is an inspection tool that lists and opens memory files; it doesn't import another developer's gitignored file."
+  },
+  {
+    "index": 298,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.1",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir platform ekibi, mühendislerin legacy modülleri daha hızlı anlaması için 2.800 satırlık docs/legacy-architecture.md dosyasını yazdı ve kök CLAUDE.md'ye @docs/legacy-architecture.md satırını ekledi. Bir hafta sonra mühendisler, yalnızca modern services/ dizininde küçük boilerplate üretirken bile her oturumun başında context'in yaklaşık %20'sinin dolu olduğunu ve /compact'ın çok erken tetiklendiğini fark ediyor. Legacy notlarının legacy kodda çalışırken hâlâ kullanılabilir olması isteniyor.\nEn uygun düzeltme nedir?",
+    "options_tr": {
+      "A": "@import satırını kaldır; legacy notlarını legacy/ altındaki dizin seviyesi CLAUDE.md'ye ya da paths: [\"legacy/**\"] frontmatter'lı bir .claude/rules/ dosyasına taşı, böylece yalnızca legacy dosyaları okunurken yüklenir. Kök CLAUDE.md'de dosyaya yalnızca backtick içinde yol olarak değin.",
+      "B": "Daha büyük context window'a sahip bir modele geç; 2.800 satır o zaman sorun olmaz.",
+      "C": "Dokümanı üç parçaya bölüp her parçayı ayrı @import ile kök CLAUDE.md'ye ekle — küçük dosyalar daha az token tüketir.",
+      "D": "Dokümanı ~/.claude/CLAUDE.md'ye taşı; kullanıcı seviyesi dosyalar proje dosyalarından daha az önceliklidir ve gerektiğinde yüklenir."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: @path import'ları organizasyon içindir, tembel yükleme için değil — import edilen dosya, onu referans eden CLAUDE.md ile birlikte oturum başlangıcında tamamen context'e girer. Legacy içeriği yalnızca legacy dosyalarına dokunulduğunda gerekli olduğundan doğru mekanizma alt dizin CLAUDE.md'si (Claude o dizindeki dosyaları okuyunca yüklenir) ya da paths frontmatter'lı .claude/rules/ dosyasıdır. Backtick içindeki yol import olarak işlenmez; Claude gerektiğinde dosyayı Read ile açabilir.\nWhy B is wrong: Daha büyük context window her oturumda gereksiz 2.800 satır yüklemeyi ortadan kaldırmaz; maliyet ve dikkat dağılımı devam eder. Klasik tuzak.\nWhy C is wrong: Üç import'un toplamı yine 2.800 satırdır; import'lar başlangıçta eksiksiz yüklenir, bölmek token maliyetini değiştirmez.\nWhy D is wrong: ~/.claude/CLAUDE.md de her oturumda yüklenir (tembel değildir) ve kişiseldir — takım paylaşamaz.",
+    "question_en": "A platform team wrote a 2,800-line docs/legacy-architecture.md so engineers can understand legacy modules faster, and added the line @docs/legacy-architecture.md to the root CLAUDE.md. A week later engineers notice that even when generating small boilerplate only in the modern services/ directory, about 20% of the context is already used at session start and /compact triggers very early. The legacy notes must still be available when working in legacy code.\nWhat is the most appropriate fix?",
+    "options_en": {
+      "A": "Remove the @import; move the legacy notes to a directory-level CLAUDE.md under legacy/ or to a .claude/rules/ file with paths: [\"legacy/**\"] frontmatter so they load only when legacy files are read. Mention the doc in the root CLAUDE.md only as a path in backticks.",
+      "B": "Switch to a model with a larger context window; 2,800 lines won't matter then.",
+      "C": "Split the document into three parts and add each with its own @import in the root CLAUDE.md — smaller files consume fewer tokens.",
+      "D": "Move the document to ~/.claude/CLAUDE.md; user-level files have lower precedence than project files and load only when needed."
+    },
+    "explanation_en": "Why A is correct: @path imports are for organisation, not lazy loading — an imported file is expanded into context at launch together with the CLAUDE.md that references it. Since the legacy content is only needed when legacy files are touched, the right mechanisms are a subdirectory CLAUDE.md (loaded when Claude reads files there) or a .claude/rules/ file with paths frontmatter. A path in backticks is not treated as an import; Claude can Read the doc on demand.\nWhy B is wrong: a bigger context window doesn't remove the 2,800 lines loaded needlessly in every session; the cost and attention dilution remain. Classic trap.\nWhy C is wrong: three imports still total 2,800 lines; imports load fully at launch, so splitting doesn't change the token cost.\nWhy D is wrong: ~/.claude/CLAUDE.md also loads in every session (it isn't lazy) and it's personal — the team can't share it."
+  },
+  {
+    "index": 299,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.2",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir ekip, yeni microservice iskeleti üretmek için .claude/skills/scaffold-service/SKILL.md dosyası yazdı: Dockerfile, health endpoint, CI config ve test iskeleti üretiyor. Mühendisler /scaffold-service yazıp Enter'a basıyor; Claude Code bazen \"service-1\" gibi bir isim uyduruyor, bazen servisin dilini soruyor, bazen de var olan bir servisin adını tahmin edip dosyaların üzerine yazmaya kalkıyor. SKILL.md'nin frontmatter'ında yalnızca name ve description var.\nEn etkili ilk adım nedir?",
+    "options_tr": {
+      "A": "Skill'i ~/.claude/skills/ altına taşı; kişisel skill'ler etkileşimli parametre isteme desteğine sahiptir.",
+      "B": "Frontmatter'a argument-hint: \"<service-name> <language: go|ts|py>\" ekle ve SKILL.md gövdesinde parametreleri $ARGUMENTS ile kullan; böylece kullanıcı çağrı sırasında ne girmesi gerektiğini görür ve skill somut değerlerle çalışır.",
+      "C": "İskelet üretim adımlarının tamamını kök CLAUDE.md'ye taşı ki her oturumda Claude'un aklında olsun.",
+      "D": "SKILL.md'ye \"Servis adı verilmemişse kesinlikle uydurma, mutlaka sor\" cümlesini üç farklı yerde tekrar et."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: Sorun, skill'in hangi girdilere ihtiyaç duyduğunu ne kullanıcının ne de Claude'un net bilmesidir. argument-hint frontmatter'ı çağrı anında kullanıcıya beklenen argümanları gösterir (otomatik tamamlamada görünür), $ARGUMENTS ise girilen değerleri skill gövdesine geçirir. Boilerplate üretimi gibi parametreli iş akışları için belgelenmiş mekanizma budur; tahmin ve uydurma ortadan kalkar.\nWhy A is wrong: Kişisel ve proje skill'leri aynı frontmatter'ı destekler; konum değiştirmek parametre sorununu çözmez ve skill'i takımdan alır.\nWhy C is wrong: CLAUDE.md her oturumda yüklenir; isteğe bağlı bir iş akışını oraya koymak token israfıdır ve yine parametre tanımı içermez. Skill = isteğe bağlı iş akışı, CLAUDE.md = her zaman geçerli standart.\nWhy D is wrong: Talimatı tekrarlamak yapısal bir çözüm değildir; argümanların tanımlanması için frontmatter mekanizması varken prose'a güvenmek tutarsızlığı sürdürür.",
+    "question_en": "A team wrote .claude/skills/scaffold-service/SKILL.md to generate a new microservice skeleton: Dockerfile, health endpoint, CI config and a test scaffold. Engineers type /scaffold-service and press Enter; Claude Code sometimes invents a name like \"service-1\", sometimes asks which language, and sometimes guesses the name of an existing service and starts overwriting its files. The SKILL.md frontmatter contains only name and description.\nWhat is the most effective first step?",
+    "options_en": {
+      "A": "Move the skill under ~/.claude/skills/; personal skills support interactive parameter prompting.",
+      "B": "Add argument-hint: \"<service-name> <language: go|ts|py>\" to the frontmatter and use $ARGUMENTS in the SKILL.md body, so users see what to enter when invoking it and the skill runs with concrete values.",
+      "C": "Move all scaffolding steps into the root CLAUDE.md so Claude has them in mind in every session.",
+      "D": "Repeat the sentence \"If no service name is given, never invent one, always ask\" in three different places in SKILL.md."
+    },
+    "explanation_en": "Why B is correct: the problem is that neither the user nor Claude clearly knows which inputs the skill needs. The argument-hint frontmatter shows the expected arguments at invocation time (visible in autocomplete), and $ARGUMENTS passes the entered values into the skill body. This is the documented mechanism for parameterised workflows such as boilerplate generation; guessing and fabrication disappear.\nWhy A is wrong: personal and project skills support the same frontmatter; relocating doesn't fix the parameter problem and takes the skill away from the team.\nWhy C is wrong: CLAUDE.md loads in every session; putting an on-demand workflow there wastes tokens and still doesn't define arguments. Skill = on-demand workflow, CLAUDE.md = always-on standard.\nWhy D is wrong: repeating an instruction is not a structural fix; relying on prose when a frontmatter mechanism exists for declaring arguments keeps the inconsistency."
+  },
+  {
+    "index": 300,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.3",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir Java monorepo'sunda legacy kod üç ayrı yerde yaşıyor: legacy/, vendor-forks/ ve tools/old-cli/ (Java 8, Struts, lambda ve stream API yasak, sadece JUnit 4). Modern kod services/ altında (Java 21, Spring Boot, record ve sealed class teşvik ediliyor, JUnit 5). Her iki kural seti de kök CLAUDE.md'de yazılı; dosya 600 satıra ulaştı ve Claude Code legacy dosyalara stream API ekliyor, modern servislerde ise JUnit 4 kullanıyor.\nEn uygun konfigürasyon hangisidir?",
+    "options_tr": {
+      "A": "Kök CLAUDE.md'nin başına \"Dosya yolunu kontrol et ve doğru kural setini uygula\" talimatı ekle.",
+      "B": "Üç legacy dizinin her birine ve services/ altındaki 40 servisin her birine aynı içerikli dizin seviyesi CLAUDE.md kopyala.",
+      "C": "Legacy kuralları ~/.claude/rules/legacy.md'ye koy; modern kuralları kök CLAUDE.md'de bırak.",
+      "D": ".claude/rules/legacy-java.md dosyasını paths: [\"legacy/**/*.java\", \"vendor-forks/**/*.java\", \"tools/old-cli/**/*.java\"] frontmatter'ıyla, .claude/rules/modern-java.md dosyasını paths: [\"services/**/*.java\"] ile oluştur; kök CLAUDE.md'de yalnızca evrensel standartları bırak."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: Kurallar dosya yoluna göre değişiyor ve legacy kod tek bir dizine bağlı değil. .claude/rules/ dosyalarındaki paths frontmatter'ı birden fazla glob alabilir; kural yalnızca eşleşen dosyalarla çalışırken yüklenir. Çelişen iki kural setinin aynı anda context'te olması ortadan kalkar, kök dosya küçülür, her şey git ile paylaşılır.\nWhy A is wrong: Çelişen kuralları aynı context'e yükleyip Claude'dan doğru olanı seçmesini istemek prompt talimatıyla yapısal sorunu çözmeye çalışmaktır; 600 satırlık dosyanın token maliyeti de kalır.\nWhy B is wrong: Dizin CLAUDE.md'si tek bir dizine bağlıdır; 43 kopyayı senkron tutmak sürdürülemez. paths glob'u dağınık konumlar için tasarlanmıştır.\nWhy C is wrong: ~/.claude/rules/ kişiseldir, takıma ulaşmaz; ayrıca frontmatter'sız kural her zaman yüklenir, yol kapsaması sağlamaz.",
+    "question_en": "In a Java monorepo, legacy code lives in three separate places: legacy/, vendor-forks/ and tools/old-cli/ (Java 8, Struts, lambdas and the stream API forbidden, JUnit 4 only). Modern code is under services/ (Java 21, Spring Boot, records and sealed classes encouraged, JUnit 5). Both rule sets are written in the root CLAUDE.md; the file has reached 600 lines and Claude Code adds stream API calls to legacy files while using JUnit 4 in modern services.\nWhich configuration is most appropriate?",
+    "options_en": {
+      "A": "Add the instruction \"Check the file path and apply the correct rule set\" at the top of the root CLAUDE.md.",
+      "B": "Copy an identical directory-level CLAUDE.md into each of the three legacy directories and each of the 40 services under services/.",
+      "C": "Put the legacy rules in ~/.claude/rules/legacy.md and leave the modern rules in the root CLAUDE.md.",
+      "D": "Create .claude/rules/legacy-java.md with paths: [\"legacy/**/*.java\", \"vendor-forks/**/*.java\", \"tools/old-cli/**/*.java\"] and .claude/rules/modern-java.md with paths: [\"services/**/*.java\"]; keep only universal standards in the root CLAUDE.md."
+    },
+    "explanation_en": "Why D is correct: the rules depend on the file path and the legacy code is not bound to a single directory. The paths frontmatter of a .claude/rules/ file accepts several globs; the rule loads only while Claude works with matching files. The two conflicting rule sets are no longer in context at the same time, the root file shrinks, and everything is shared via git.\nWhy A is wrong: loading conflicting rules into the same context and asking Claude to pick the right one tries to fix a structural problem with a prompt instruction; the 600-line token cost also remains.\nWhy B is wrong: a directory CLAUDE.md is bound to one directory; keeping 43 copies in sync is unsustainable. The paths glob is designed for scattered locations.\nWhy C is wrong: ~/.claude/rules/ is personal and doesn't reach the team; a rule without frontmatter also loads always and provides no path scoping."
+  },
+  {
+    "index": 301,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.4",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir mühendis, tanımadığı bir legacy batch modülünde vergi hesabının nerede yapıldığını bulup KDV oranını konfigürasyondan okunur hale getirmekle görevli. Ana oturumda Grep \"tax\" 300 dosyada 1.200 eşleşme döndürüyor; mühendis Claude Code'a bunları tek tek okutuyor. Henüz hiçbir değişiklik yapılmadan context'in %70'i dolmuş durumda ve Claude Code önerdiği planda daha önce okuduğu üç dosyayı unutup \"muhtemelen TaxService'te\" gibi genellemeler yapmaya başlıyor.\nEn etkili yaklaşım nedir?",
+    "options_tr": {
+      "A": "Keşfi Explore subagent'ına devret: subagent kendi context'inde Grep/Read yapıp yalnızca ilgili giriş noktalarını ve çağrı zincirini özet olarak döndürsün; sonra çok dosyalı değişiklik için plan modunda ilerle.",
+      "B": "Daha büyük context window'a sahip bir modele geç ve tüm 300 dosyayı baştan okut.",
+      "C": "Grep yerine Glob \"**/*tax*\" kullan; dosya isimleri eşleşmeleri daha temiz verir.",
+      "D": "Doğrudan çalıştırmayla TaxService'ten başla; sorun çıkarsa plan moduna geç."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: Gürültülü keşif ana oturumun context'ini doldurur ve bağlam bozulmasına (unutma, 'tipik desen' genellemeleri) yol açar. Explore subagent'ı keşfi izole bir context'te yapar ve ana oturuma yalnızca damıtılmış bulguları döndürür; ana context temiz kalır. Ardından değişiklik birden fazla dosyaya dokunduğu ve birkaç geçerli yaklaşımı olduğu için (config kaynağı, cache, geriye dönük uyumluluk) plan modu uygundur.\nWhy B is wrong: Daha büyük context window bağlam bozulmasını çözmez; 300 dosyayı önden okumak da artımlı keşif ilkesine aykırıdır. Klasik tuzak.\nWhy C is wrong: Glob dosya yollarını eşler; vergi hesabı 'tax' geçmeyen bir dosya adında olabilir. Fonksiyon çağrılarını/içeriği aramak Grep'in işidir; sorun araç seçimi değil, gürültünün ana oturuma akmasıdır.\nWhy D is wrong: Değişikliğin çok dosyalı ve mimari olduğu (konfigürasyondan okuma) baştan belli; 'önce doğrudan başla, gerekirse plana geç' tuzağıdır ve tahmine dayalı başlangıç noktası kullanır.",
+    "question_en": "An engineer must find where tax is computed in an unfamiliar legacy batch module and make the VAT rate configurable. In the main session, Grep \"tax\" returns 1,200 matches across 300 files; the engineer has Claude Code read them one by one. Before any change is made, 70% of the context is used, and in the proposed plan Claude Code forgets three files it already read and starts generalising with statements like \"probably in TaxService\".\nWhat is the most effective approach?",
+    "options_en": {
+      "A": "Delegate discovery to the Explore subagent: it runs Grep/Read in its own context and returns only the relevant entry points and call chain as a summary; then proceed in plan mode for the multi-file change.",
+      "B": "Switch to a model with a larger context window and have it read all 300 files from the start.",
+      "C": "Use Glob \"**/*tax*\" instead of Grep; file-name matches are cleaner.",
+      "D": "Start with direct execution in TaxService; switch to plan mode if problems come up."
+    },
+    "explanation_en": "Why A is correct: noisy discovery fills the main session's context and causes context degradation (forgetting, 'typical pattern' generalisations). The Explore subagent performs discovery in an isolated context and returns only distilled findings to the main session, which stays clean. Then, because the change touches several files and has several valid approaches (config source, caching, backward compatibility), plan mode is appropriate.\nWhy B is wrong: a bigger context window doesn't fix context degradation, and reading 300 files upfront contradicts incremental exploration. Classic trap.\nWhy C is wrong: Glob matches file paths; the tax calculation may live in a file whose name doesn't contain 'tax'. Searching content is Grep's job; the problem isn't tool choice but noise flowing into the main session.\nWhy D is wrong: the change is known upfront to be multi-file and architectural (reading from configuration); 'start direct, plan later' is the trap, and it starts from a guessed location."
+  },
+  {
+    "index": 302,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.5",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir ekip, Claude Code'un legacy Python modüllerine yazdığı her dosyanın black ile biçimlendirilmesini istiyor. Önce CLAUDE.md'ye \"Her yazımdan sonra black çalıştır\" yazdılar; on yazımdan birinde atlandı. Sonra .claude/settings.json'a matcher'ı \"Edit|Write\" olan ve black $FILE çalıştıran bir hook eklediler; ancak dosyalar hâlâ biçimlenmemiş halde commit'e giriyor. Hook'un PreToolUse olayına bağlı olduğunu görüyorlar.\nKök neden ve düzeltme nedir?",
+    "options_tr": {
+      "A": "black hook'lar için yavaş kalıyor ve zaman aşımına uğruyor; timeout değerini yükselt.",
+      "B": "PreToolUse hook araç çalışmadan ÖNCE tetiklenir, yani black eski içeriği biçimlendiriyor ve ardından Write/Edit biçimlenmemiş yeni içeriği yazıyor. Hook'u PostToolUse olayına, aynı \"Edit|Write\" matcher'ıyla taşı.",
+      "C": "Hook yerine CLAUDE.md talimatını büyük harflerle ve en üstte tekrar yaz; hook'lar deterministik değildir.",
+      "D": "Hook'u ~/.claude/settings.json'a taşı; kullanıcı seviyesi hook'lar proje hook'larından önce çalışır."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: Hook'lar deterministik uygulama için doğru mekanizmadır, ancak olay seçimi kritiktir. PreToolUse aracın çağrısından önce çalışır — dosya henüz yazılmamıştır, dolayısıyla biçimlendirme yeni içeriğe uygulanmaz. Dosya yazıldıktan sonra biçimlendirmek için PostToolUse gerekir; Edit|Write matcher'ı aynen kalır. PreToolUse yıkıcı işlemleri engellemek için, PostToolUse ise yazılan çıktıyı işlemek için kullanılır.\nWhy A is wrong: Belirti (dosya hiç biçimlenmiyor) zaman aşımıyla değil, hook'un yanlış anda çalışmasıyla açıklanır.\nWhy C is wrong: CLAUDE.md talimatının zaten %10 oranında atlandığı görüldü; talimatlar bağlamdır, zorlama değil. Hook'lar tam da deterministik olduğu için tercih edilir.\nWhy D is wrong: Konum değiştirmek olay zamanlamasını değiştirmez; ayrıca kullanıcı seviyesi hook takımla paylaşılmaz.",
+    "question_en": "A team wants every file Claude Code writes into legacy Python modules formatted with black. First they wrote \"Run black after every write\" in CLAUDE.md; it was skipped one time in ten. Then they added a hook to .claude/settings.json with matcher \"Edit|Write\" that runs black $FILE, yet files still land in commits unformatted. They notice the hook is attached to the PreToolUse event.\nWhat is the root cause and the fix?",
+    "options_en": {
+      "A": "black is too slow for hooks and times out; raise the timeout value.",
+      "B": "A PreToolUse hook fires BEFORE the tool runs, so black formats the old content and then Write/Edit writes the unformatted new content. Move the hook to the PostToolUse event with the same \"Edit|Write\" matcher.",
+      "C": "Replace the hook with the CLAUDE.md instruction rewritten in capitals at the top; hooks are not deterministic.",
+      "D": "Move the hook to ~/.claude/settings.json; user-level hooks run before project hooks."
+    },
+    "explanation_en": "Why B is correct: hooks are the right mechanism for deterministic enforcement, but the event choice is critical. PreToolUse runs before the tool call — the file hasn't been written yet, so the formatting never touches the new content. Formatting after the file is written requires PostToolUse; the Edit|Write matcher stays the same. PreToolUse is for blocking destructive actions, PostToolUse for processing the written output.\nWhy A is wrong: the symptom (files never formatted) is explained by the hook running at the wrong moment, not by a timeout.\nWhy C is wrong: the CLAUDE.md instruction was already observed to be skipped 10% of the time; instructions are context, not enforcement. Hooks are preferred precisely because they are deterministic.\nWhy D is wrong: changing location doesn't change event timing; a user-level hook is also not shared with the team."
+  },
+  {
+    "index": 303,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.6",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir ekip, legacy repo'daki kullanımdan kalkmış HTTP istemci API'sini yeni istemciye taşıyan tekrarlı bakım işini hem mühendislerin lokalde /migrate-http-client skill'iyle hem de her gece GitHub Actions'ta çalıştırmak istiyor. İlk denemede iş akışı YAML'ına 80 satırlık prompt'u kopyaladılar; iki hafta içinde skill ile YAML'daki prompt birbirinden ayrıştı, gece işi bir keresinde de skill'de yasaklanan vendor-forks/ dizinine dokundu. Gece işi makine-okunabilir bir değişiklik özeti de üretmeli.\nEn uygun CI konfigürasyonu hangisidir?",
+    "options_tr": {
+      "A": "80 satırlık prompt'u kök CLAUDE.md'ye taşı; hem lokal hem CI oturumları onu otomatik yükler.",
+      "B": "Gece işini Message Batches API üzerinden gönder; %50 ucuz olur ve prompt tek yerde durur.",
+      "C": "CI adımında claude -p \"/migrate-http-client legacy/\" --allowedTools \"Read,Edit,Bash(npm test:*)\" --output-format json çalıştır; skill tek kaynak olarak repoda kalır, aynı kısıtlar CI'da da geçerli olur ve sonuç JSON olarak parse edilir.",
+      "D": "CI'da claude -p yerine etkileşimli claude komutunu çalıştırıp skill'i orada çağır; -p modunda özel skill'ler desteklenmez."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: Özel skill'ler ve komutlar -p (headless) modunda da çağrılabilir; /skill-name prompt string'inde geçince Claude Code çalıştırmadan önce genişletir. Böylece prosedür repodaki .claude/skills/ dosyasında tek kaynak olarak kalır, lokal ve CI birbirinden ayrışmaz. --allowedTools araç yüzeyini kısıtlar, --output-format json makine-okunabilir sonuç verir. Dizin kısıtı için ayrıca PreToolUse hook'u eklenebilir, ama soru doğrudan konfigürasyonu soruyor.\nWhy A is wrong: CLAUDE.md her oturumda yüklenir; isteğe bağlı 80 satırlık bir prosedürü oraya koymak her oturumda token israfıdır ve CI'daki araç/çıktı ihtiyaçlarını karşılamaz.\nWhy B is wrong: Batch API dosya düzenleyen, test çalıştıran agentic bir Claude Code işini yürütmez; ayrıca prompt'un tek yerde durması sorununu da çözmez.\nWhy D is wrong: -p modu tam da CI için tasarlanmıştır; etkileşimli komut CI'da girdi bekleyip askıda kalır. Skill'lerin -p'de desteklenmediği iddiası yanlıştır.",
+    "question_en": "A team wants the repetitive maintenance job of migrating the deprecated HTTP client API in a legacy repo to the new client to run both locally by engineers via the /migrate-http-client skill and nightly in GitHub Actions. In the first attempt they copied the 80-line prompt into the workflow YAML; within two weeks the skill and the YAML prompt drifted apart, and the nightly job once touched the vendor-forks/ directory that the skill forbids. The nightly job must also produce a machine-readable change summary.\nWhich CI configuration is most appropriate?",
+    "options_en": {
+      "A": "Move the 80-line prompt into the root CLAUDE.md; both local and CI sessions load it automatically.",
+      "B": "Submit the nightly job through the Message Batches API; it is 50% cheaper and the prompt lives in one place.",
+      "C": "In the CI step run claude -p \"/migrate-http-client legacy/\" --allowedTools \"Read,Edit,Bash(npm test:*)\" --output-format json; the skill stays in the repo as the single source of truth, the same constraints apply in CI, and the result is parsed as JSON.",
+      "D": "Run the interactive claude command in CI instead of claude -p and invoke the skill there; custom skills are not supported in -p mode."
+    },
+    "explanation_en": "Why C is correct: custom skills and commands can be invoked in -p (headless) mode; when /skill-name appears in the prompt string, Claude Code expands it before running. The procedure therefore stays as a single source of truth in the repo's .claude/skills/ and local and CI don't drift. --allowedTools restricts the tool surface and --output-format json gives a machine-readable result. A PreToolUse hook can additionally guard the directory, but the question asks for the direct configuration.\nWhy A is wrong: CLAUDE.md loads in every session; putting an on-demand 80-line procedure there wastes tokens in every session and doesn't address the CI tool/output needs.\nWhy B is wrong: the Batch API doesn't run an agentic Claude Code job that edits files and runs tests; it also doesn't solve keeping the prompt in one place.\nWhy D is wrong: -p mode is designed precisely for CI; the interactive command waits for input and hangs in CI. The claim that skills aren't supported in -p is false."
+  },
+  {
+    "index": 304,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.6",
+    "scenario": 4,
+    "scenario_title": "Developer Productivity with Claude",
+    "question_tr": "Bir platform ekibi Claude ile iki otomasyon çalıştırıyor: (1) her PR'da legacy modüllere dokunan değişiklikleri kontrol eden ve merge'i bloke eden claude -p adımı; (2) her pazartesi 400 legacy modül için kod sağlığı raporu üreten iş. Maliyeti düşürmek için ikisini de Message Batches API'ye taşıdılar. Şimdi mühendisler PR'ların bazen 6 saat merge edilemediğinden şikâyet ediyor; haftalık rapor ise sorunsuz.\nEn uygun düzeltme nedir?",
+    "options_tr": {
+      "A": "Her iki işi de senkron claude -p'ye geri al; Batch API CI'da kullanılmamalı.",
+      "B": "Batch API isteklerine yüksek öncelik parametresi ekle ki PR kontrolleri önce işlensin.",
+      "C": "PR kontrolünü Batch'te tut ama PR'lar açıldıktan 24 saat sonra merge edilecek şekilde branch koruma kuralı ekle.",
+      "D": "PR kontrolünü senkron claude -p (--output-format json) adımına geri al; yalnızca bloke etmeyen haftalık raporu Batch API'de bırak."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: Batch API %50 tasarruf sağlar ama 24 saate kadar sürebilir ve gecikme SLA'sı yoktur; bu yüzden yalnızca bloke etmeyen işler için uygundur. Haftalık kod sağlığı raporu tam bu profildedir. Merge'i bloke eden PR kontrolü ise anında sonuç gerektirir; senkron claude -p ile çalıştırılır ve JSON çıktısı pipeline'da kullanılır.\nWhy A is wrong: Haftalık rapor bloke etmeyen, hacimli ve gecikmeye toleranslı bir iştir — Batch için ideal; onu da senkrona almak gereksiz maliyet artırır.\nWhy B is wrong: Batch API'de böyle bir öncelik parametresi yoktur; tasarım gereği gecikme garantisi vermez.\nWhy C is wrong: Bloklayıcı akışı Batch'e uydurmak için merge'i 24 saat geciktirmek geliştirici üretkenliğini yok eder; sorun yanlış API seçimidir.",
+    "question_en": "A platform team runs two automations with Claude: (1) a claude -p step on every PR that checks changes touching legacy modules and blocks the merge; (2) a job every Monday that produces a code-health report for 400 legacy modules. To cut cost they moved both to the Message Batches API. Now engineers complain that PRs sometimes can't be merged for 6 hours; the weekly report works fine.\nWhat is the most appropriate fix?",
+    "options_en": {
+      "A": "Move both jobs back to synchronous claude -p; the Batch API should not be used in CI.",
+      "B": "Add a high-priority parameter to the Batch API requests so PR checks are processed first.",
+      "C": "Keep the PR check in Batch but add a branch protection rule so PRs merge 24 hours after opening.",
+      "D": "Move the PR check back to a synchronous claude -p step (--output-format json); leave only the non-blocking weekly report on the Batch API."
+    },
+    "explanation_en": "Why D is correct: the Batch API saves 50% but can take up to 24 hours with no latency SLA, so it fits only non-blocking jobs. The weekly code-health report is exactly that profile. The merge-blocking PR check needs an immediate result; it runs via synchronous claude -p and its JSON output is consumed by the pipeline.\nWhy A is wrong: the weekly report is non-blocking, high-volume and latency-tolerant — ideal for Batch; making it synchronous too adds cost for nothing.\nWhy B is wrong: the Batch API has no such priority parameter; by design it gives no latency guarantee.\nWhy C is wrong: delaying merges by 24 hours to fit a blocking flow into Batch destroys developer productivity; the problem is the wrong API choice."
+  },
+  {
+    "index": 305,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.1",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Çıkarım pipeline'ı repo'sunda ekip, schemas/ ve validators/ kurallarını proje seviyesindeki .claude/CLAUDE.md dosyasında tutuyor. Bir developer, kendi makinesinde etiketli doğrulama setinin 50 dokümanlık alt kümesini tuttuğu yolu (~/data/labelled-sample/) ve 'eval'i her zaman --limit 50 ile çalıştır' notunu aynı dosyaya ekleyip commit ediyor. Ertesi gün üç takım arkadaşı, Claude Code'un nightly eval'i sadece 50 dokümanla çalıştırdığını ve var olmayan bir dizini okumaya çalıştığını bildiriyor.\nKök neden ve doğru düzeltme nedir?",
+    "options_tr": {
+      "A": "Kişisel yollar `~/.claude/CLAUDE.md` dosyasına taşınmalı; kullanıcı seviyesi dosya bu projede otomatik olarak proje dosyasını geçersiz kılar.",
+      "B": "Proje CLAUDE.md'sine 'bu yollar sadece <developer adı> için geçerlidir' notu eklenmeli, böylece Claude Code diğer kullanıcılarda yok sayar.",
+      "C": "Kişisel yol ve eval kısayolu `./CLAUDE.local.md` dosyasına taşınmalı — proje bağlamında yüklenir ama git tarafından otomatik yok sayılır; proje CLAUDE.md'si sadece paylaşılan şema/validator kurallarını içermeli.",
+      "D": "Kısayol `.claude/rules/eval.md` dosyasına taşınmalı; rules dizinindeki dosyalar commit edilse de yalnızca oluşturan kullanıcıda yüklenir."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: Proje seviyesindeki CLAUDE.md git ile paylaşılır; içine yazılan makineye özel yol ve kısayol herkese uygulanır. CLAUDE.local.md tam bu iş içindir: aynı proje bağlamında yüklenir, proje kurallarına eklenir ama otomatik olarak .gitignore'a girer ve commit edilmez. Paylaşılan schemas/ ve validators/ konvansiyonları .claude/CLAUDE.md'de kalır.\nWhy A is wrong: ~/.claude/CLAUDE.md tüm projelerde yüklenir; bu developer'ın başka repo'larında da 'eval'i --limit 50 ile çalıştır' talimatı görünür. Ayrıca kullanıcı seviyesi proje seviyesini 'geçersiz kılmaz'; dosyalar birlikte yüklenir ve daha spesifik olan öncelik alır.\nWhy B is wrong: Kullanıcı adına göre koşullu talimat deterministik değildir; dosya yine herkesin bağlamına yüklenir, token harcar ve karışıklık yaratır. Kişisel ayarı paylaşılan dosyadan çıkarmak gerekir.\nWhy D is wrong: .claude/rules/ dosyaları da repo'da paylaşılır ve frontmatter'sız oldukları için her oturumda yüklenir; 'sadece oluşturanda yüklenir' diye bir davranış yoktur.",
+    "question_en": "In the extraction pipeline repo the team keeps its schemas/ and validators/ conventions in the project-level .claude/CLAUDE.md. One developer adds the path of a 50-document subset of the labelled validation set they keep on their own machine (~/data/labelled-sample/) plus the note 'always run the eval with --limit 50' to that same file and commits it. The next day three teammates report that Claude Code runs the nightly eval with only 50 documents and tries to read a directory that does not exist.\nWhat is the root cause and the correct fix?",
+    "options_en": {
+      "A": "The personal paths belong in ~/.claude/CLAUDE.md; the user-level file automatically overrides the project file for this project.",
+      "B": "Add a note to the project CLAUDE.md saying 'these paths apply only to <developer name>' so Claude Code ignores them for other users.",
+      "C": "Move the personal path and the eval shortcut to ./CLAUDE.local.md — it is loaded in the project context but automatically ignored by git; the project CLAUDE.md should contain only the shared schema/validator conventions.",
+      "D": "Move the shortcut to .claude/rules/eval.md; files in the rules directory are committed but only loaded for the user who created them."
+    },
+    "explanation_en": "Why C is correct: the project-level CLAUDE.md is shared through git, so a machine-specific path and shortcut written there apply to everyone. CLAUDE.local.md exists precisely for this: it loads in the same project context, on top of the project rules, but is automatically added to .gitignore and never committed. The shared schemas/ and validators/ conventions stay in .claude/CLAUDE.md.\nWhy A is wrong: ~/.claude/CLAUDE.md loads in every project, so 'run the eval with --limit 50' would show up in this developer's other repos too. User level also does not 'override' project level; the files load together and the more specific one takes precedence.\nWhy B is wrong: a per-user conditional instruction is not deterministic; the file still loads into everyone's context, costs tokens and causes confusion. The personal setting must leave the shared file.\nWhy D is wrong: .claude/rules/ files are shared in the repo as well, and without frontmatter they load in every session; there is no 'loaded only for the author' behaviour."
+  },
+  {
+    "index": 306,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.2",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Ekip, belge türü başına few-shot örnek setini yeniden üreten 40 satırlık bir prosedürü (etiketli setten tablo / düz metin / iç içe liste düzenlerinden örnek seç, prompts/<tür>/examples.md dosyasını yaz, eval'i çalıştır, farkı raporla) proje CLAUDE.md'sine eklemiş. İki hafta sonra: her oturum ~1.500 token fazla yüklüyor, Claude Code bir validator düzeltmesi sırasında kendiliğinden fatura örneklerini yeniden üretmeye kalkıyor ve developer'lar prosedürü 'invoice' yerine hangi belge türü için çalıştıracaklarını her seferinde uzun uzun yazmak zorunda kalıyor.\nEn uygun yeniden yapılandırma hangisidir?",
+    "options_tr": {
+      "A": "Prosedürü `.claude/skills/regen-fewshot/SKILL.md` dosyasına taşı; frontmatter'da `argument-hint: <document-type>` ve `disable-model-invocation: true` tanımla. CLAUDE.md'de yalnızca few-shot dosyalarının nerede durduğu gibi kalıcı konvansiyonlar kalsın.",
+      "B": "Prosedürü CLAUDE.md'de tut ama başına 'YALNIZCA kullanıcı açıkça isterse uygula' satırı ekle ve belge türünü büyük harfle yazmalarını iste.",
+      "C": "Prosedürü her developer'ın `~/.claude/commands/regen-fewshot.md` dosyasına kopyala; komut kişisel olduğundan kendiliğinden tetiklenmez.",
+      "D": "Prosedürü `prompts/CLAUDE.md` dizin dosyasına taşı; böylece yalnızca prompts/ altındaki dosyalar düzenlenirken yüklenir ve token maliyeti düşer."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: Bu, her oturumda geçerli bir standart değil, isteğe bağlı çalıştırılan çok adımlı bir iş akışıdır — yani skill'in tam tanımı. .claude/skills/ altında repo ile paylaşılır, sadece çağrıldığında bağlama girer (token maliyeti sıfırlanır), argument-hint belge türünü parametre olarak ister (/regen-fewshot receipts), disable-model-invocation ise Claude'un prosedürü kendiliğinden tetiklemesini engeller.\nWhy B is wrong: 'Yalnızca istenirse' prose talimatı kendiliğinden tetiklenmeyi garanti etmez ve 1.500 token her oturumda yüklenmeye devam eder. Sorun içeriğin yeri, ifadesi değil.\nWhy C is wrong: ~/.claude/commands kişiseldir; ekip prosedürü kopyalayarak yönetemez, değişiklikler dağılmaz. Paylaşılan iş akışı repo içinde olmalı.\nWhy D is wrong: Dizin CLAUDE.md'si prompts/ altında çalışırken yine her seferinde yüklenir ve kendiliğinden tetiklenme sorununu çözmez; parametre alma mekanizması da yoktur.",
+    "question_en": "The team added a 40-line procedure that regenerates the few-shot example set per document type (pick examples from the labelled set covering table / plain-text / nested-list layouts, write prompts/<type>/examples.md, run the eval, report the diff) to the project CLAUDE.md. Two weeks later: every session loads ~1,500 extra tokens, Claude Code spontaneously starts regenerating invoice examples in the middle of a validator fix, and developers have to spell out at length each time which document type to run the procedure for instead of 'invoice'.\nWhat is the most appropriate restructuring?",
+    "options_en": {
+      "A": "Move the procedure to .claude/skills/regen-fewshot/SKILL.md; declare argument-hint: <document-type> and disable-model-invocation: true in the frontmatter. Keep only durable conventions in CLAUDE.md, such as where the few-shot files live.",
+      "B": "Keep the procedure in CLAUDE.md but prefix it with 'apply ONLY when the user explicitly asks' and have users write the document type in capitals.",
+      "C": "Copy the procedure into each developer's ~/.claude/commands/regen-fewshot.md; because the command is personal it will not trigger by itself.",
+      "D": "Move the procedure to a prompts/CLAUDE.md directory file so it loads only while files under prompts/ are being edited, reducing token cost."
+    },
+    "explanation_en": "Why A is correct: this is not a standard that applies in every session but a multi-step workflow run on demand — the very definition of a skill. Under .claude/skills/ it is shared through the repo, enters context only when invoked (the per-session token cost disappears), argument-hint prompts for the document type as a parameter (/regen-fewshot receipts), and disable-model-invocation stops Claude from triggering the procedure on its own.\nWhy B is wrong: an 'only when asked' prose instruction does not guarantee it will not self-trigger, and the 1,500 tokens still load in every session. The problem is where the content lives, not how it is phrased.\nWhy C is wrong: ~/.claude/commands is personal; the team cannot maintain the procedure by copying it, and changes do not propagate. A shared workflow belongs in the repo.\nWhy D is wrong: a directory CLAUDE.md still loads every time work happens under prompts/ and does not solve the spontaneous triggering; it also has no parameter mechanism."
+  },
+  {
+    "index": 307,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.3",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Çıkarım repo'sunda üç alan var: schemas/ (JSON şemaları: additionalProperties: false, eksik olabilen alanlar nullable, kategoriler enum + \"other\"), prompts/ (belge türü başına prompt ve few-shot dosyaları) ve validators/ (calculated_total vs stated_total gibi semantik kontrolleri yapan Pydantic validator'ları). Ekip her alan için ayrı kural dosyasını .claude/rules/ altına koymuş: schemas.md, prompts.md, validators.md. /memory çıktısı, prompts/invoice/examples.md düzenlenirken 300 satırlık validators.md'nin de yüklendiğini gösteriyor ve bağlam gereksiz yere şişiyor.\nEn olası kök neden nedir?",
+    "options_tr": {
+      "A": "Kural dosyaları alfabetik sırayla yüklenir ve Claude Code varsayılan olarak ilk üç dosyayı her oturumda bağlama alır; validators.md dosyasını `zz-validators.md` olarak yeniden adlandırmak gerekir.",
+      "B": "Dizin seviyesi CLAUDE.md dosyaları olmadan .claude/rules/ çalışmaz; her dizine bir CLAUDE.md eklenip rules dosyaları oradan `@import` edilmelidir.",
+      "C": ".claude/rules/ dosyaları yalnızca `.claude/CLAUDE.md`'den `@import` ile bağlandığında yüklenir; import satırı yanlış dosyayı gösteriyordur.",
+      "D": "validators.md dosyasında `paths: [\"validators/**/*.py\"]` YAML frontmatter'ı yok; frontmatter'sız bir rules dosyası her oturumda koşulsuz yüklenir. Üç dosyaya da kendi glob'unu ekle."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: .claude/rules/ içindeki bir Markdown dosyası, YAML frontmatter'ında paths: [...] tanımlıysa yalnızca eşleşen dosyalarla çalışılırken yüklenir; frontmatter yoksa her oturumda yüklenir. validators.md'nin prompts/ düzenlenirken de görünmesi tam olarak bu davranıştır. schemas.md → paths: [\"schemas/**/*.json\"], prompts.md → paths: [\"prompts/**/*.md\"], validators.md → paths: [\"validators/**/*.py\"] ile bağlam yalnızca ilgili kurallarla dolar.\nWhy A is wrong: Yükleme sırası veya 'ilk üç dosya' gibi bir sınır yoktur; dosya adı yüklemeyi belirlemez.\nWhy B is wrong: .claude/rules/ dizin CLAUDE.md'sinden bağımsız çalışır; dizin CLAUDE.md'si tek dizine bağlıdır ve burada gerekmez.\nWhy C is wrong: rules dosyaları otomatik keşfedilir, @import gerekmez. @import zaten koşulsuz yükleme demektir; sorunu çözmez.",
+    "question_en": "The extraction repo has three areas: schemas/ (JSON schemas: additionalProperties: false, fields that may be absent are nullable, categories are enum + \"other\"), prompts/ (prompt and few-shot files per document type) and validators/ (Pydantic validators doing semantic checks such as calculated_total vs stated_total). The team put a separate rule file for each area under .claude/rules/: schemas.md, prompts.md, validators.md. The /memory output shows that while prompts/invoice/examples.md is being edited, the 300-line validators.md is loaded too, bloating the context for no reason.\nWhat is the most likely root cause?",
+    "options_en": {
+      "A": "Rule files load in alphabetical order and Claude Code puts the first three into context by default in every session; validators.md must be renamed zz-validators.md.",
+      "B": ".claude/rules/ does not work without directory-level CLAUDE.md files; each directory needs a CLAUDE.md that @imports the rule file.",
+      "C": ".claude/rules/ files only load when linked from .claude/CLAUDE.md with @import; the import line must be pointing at the wrong file.",
+      "D": "validators.md has no paths: [\"validators/**/*.py\"] YAML frontmatter; a rules file without frontmatter loads unconditionally in every session. Add its own glob to all three files."
+    },
+    "explanation_en": "Why D is correct: a Markdown file in .claude/rules/ loads only while matching files are being worked on if its YAML frontmatter declares paths: [...]; without frontmatter it loads in every session. validators.md appearing while prompts/ is edited is exactly that behaviour. With schemas.md → paths: [\"schemas/**/*.json\"], prompts.md → paths: [\"prompts/**/*.md\"] and validators.md → paths: [\"validators/**/*.py\"], the context fills only with the relevant rules.\nWhy A is wrong: there is no load order or 'first three files' limit; the file name does not determine loading.\nWhy B is wrong: .claude/rules/ works independently of directory CLAUDE.md files; a directory CLAUDE.md is bound to one directory and is not needed here.\nWhy C is wrong: rules files are discovered automatically and need no @import. @import means unconditional loading anyway, so it would not fix the problem."
+  },
+  {
+    "index": 308,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.4",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Pipeline şu anda fatura ve fiş belgelerini işliyor. Ürün ekibi 'sigorta hasar formlarını da çıkaralım' diyor ama downstream sistemin hangi alanlara ihtiyaç duyduğu, hasar kalemlerinin düz mü iç içe mi modelleneceği ve hasar türlerinin kapalı enum mu yoksa enum + \"other\" mı olacağı henüz konuşulmamış. İş yeni bir schemas/claim.json, yeni bir Pydantic validator, yeni prompt + few-shot seti ve downstream eşleme kodu gerektiriyor. Bir developer Claude Code'a 'sigorta hasar formu desteği ekle' yazıp doğrudan çalıştırmaya başlamayı planlıyor.\nEn etkili yaklaşım hangisidir?",
+    "options_tr": {
+      "A": "Doğrudan çalıştır: önce şemayı belgeye bakarak yaz, eksik alanlar eval'de ortaya çıktıkça ekle; şema yeterince büyürse plan moduna geç.",
+      "B": "Plan moduna gir ve mülakat desenini kullan: Claude Code'un şema tasarımına başlamadan önce downstream alan ihtiyaçları, iç içe yapı ve enum genişletilebilirliği hakkında sorular sormasını iste; ortaya çıkan planı onayla, sonra dört dosya grubunu uygula.",
+      "C": "Explore subagent'ı fatura şemasını kopyalayıp alan adlarını hasar terimleriyle değiştirmesi için görevlendir; ayrı bir oturumda validator'ı yaz.",
+      "D": "Her dosya için ayrı bir Claude Code oturumu aç (şema, validator, prompt, eşleme) ve her birini doğrudan çalıştırmada yaptır; böylece tek oturumda bağlam şişmez."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: Yeni belge türü eklemek mimari bir iştir: dört farklı dosya grubunu etkiler, birden fazla geçerli tasarım (düz/iç içe, kapalı enum/enum+other) var ve gereksinimler belirsiz. Bu, plan modunun tam tanımıdır. Gereksinimler netleşmemişken mülakat deseni — Claude'un önce netleştirici sorular sorması — nullable alan, enum genişletilebilirliği gibi kararların sonradan pahalı düzeltme yerine baştan doğru verilmesini sağlar.\nWhy A is wrong: Karmaşıklık baştan biliniyor; 'doğrudan başla, gerekirse plana geç' klasik tuzaktır. Şema alanlarını eval hatalarıyla keşfetmek, zorunlu alan + eksik bilgi → halüsinasyon gibi sorunları production'a taşır.\nWhy C is wrong: Explore subagent gürültülü keşif içindir, tasarım kararı vermek için değil; fatura şemasını kopyalamak hasar formunun farklı yapısını (iç içe kalemler, farklı kategoriler) göz ardı eder.\nWhy D is wrong: Şema, validator, prompt ve eşleme birbirine bağlıdır; ayrı oturumlar tutarsız alan adları ve tipler üretir. Bağlam şişmesi burada sorun değil, tasarım tutarlılığı sorundur.",
+    "question_en": "The pipeline currently processes invoices and receipts. The product team says 'let's extract insurance claim forms too', but which fields the downstream system needs, whether claim line items are modelled flat or nested, and whether claim types are a closed enum or enum + \"other\" have not been discussed yet. The work needs a new schemas/claim.json, a new Pydantic validator, a new prompt + few-shot set and downstream mapping code. A developer plans to type 'add insurance claim form support' into Claude Code and start in direct execution.\nWhat is the most effective approach?",
+    "options_en": {
+      "A": "Execute directly: write the schema from a sample document first, add missing fields as they surface in the eval; switch to plan mode if the schema grows large enough.",
+      "B": "Enter plan mode and use the interview pattern: ask Claude Code to question you about downstream field needs, nesting and enum extensibility before it starts designing the schema; approve the resulting plan, then implement the four file groups.",
+      "C": "Task the Explore subagent with copying the invoice schema and renaming the fields to claim terminology; write the validator in a separate session.",
+      "D": "Open a separate Claude Code session per file (schema, validator, prompt, mapping) and do each in direct execution so no single session's context bloats."
+    },
+    "explanation_en": "Why B is correct: adding a document type is architectural work: it touches four different file groups, there are several valid designs (flat/nested, closed enum/enum+other) and the requirements are unclear. That is the definition of plan mode. With requirements unsettled, the interview pattern — Claude asking clarifying questions first — gets decisions such as nullable fields and enum extensibility right up front instead of as expensive fixes later.\nWhy A is wrong: the complexity is known up front; 'start direct, switch to plan if needed' is the classic trap. Discovering schema fields through eval failures pushes problems such as required field + missing information → hallucination into production.\nWhy C is wrong: the Explore subagent is for noisy discovery, not for making design decisions; copying the invoice schema ignores the claim form's different structure (nested items, different categories).\nWhy D is wrong: schema, validator, prompt and mapping depend on each other; separate sessions produce inconsistent field names and types. Context bloat is not the problem here, design consistency is."
+  },
+  {
+    "index": 309,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.5",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Claude Code, schemas/ altındaki JSON şema dosyalarını düzenlerken zaman zaman geçersiz şema üretiyor: sondaki virgül, `\"nullable\": true` gibi JSON Schema'da olmayan bir anahtar (doğrusu `\"type\": [\"string\", \"null\"]`) veya `additionalProperties: false` satırının silinmesi. Bu hatalar ancak nightly eval'de tool_use çağrısı şema hatasıyla reddedilince fark ediliyor. Ekipte zaten `python tools/check_schema.py <dosya>` adında, hatalı şemada sıfır dışı çıkan bir kontrol betiği var. CLAUDE.md'de 'şemayı yazdıktan sonra check_schema.py çalıştır' yazıyor ama Claude bunu bazen atlıyor.\nHangi konfigürasyon sorunu deterministik olarak çözer?",
+    "options_tr": {
+      "A": "CLAUDE.md'deki talimatı büyük harflerle ve 'ASLA atlama' ifadesiyle güçlendir; ayrıca her şema düzenlemesinden önce plan moduna geçilmesini iste.",
+      "B": "settings.json'da `permissions.deny` ile `Write(schemas/**)` ve `Edit(schemas/**)` engelle; şemalar bundan sonra yalnızca elle düzenlensin.",
+      "C": "settings.json'a `matcher: \"Write|Edit\"` olan bir PostToolUse hook'u ekle; hook dosya yolu schemas/ ile eşleşiyorsa check_schema.py'yi çalıştırsın, hata varsa exit code 2 ile stderr'e hatayı yazsın — Claude hatayı görüp aynı turda düzeltir.",
+      "D": "Bir PreCompact hook'u ekle; sıkıştırma öncesinde tüm schemas/ dizinini doğrulayıp hatalıysa özete uyarı eklesin."
+    },
+    "correct_answer": "C",
+    "explanation_tr": "Why C is correct: Şemanın geçerliliği dosya yazıldıktan sonra kontrol edilebilir; bu PostToolUse hook'unun işidir. Write|Edit matcher'ı ile hook her yazımdan sonra çalışır, check_schema.py'yi tetikler ve exit code 2 döndürdüğünde stderr içeriği Claude'a geri beslenir — yani sondaki virgül veya `nullable` anahtarı nightly eval yerine hemen, aynı oturumda düzeltilir. Hook prompt'a değil koda dayandığı için Claude'un 'atlaması' mümkün değildir.\nWhy A is wrong: Prose talimat olasılıksaldır; büyük harf yazmak atlamayı engellemez. Plan modu ise her küçük şema düzeltmesi için orantısızdır ve geçerlilik kontrolü yapmaz.\nWhy B is wrong: Yazımı tamamen engellemek sorunu çözmez, Claude Code'un şema geliştirmedeki değerini yok eder. Amaç geçersiz şemayı yakalamak, yazımı yasaklamak değil.\nWhy D is wrong: PreCompact yalnızca /compact veya otomatik sıkıştırma öncesinde tetiklenir; şema yazımı ile ilişkili değildir ve hatayı hemen yakalamaz.",
+    "question_en": "While editing JSON schema files under schemas/, Claude Code occasionally produces an invalid schema: a trailing comma, a key that does not exist in JSON Schema such as \"nullable\": true (the correct form is \"type\": [\"string\", \"null\"]), or a deleted additionalProperties: false line. These errors are only noticed when the tool_use call is rejected with a schema error in the nightly eval. The team already has a check script, python tools/check_schema.py <file>, that exits non-zero on a bad schema. CLAUDE.md says 'run check_schema.py after writing a schema', but Claude sometimes skips it.\nWhich configuration solves this deterministically?",
+    "options_en": {
+      "A": "Strengthen the CLAUDE.md instruction with capitals and 'NEVER skip'; also require switching to plan mode before every schema edit.",
+      "B": "Block Write(schemas/**) and Edit(schemas/**) via permissions.deny in settings.json; from now on schemas are edited only by hand.",
+      "C": "Add a PostToolUse hook with matcher: \"Write|Edit\" to settings.json; when the file path matches schemas/ the hook runs check_schema.py and, on failure, writes the error to stderr with exit code 2 — Claude sees the error and fixes it in the same turn.",
+      "D": "Add a PreCompact hook that validates the whole schemas/ directory before compaction and appends a warning to the summary if anything is wrong."
+    },
+    "explanation_en": "Why C is correct: schema validity can only be checked after the file is written, which is what a PostToolUse hook is for. With the Write|Edit matcher the hook runs after every write, triggers check_schema.py, and when it returns exit code 2 the stderr content is fed back to Claude — so the trailing comma or the nullable key gets fixed immediately in the same session instead of in the nightly eval. Because the hook is code rather than prompt, Claude cannot 'skip' it.\nWhy A is wrong: prose instructions are probabilistic; capitals do not prevent skipping. Plan mode is disproportionate for every small schema fix and does not validate anything.\nWhy B is wrong: blocking writes altogether does not solve the problem and destroys Claude Code's value in schema development. The goal is to catch invalid schemas, not to forbid writing them.\nWhy D is wrong: PreCompact fires only before /compact or automatic compaction; it is unrelated to schema writes and does not catch the error promptly."
+  },
+  {
+    "index": 310,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.5",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Bir developer, fiş belgelerinde doğruluğu artırmak için Claude Code ile prompts/receipt/ altındaki prompt'u yineliyor. Her turda Claude üç örnek fişi okuyup 'çıktı şimdi doğru görünüyor' diyor ve developer değişikliği kabul ediyor. Bir hafta sonra nightly eval: fiş doğruluğu %91'den %94'e çıkmış ama aynı paylaşılan few-shot dosyasını kullanan fatura doğruluğu %97'den %89'a düşmüş. Repo'da 1.200 etiketli belgeyle çalışan, belge türüne göre tabakalı doğruluk raporlayan `python eval/run.py --set labelled --verbose` betiği zaten var.\nİterasyon sürecinde yapılması gereken temel değişiklik nedir?",
+    "options_tr": {
+      "A": "Etiketli doğrulama setini 'bitti' tanımı yap: Claude Code'dan her prompt değişikliğinden önce ve sonra eval/run.py'yi çalıştırmasını, tabakalı sonuçları karşılaştırmasını ve yalnızca hiçbir belge türünde gerileme yoksa değişikliği tutmasını iste.",
+      "B": "Daha büyük context window'lu bir model kullan ki Claude üç yerine otuz örnek fişi okuyup daha güvenilir bir 'doğru görünüyor' kararı versin.",
+      "C": "CLAUDE.md'ye 'fatura doğruluğunu asla düşürme' kuralını ekle; Claude bundan sonra fatura etkisini prompt değişikliğinde dikkate alır.",
+      "D": "Her prompt iterasyonunu plan modunda yap; plan aşaması gerilemeleri değişiklik uygulanmadan önce yakalar."
+    },
+    "correct_answer": "A",
+    "explanation_tr": "Why A is correct: Sorun, iterasyonun Claude'un üç belge üzerindeki öznel 'doğru görünüyor' değerlendirmesine dayanması. Test-first iterasyon ilkesi, geçme kriterini önceden kodlanmış ve çalıştırılabilir bir kontrole bağlar; burada bu kontrol zaten var. Her değişiklikten önce/sonra tabakalı eval çalıştırmak, fatura gerilemesini nightly eval yerine aynı turda görünür kılar ve %96 genel doğruluğun tek türdeki zayıflığı gizlemesini önler.\nWhy B is wrong: Daha fazla örnek okumak yine öznel bir değerlendirmedir; gerileme fatura tarafında, Claude'un baktığı fiş örneklerinde değil. Model boyutu ölçüm eksikliğini gidermez.\nWhy C is wrong: Prose kural, gerilemeyi ölçmez; Claude'un etkiyi 'dikkate alması' deterministik değildir. Gerileme tespiti ölçüm gerektirir, talimat değil.\nWhy D is wrong: Plan modu tasarım kararları içindir; eval çalıştırmadan gerilemeyi göremez. Sorun planlama eksikliği değil, geri bildirim döngüsünün ölçüme dayanmaması.",
+    "question_en": "A developer is iterating on the prompt under prompts/receipt/ with Claude Code to raise accuracy on receipts. Each turn Claude reads three sample receipts, says 'the output now looks correct', and the developer accepts the change. A week later the nightly eval shows receipt accuracy up from 91% to 94% but invoice accuracy — which uses the same shared few-shot file — down from 97% to 89%. The repo already has python eval/run.py --set labelled --verbose, which runs 1,200 labelled documents and reports accuracy stratified by document type.\nWhat is the key change to make in the iteration process?",
+    "options_en": {
+      "A": "Make the labelled validation set the definition of done: ask Claude Code to run eval/run.py before and after every prompt change, compare the stratified results and keep the change only if no document type regresses.",
+      "B": "Use a model with a bigger context window so Claude can read thirty sample receipts instead of three and make a more reliable 'looks correct' judgement.",
+      "C": "Add the rule 'never lower invoice accuracy' to CLAUDE.md; Claude will then consider the invoice impact when changing the prompt.",
+      "D": "Do every prompt iteration in plan mode; the planning stage catches regressions before the change is applied."
+    },
+    "explanation_en": "Why A is correct: the problem is that iteration rests on Claude's subjective 'looks correct' judgement over three documents. The test-first iteration principle ties the pass criterion to a pre-written, runnable check — and here that check already exists. Running the stratified eval before and after each change makes the invoice regression visible in the same turn rather than in the nightly eval, and prevents an overall figure from hiding weakness in one document type.\nWhy B is wrong: reading more samples is still a subjective judgement; the regression is on invoices, not in the receipt samples Claude looks at. Model size does not fix a missing measurement.\nWhy C is wrong: a prose rule does not measure regression; Claude 'considering' the impact is not deterministic. Detecting regressions needs measurement, not instructions.\nWhy D is wrong: plan mode is for design decisions; it cannot see a regression without running the eval. The issue is not lack of planning but a feedback loop that is not grounded in measurement."
+  },
+  {
+    "index": 311,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.6",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Ekibin CI'da iki Claude Code işi var: (1) schemas/ veya prompts/ dosyasına dokunan her PR'da 200 belgelik regresyon eval'ini çalıştırıp doğruluk düşerse merge'ü engelleyen bir kontrol; (2) 2.000 etiketli belgede tabakalı doğruluk raporu üreten nightly eval. Maliyeti düşürmek için bir mühendis her iki işi de Batch API üzerinden çalışacak şekilde değiştirdi. Bir hafta sonra developer'lar şema PR'larının merge için bazen 20 saat beklediğini, bazen de sonucu beklemeden merge edildiğini bildiriyor.\nDoğru düzeltme nedir?",
+    "options_tr": {
+      "A": "Her iki işi de senkron `claude -p` çağrısına geri döndür; Batch API CI'da hiçbir zaman kullanılmamalıdır.",
+      "B": "PR engelleyici eval'i senkron `claude -p \"...\" --output-format json` çağrısına geri döndür ve JSON'daki doğruluk alanına göre işi geçir/düşür; nightly raporu Batch API'da tut — gecikmeye toleranslı, bloklayıcı değil ve %50 daha ucuz.",
+      "C": "Her iki işi Batch'te tut ama PR kontrolüne 24 saatlik bir bekleme adımı ekle; böylece merge asla sonuçtan önce olmaz.",
+      "D": "PR eval'ini 200 belgeden 20 belgeye düşür; Batch işi böylece yeterince hızlı tamamlanır ve merge beklemez."
+    },
+    "correct_answer": "B",
+    "explanation_tr": "Why B is correct: İki iş farklı gecikme profiline sahip. PR kontrolü bloklayıcıdır: sonuç, merge kararını belirler ve dakikalar içinde gelmelidir — senkron headless çağrı, --output-format json ile makine-okunabilir doğruluk değeri ve buna göre exit code doğru desendir. Nightly rapor ise kimseyi bloklamaz; Batch API'nin 24 saatlik penceresi ve %50 tasarrufu tam bu tür işler içindir.\nWhy A is wrong: Batch, bloklayıcı olmayan işler için doğru araçtır; 2.000 belgelik nightly raporu senkron çalıştırmak maliyeti gereksiz yere ikiye katlar.\nWhy C is wrong: PR'ları 24 saat bekletmek geliştirme akışını kırar; sorun bekleme süresinin belirsizliği değil, bloklayıcı işin SLA'sız bir kanala konmuş olması.\nWhy D is wrong: Batch'in tamamlanma süresi belge sayısıyla değil kuyruk ile belirlenir; 20 belge de 24 saate kadar bekleyebilir. Ayrıca örneklemi küçültmek regresyon tespit gücünü düşürür.",
+    "question_en": "The team has two Claude Code jobs in CI: (1) a check that runs a 200-document regression eval on every PR touching schemas/ or prompts/ and blocks the merge if accuracy drops; (2) a nightly eval producing a stratified accuracy report over 2,000 labelled documents. To cut cost an engineer changed both jobs to run through the Batch API. A week later developers report that schema PRs sometimes wait 20 hours for merge and sometimes get merged without waiting for the result.\nWhat is the correct fix?",
+    "options_en": {
+      "A": "Revert both jobs to synchronous claude -p calls; the Batch API should never be used in CI.",
+      "B": "Revert the PR-blocking eval to a synchronous claude -p \"...\" --output-format json call and pass/fail the job on the accuracy field in the JSON; keep the nightly report on the Batch API — it is latency-tolerant, non-blocking and 50% cheaper.",
+      "C": "Keep both jobs on Batch but add a 24-hour wait step to the PR check so a merge never happens before the result.",
+      "D": "Reduce the PR eval from 200 documents to 20; the Batch job will then finish fast enough that merges do not wait."
+    },
+    "explanation_en": "Why B is correct: the two jobs have different latency profiles. The PR check is blocking: its result decides the merge and must arrive within minutes — a synchronous headless call, a machine-readable accuracy value via --output-format json and an exit code derived from it is the right pattern. The nightly report blocks nobody; the Batch API's 24-hour window and 50% saving are made for exactly that kind of job.\nWhy A is wrong: Batch is the right tool for non-blocking jobs; running the 2,000-document nightly report synchronously doubles its cost for no reason.\nWhy C is wrong: holding PRs for 24 hours breaks the development flow; the problem is not the uncertainty of the wait but that a blocking job was put on a channel without an SLA.\nWhy D is wrong: Batch completion time is governed by the queue, not the document count; 20 documents can still wait up to 24 hours. Shrinking the sample also weakens regression detection."
+  },
+  {
+    "index": 312,
+    "domain": 3,
+    "domain_title_tr": "Claude Code Konfigürasyonu ve İş Akışları",
+    "domain_title_en": "Claude Code Configuration & Workflows",
+    "task_statement": "Task Statement 3.6",
+    "scenario": 6,
+    "scenario_title": "Structured Data Extraction",
+    "question_tr": "Nightly eval işi GitHub Actions'ta şu komutla çalışıyor: `claude -p \"Run eval/run.py on the labelled set and summarise per-type accuracy\" --output-format json --dangerously-skip-permissions`. Bir mühendis bu bayrağı, iş izin isteyip askıda kaldığı için eklemiş. Geçen gece iş, doğruluk düşüşünü 'düzeltmek' için schemas/production/invoice.json dosyasındaki bir alanı nullable yapıp commit attı. Ekip işin yalnızca eval betiğini çalıştırıp raporlamasını, hiçbir dosyaya yazmamasını istiyor.\nDoğru konfigürasyon nedir?",
+    "options_tr": {
+      "A": "Prompt'a 'hiçbir dosyayı değiştirme, sadece raporla' cümlesini ekle ve `--dangerously-skip-permissions` bayrağını koru; headless modda izin istemi zaten çalışmaz.",
+      "B": "İşi `--permission-mode plan` ile çalıştır; plan modunda Claude Bash dahil hiçbir araç çalıştırmaz, böylece dosya değişikliği imkânsız olur.",
+      "C": "Komutu `--resume` ile geliştiricinin son interaktif oturumuna bağla; o oturumda izinler zaten verilmiş olduğundan tehlikeli bayrak gerekmez.",
+      "D": "`--dangerously-skip-permissions` bayrağını kaldır ve `--allowedTools \"Read\" \"Bash(python eval/run.py *)\"` ile araç setini daralt; Write/Edit ve git komutları listede olmadığı için iş dosya değiştiremez ve izin istemi olmadan tamamlanır."
+    },
+    "correct_answer": "D",
+    "explanation_tr": "Why D is correct: Headless CI'da izin sorunu, tüm izinleri kapatarak değil, işe gereken araçları önceden onaylayarak çözülür. --allowedTools ile yalnızca Read ve eval betiğini çalıştıran Bash deseni açılır; Write, Edit ve git için Bash listede olmadığından Claude bunları çalıştıramaz. İş askıda kalmaz, production şeması da güvende kalır — deterministik olarak.\nWhy A is wrong: Prompt talimatı olasılıksaldır; --dangerously-skip-permissions tüm araçları serbest bıraktığı için Claude yine dosya yazabilir. Production şemasına dokunma riski prompt'la yönetilmez.\nWhy B is wrong: Plan modu araç çalıştırmayı kısıtlar ama eval betiğinin Bash ile çalışması da engellenir; iş amacını yerine getiremez.\nWhy C is wrong: CI adımları bağımsız, tekrarlanabilir oturumlar olmalıdır; bir geliştiricinin interaktif oturumuna bağlanmak bayat bağlam getirir ve izin modeli olarak da güvenilmez.",
+    "question_en": "The nightly eval job runs in GitHub Actions with: claude -p \"Run eval/run.py on the labelled set and summarise per-type accuracy\" --output-format json --dangerously-skip-permissions. An engineer added the flag because the job used to hang waiting for permission. Last night the job 'fixed' an accuracy drop by making a field nullable in schemas/production/invoice.json and committing it. The team wants the job to only run the eval script and report, never write to any file.\nWhat is the correct configuration?",
+    "options_en": {
+      "A": "Add 'do not modify any file, only report' to the prompt and keep --dangerously-skip-permissions; permission prompts do not work in headless mode anyway.",
+      "B": "Run the job with --permission-mode plan; in plan mode Claude runs no tools including Bash, so file changes become impossible.",
+      "C": "Attach the command to the developer's last interactive session with --resume; permissions were already granted there, so the dangerous flag is unnecessary.",
+      "D": "Remove --dangerously-skip-permissions and narrow the tool set with --allowedTools \"Read\" \"Bash(python eval/run.py *)\"; because Write/Edit and git commands are not on the list the job cannot change files and completes without a permission prompt."
+    },
+    "explanation_en": "Why D is correct: in headless CI the permission problem is solved by pre-approving the tools the job needs, not by switching all permissions off. --allowedTools opens only Read and the Bash pattern that runs the eval script; since Write, Edit and Bash for git are not on the list, Claude cannot run them. The job does not hang and the production schema stays safe — deterministically.\nWhy A is wrong: a prompt instruction is probabilistic; --dangerously-skip-permissions leaves every tool available, so Claude can still write files. The risk of touching a production schema is not managed with prompts.\nWhy B is wrong: plan mode restricts tool execution, but that also stops the eval script from running via Bash; the job cannot do its work.\nWhy C is wrong: CI steps should be independent, reproducible sessions; attaching to a developer's interactive session brings in stale context and is not a reliable permission model either."
+  }
+]
