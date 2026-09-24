@@ -1,19 +1,15 @@
-"""One-off: merges the two authored source files into content/question_pool.json,
-the Question Pool's committed source of truth (#12). Not part of the regular build —
-re-run only if new source batches need merging in."""
+"""One-off: converts docs/question-pool-merged-312.json (the authored Question Pool,
+our source of truth for questions) into content/question_pool.json, the build's
+consumable schema (#12). Not part of the regular build — re-run only if the
+authored pool changes."""
 import json
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SOURCES = [
-    os.path.join(ROOT, "docs", "question-pool-merged-280_with-scenario.json"),
-    os.path.join(ROOT, "docs", "question-pool-domain3-with-scenario-new-32.json"),
-]
+SOURCE = os.path.join(ROOT, "docs", "question-pool-merged-312.json")
 
-merged = []
-for path in SOURCES:
-    merged.extend(json.load(open(path, encoding="utf-8")))
+merged = json.load(open(SOURCE, encoding="utf-8"))
 
 out = []
 for q in merged:
