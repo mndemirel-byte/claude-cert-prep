@@ -44,13 +44,19 @@ h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0 0 20px;font-weight
 .lesson{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .lesson summary{cursor:pointer;padding:16px 18px;display:flex;gap:14px;align-items:baseline;font-weight:700;list-style:none}
 .lesson summary::-webkit-details-marker{display:none}
-.lesson summary::after{content:"+";margin-left:auto;color:var(--c);font-size:1.4rem;font-weight:500;line-height:1}
+.lesson summary::after{content:"+";color:var(--c);font-size:1.4rem;font-weight:500;line-height:1}
 .lesson[open] summary::after{content:"–"}
 .lesson[open] summary{border-bottom:1px solid var(--line)}
 .lidx{color:var(--c);font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.85rem;white-space:nowrap}
 .lesson-play{margin-left:auto;flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--c);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;padding:0}
 .lesson-play.playing{background:var(--c);color:#fff;border-color:var(--c)}
 .lesson-play[hidden]{display:none}
+.narration-controls{display:flex;align-items:center;gap:8px;padding:0 18px 14px;font-size:.8rem;color:var(--muted)}
+.narration-controls[hidden]{display:none}
+.narration-controls button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--c);border-radius:6px;cursor:pointer;padding:4px 8px;font-size:.8rem;line-height:1}
+.nc-seek{flex:1;accent-color:var(--c)}
+.nc-time{font-family:"JetBrains Mono",ui-monospace,monospace;white-space:nowrap}
+.nc-speed{min-width:2.6em}
 .lesson .prose{padding:6px 22px 22px}
 /* prose */
 .prose{font-size:.98rem}
