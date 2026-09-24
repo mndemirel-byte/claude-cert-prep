@@ -1,10 +1,10 @@
-# Task Statement 1.6: Task Decomposition Strategies
+# Task Statement 1.6: Görev Ayrıştırma Stratejileri (Task Decomposition Strategies)
 
-## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+## Domain 1 — Agentic Mimari ve Orkestrasyon (Sınavın %27'si)
 
 ---
 
-## The Core Idea
+## Temel Fikir
 
 Büyük görevleri nasıl parçalara ayırırsın? İki temel pattern var ve her birinin ne zaman doğru olduğunu bilmen gerekiyor.
 
@@ -58,19 +58,19 @@ Per-file geçişleri yerel sorunları tutarlı şekilde yakalar; entegrasyon ge�
 
 ---
 
-## Key Exam Takeaways
+## Sınav İçin Temel Çıkarımlar
 
-| Concept | Remember |
+| Kavram | Hatırla |
 |---|---|
 | Fixed sequential pipelines | Önceden belirlenmiş sıralı adımlar — tahmin edilebilir görevler için |
 | Dynamic adaptive decomposition | Keşfedilen bilgiye göre dinamik alt görevler — açık uçlu araştırma için |
 | Attention dilution | Tek geçişte çok fazla veri → tutarsız derinlik ve çelişkili değerlendirmeler |
 | Multi-pass architecture | Per-file local analysis + cross-file integration — attention dilution'ın çözümü |
-| Exam trap | "Prompt'a eşit dikkat göster yaz" gibi çözümler yapısal sorunu çözmez — reddet |
+| Sınav tuzağı | "Prompt'a eşit dikkat göster yaz" gibi çözümler yapısal sorunu çözmez — reddet |
 
 ---
 
-## Practice Scenario
+## Pratik Senaryo
 
 > Bir kod inceleme agent'ı 14 dosyalık bir pull request'i tek geçişte analiz ediyor. Sonuçlar:
 >
@@ -87,12 +87,12 @@ Per-file geçişleri yerel sorunları tutarlı şekilde yakalar; entegrasyon ge�
 >
 > **D)** Dosyalar alfabetik sırayla değil, öncelik sırasına göre sıralanmalı.
 
-### Correct Answer: B
+### Doğru Cevap: B
 
-**Why B is correct:** 14 dosyayı tek geçişte işlemek Claude'un dikkatini dağıtıyor. Tutarsız derinlik ve aynı pattern'a farklı tepkiler vermesi bunun klasik belirtisi. Multi-pass mimari — önce her dosyayı ayrı ayrı analiz et, sonra dosyalar arası entegrasyon geçişi yap — her iki sorunu da çözer.
+**Neden B doğru:** 14 dosyayı tek geçişte işlemek Claude'un dikkatini dağıtıyor. Tutarsız derinlik ve aynı pattern'a farklı tepkiler vermesi bunun klasik belirtisi. Multi-pass mimari — önce her dosyayı ayrı ayrı analiz et, sonra dosyalar arası entegrasyon geçişi yap — her iki sorunu da çözer.
 
-**Why A is wrong:** Sorun context window boyutu değil, dikkat dağılımı. Daha büyük model aynı sorunu yaşar çünkü tek geçişte 14 dosyaya odaklanmaya çalışmak yapısal bir problem.
+**Neden A yanlış:** Sorun context window boyutu değil, dikkat dağılımı. Daha büyük model aynı sorunu yaşar çünkü tek geçişte 14 dosyaya odaklanmaya çalışmak yapısal bir problem.
 
-**Why C is wrong:** Prompt talimatı olasılıksal. "Eşit dikkat göster" demek attention dilution'ı çözmez — bu yapısal bir mimari sorunu, prompt sorunu değil.
+**Neden C yanlış:** Prompt talimatı olasılıksal. "Eşit dikkat göster" demek attention dilution'ı çözmez — bu yapısal bir mimari sorunu, prompt sorunu değil.
 
-**Why D is wrong:** Sıralama değişikliği hangi dosyaların ihmal edildiğini değiştirir ama sorunu çözmez. Hâlâ tek geçiş, hâlâ dikkat dağılımı.
+**Neden D yanlış:** Sıralama değişikliği hangi dosyaların ihmal edildiğini değiştirir ama sorunu çözmez. Hâlâ tek geçiş, hâlâ dikkat dağılımı.

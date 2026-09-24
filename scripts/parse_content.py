@@ -7,7 +7,7 @@ MD=lambda s: markdown.markdown(s, extensions=['fenced_code','tables','sane_lists
 DOMAINS = [
  {"id":1,"title":"Agentic Mimari ve Orkestrasyon","weight":27,"hue":"#0F6E6E",
   "desc":"Agentic döngüler, çoklu agent orkestrasyonu, subagent çağırma ve bağlam aktarımı, iş akışı zorlaması ve hook'lar, görev ayrıştırma, oturum durumu.",
-  "lessons":["task_statement_1_1_agentic_loops_TR.md","task_statement_1_2_multi_agent_orchestration_TR.md","task_statement_1_3_subagent_invocation.md","task_statement_1_4_workflow_enforcement.md","task_statement_1_5_agent_sdk_hooks.md","task_statement_1_6_task_decomposition.md","task_statement_1_7_session_state.md"],
+  "lessons":["task_statement_1_1_agentic_loops_TR.md","task_statement_1_2_multi_agent_orchestration_TR.md","task_statement_1_3_subagent_invocation_TR.md","task_statement_1_4_workflow_enforcement_TR.md","task_statement_1_5_agent_sdk_hooks_TR.md","task_statement_1_6_task_decomposition_TR.md","task_statement_1_7_session_state_TR.md"],
   "quiz":"domain_1_practice_exam.md","fmt":"A"},
  {"id":2,"title":"Araç Tasarımı ve MCP Entegrasyonu","weight":18,"hue":"#8A4B08",
   "desc":"Araç arayüzü tasarımı, yapılandırılmış hata yanıtları, araç dağılımı ve tool_choice, MCP sunucu entegrasyonu, yerleşik araçlar.",

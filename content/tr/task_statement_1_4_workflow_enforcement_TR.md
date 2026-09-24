@@ -1,10 +1,10 @@
-# Task Statement 1.4: Workflow Enforcement and Handoff
+# Task Statement 1.4: İş Akışı Zorlaması ve Devir Teslim (Workflow Enforcement and Handoff)
 
-## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+## Domain 1 — Agentic Mimari ve Orkestrasyon (Sınavın %27'si)
 
 ---
 
-## The Core Idea
+## Temel Fikir
 
 Agentic loops, multi-agent orchestration, context passing — bunların hepsi Claude'un **esnek** ve **akıllı** kararlar vermesine dayanıyor. Ama bazı kararlar esnekliğe bırakılamaz. Bazı kurallar **her seferinde, istisnasız** uygulanmalıdır.
 
@@ -12,7 +12,7 @@ Bu task statement tam olarak bunu öğretiyor: **ne zaman Claude'a güvenirsin, 
 
 ---
 
-## The Enforcement Spectrum
+## Zorlama Spektrumu
 
 İki yaklaşım var:
 
@@ -37,7 +37,7 @@ Bu çok net ve sınavda tekrar tekrar test ediliyor:
 
 ---
 
-## Multi-Concern Request Handling
+## Çoklu Sorunlu İstekleri Yönetme
 
 Bir müşteri aynı anda birden fazla sorun bildirdiğinde:
 
@@ -47,7 +47,7 @@ Bir müşteri aynı anda birden fazla sorun bildirdiğinde:
 
 ---
 
-## Structured Handoff Protocols
+## Yapılandırılmış Devir Teslim Protokolleri
 
 Bazen agent sorunu çözemez ve bir insan agent'a yönlendirmesi gerekir. Bu escalation'da kritik kural:
 
@@ -63,20 +63,20 @@ Handoff özetinde bulunması gerekenler:
 
 ---
 
-## Key Exam Takeaways
+## Sınav İçin Temel Çıkarımlar
 
-| Concept | Remember |
+| Kavram | Hatırla |
 |---|---|
 | Prompt-based guidance | Olasılıksal — çoğu zaman çalışır, %100 garanti değil |
 | Programmatic enforcement | Deterministik — prerequisite gate ile fiziksel engel, %100 garanti |
 | Karar kuralı | Finansal / güvenlik / compliance → programmatic. Düşük risk → prompt yeterli |
 | Multi-concern requests | Ayrıştır → paralel araştır → birleşik çözüm sentezle |
 | Handoff protocol | Self-contained özet: müşteri ID, özet, kök neden, tutar, önerilen aksiyon |
-| Exam trap | Yüksek riskli senaryolarda prompt-based çözümler şık olarak sunulur — reddet |
+| Sınav tuzağı | Yüksek riskli senaryolarda prompt-based çözümler şık olarak sunulur — reddet |
 
 ---
 
-## Practice Scenario
+## Pratik Senaryo
 
 > Production verileri gösteriyor ki vakaların %8'inde, bir müşteri destek agent'ı hesap sahipliğini doğrulamadan (verify account ownership) iade işlemi yapıyor. Bu bazen yanlış hesaplara iade yapılmasına yol açıyor.
 >
@@ -90,12 +90,12 @@ Handoff özetinde bulunması gerekenler:
 >
 > **D)** Bir routing classifier ekle — iade isteklerini önce doğrulama akışına yönlendirsin.
 
-### Correct Answer: A
+### Doğru Cevap: A
 
-**Why A is correct:** Finansal sonuçları olan bir işlem — yanlış hesaba iade yapılıyor. Bu %100 garanti gerektiriyor. Programmatik prerequisite gate, `verify_identity` tamamlanmadan refund tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.
+**Neden A doğru:** Finansal sonuçları olan bir işlem — yanlış hesaba iade yapılıyor. Bu %100 garanti gerektiriyor. Programmatik prerequisite gate, `verify_identity` tamamlanmadan refund tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.
 
-**Why B is wrong:** Prompt güçlendirme olasılıksal — %92'den %97'ye çıkarabilir ama %100 garanti edemez. Zaten mevcut durumda %8 hata var, bu da prompt'un yetmediğinin kanıtı. Finansal risk devam eder.
+**Neden B yanlış:** Prompt güçlendirme olasılıksal — %92'den %97'ye çıkarabilir ama %100 garanti edemez. Zaten mevcut durumda %8 hata var, bu da prompt'un yetmediğinin kanıtı. Finansal risk devam eder.
 
-**Why C is wrong:** Few-shot örnekler de prompt-based guidance kategorisinde. Modelin davranışını *yönlendirir* ama *zorlamaz*. Aynı sorun — deterministik değil.
+**Neden C yanlış:** Few-shot örnekler de prompt-based guidance kategorisinde. Modelin davranışını *yönlendirir* ama *zorlamaz*. Aynı sorun — deterministik değil.
 
-**Why D is wrong:** Routing classifier sorunu farklı bir yere taşır ama çözmez. Classifier da hata yapabilir. Ve asıl mesele şu: refund tool'u hâlâ doğrulama olmadan çağrılabilir durumda. Gate yok, garanti yok.
+**Neden D yanlış:** Routing classifier sorunu farklı bir yere taşır ama çözmez. Classifier da hata yapabilir. Ve asıl mesele şu: refund tool'u hâlâ doğrulama olmadan çağrılabilir durumda. Gate yok, garanti yok.

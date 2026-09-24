@@ -121,11 +121,11 @@ def test_discovers_all_current_repo_lessons_with_correct_domain_1_language_cover
     assert len(lessons) == 30
     assert coverage["1.1"] == (True, True)
     assert coverage["1.2"] == (True, True)
-    assert coverage["1.3"] == (True, False)
-    assert coverage["1.7"] == (True, False)
+    assert coverage["1.3"] == (True, True)
+    assert coverage["1.7"] == (True, True)
     assert coverage["2.1"] == (True, True)
     assert coverage["5.6"] == (True, True)
-    assert all(en for en, _ in coverage.values())
+    assert all(en and tr for en, tr in coverage.values())
 
 
 def test_plans_generation_for_every_lesson_when_manifest_is_empty():

@@ -1,10 +1,10 @@
-# Task Statement 1.5: Agent SDK Hooks
+# Task Statement 1.5: Agent SDK Hook'ları (Agent SDK Hooks)
 
-## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+## Domain 1 — Agentic Mimari ve Orkestrasyon (Sınavın %27'si)
 
 ---
 
-## The Core Idea
+## Temel Fikir
 
 Task Statement 1.4'te programmatic enforcement'ın neden gerekli olduğunu öğrendik. Şimdi **nasıl** uygulandığını öğreniyoruz. Cevap: **hooks**.
 
@@ -49,25 +49,25 @@ Tool çağrılmadan **önce** araya girer.
 
 ---
 
-## Key Exam Takeaways
+## Sınav İçin Temel Çıkarımlar
 
-| Concept | Remember |
+| Kavram | Hatırla |
 |---|---|
 | PostToolUse hooks | Tool sonuçlarını Claude'a göndermeden önce yakalar — veri normalizasyonu için |
 | Tool call interception | Tool çağrılmadan önce yakalar — iş kurallarını zorlamak için |
 | Hook = deterministik | %100 garanti — business rules, compliance, finansal kontroller |
 | Prompt = olasılıksal | Çoğu zaman çalışır — tercihler ve yumuşak kurallar için yeterli |
-| Decision rule | Tek bir hata para kaybı veya yasal risk yaratıyorsa → her zaman hook |
+| Karar kuralı | Tek bir hata para kaybı veya yasal risk yaratıyorsa → her zaman hook |
 
 ---
 
-## Practice Scenario
+## Pratik Senaryo
 
 > Bir agent zaman zaman uluslararası transferleri gerekli compliance kontrolleri yapmadan işliyor. Bu düzenleyici (regulatory) risk yaratıyor.
 >
 > **Çözüm: hook mu, yoksa geliştirilmiş prompt talimatları mı? Neden?**
 
-### Correct Answer: Hook
+### Doğru Cevap: Hook
 
 **Açıklama:** Regulatory risk = tek bir başarısızlık yasal sonuç doğurur. Prompt talimatları başarı oranını artırabilir (örneğin %92'den %97'ye) ama %100 garanti edemez. Tool call interception hook, compliance kontrolü tamamlanmadan transfer tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.
 

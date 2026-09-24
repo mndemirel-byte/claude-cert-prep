@@ -615,10 +615,10 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>Why A is wrong:</strong> The web search subagent returns excellent results when tested independently with geothermal or tidal queries. Its search capability is fine — it was simply never given those topics to search for. The fault is upstream.</p>
 <p><strong>Why C is wrong:</strong> The synthesis subagent can only synthesise what it receives. If no research on geothermal or tidal was ever conducted, there's nothing for it to filter out. The missing topics were never researched in the first place.</p>
 <p><strong>Why D is wrong:</strong> This is the isolation principle trap. Giving subagents the coordinator's full conversation history is the opposite of good architecture. Subagents should receive only the specific context they need, explicitly passed by the coordinator. The fix is to improve the coordinator's decomposition, not to break the isolation principle.</p></div></details>
-<details class="lesson" data-narration-en="audio/en/D1-3.mp3"><summary><span class="lidx">1.3</span><span class="ltitle"><span class="l-tr">Subagent Invocation and Context Passing</span><span class="l-en">Subagent Invocation and Context Passing</span></span></summary><div class="prose l-tr"><h2>The Core Idea</h2>
+<details class="lesson" data-narration-en="audio/en/D1-3.mp3" data-narration-tr="audio/tr/D1-3.mp3"><summary><span class="lidx">1.3</span><span class="ltitle"><span class="l-tr">Subagent Çağırma ve Bağlam Aktarımı (Subagent Invocation and Context Passing)</span><span class="l-en">Subagent Invocation and Context Passing</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Task Statement 1.2'de koordinatörün subagent'ları yönettiğini öğrendik. Şimdi asıl soruya geliyoruz: <strong>koordinatör subagent'ları nasıl oluşturur ve onlara bilgiyi nasıl aktarır?</strong></p>
 <hr />
-<h2>The Task Tool</h2>
+<h2>Task Tool</h2>
 <p>Koordinatörün subagent oluşturma mekanizması <strong>Task tool</strong>'dur. Kritik detay: koordinatörün <code>allowedTools</code> listesinde <code>"Task"</code> yoksa, subagent oluşturamaz — hiçbir şekilde.</p>
 <p>Her subagent bir <strong>AgentDefinition</strong> ile tanımlanır. Bu tanım üç şey içerir:</p>
 <ul>
@@ -664,12 +664,12 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><code>fork_session</code> paylaşılan bir analiz temelinden <strong>bağımsız dallar</strong> oluşturur.</p>
 <p>Kullanım senaryosu: Aynı kod tabanı analizinden iki farklı test stratejisini karşılaştırmak istiyorsun. <code>fork_session</code> ile ortak başlangıç noktasından iki bağımsız dal yaratırsın. Her dal dallanma noktasından sonra birbirinden bağımsız çalışır.</p>
 <hr />
-<h2>Key Exam Takeaways</h2>
+<h2>Sınav İçin Temel Çıkarımlar</h2>
 <table>
 <thead>
 <tr>
-<th>Concept</th>
-<th>Remember</th>
+<th>Kavram</th>
+<th>Hatırla</th>
 </tr>
 </thead>
 <tbody>
@@ -690,7 +690,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <td>Claim-source eşleştirmesi — içeriği metadatadan ayır (URL, doküman adı, sayfa no)</td>
 </tr>
 <tr>
-<td>Coordinator prompts</td>
+<td>Koordinatör prompt'ları</td>
 <td>Hedef ve kalite kriterleri belirt, adım adım talimat verme</td>
 </tr>
 <tr>
@@ -704,7 +704,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 </tbody>
 </table>
 <hr />
-<h2>Practice Scenario</h2>
+<h2>Pratik Senaryo</h2>
 <blockquote>
 <p>Bir multi-agent research sistemi var. Web search subagent ve document analysis subagent mükemmel çalışıyor — her ikisi de zengin, kaynaklı veriler üretiyor. Ancak synthesis subagent'ın ürettiği nihai raporda birçok iddia <strong>kaynak atıfsız</strong> — hangi bilginin nereden geldiği belli değil.</p>
 <p><strong>Kök neden nedir ve nasıl düzeltilir?</strong></p>
@@ -713,32 +713,32 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>C)</strong> Web search subagent kaynak URL'lerini döndürmüyor — arama sonuçlarına URL eklenmeli.</p>
 <p><strong>D)</strong> Synthesis subagent'a koordinatörün tam konuşma geçmişi verilmeli ki kaynakları görebilsin.</p>
 </blockquote>
-<h3>Correct Answer: B</h3>
-<p><strong>Why B is correct:</strong> Sorun bilginin <em>nasıl aktarıldığında</em>. Web search ve document analysis agent'ları doğru çalışıyor — veriyi üretiyorlar. Ama koordinatör bu verileri synthesis agent'a aktarırken düz metin olarak gönderiyor, metadata'yı (kaynak URL, doküman adı, sayfa numarası) ayrıştırılmış şekilde dahil etmiyor. Synthesis agent ham metni görüyor ama hangi iddianın hangi kaynaktan geldiğini ayırt edemiyor. Çözüm: subagent'ların çıktısını claim-source eşleştirmesi yapan yapılandırılmış formata dönüştürmek.</p>
-<p><strong>Why A is wrong:</strong> Prompt'a talimat eklemek yardımcı olabilir ama kök neden bu değil. Synthesis agent'a "kaynak belirt" desen bile, eğer kendisine gelen veride kaynak bilgisi yapılandırılmış şekilde yoksa, atıf yapacak bir şeyi yok. Prompt talimatı, eksik veriyi yaratamaz.</p>
-<p><strong>Why C is wrong:</strong> Soruda açıkça belirtiliyor — web search subagent mükemmel çalışıyor ve zengin veriler üretiyor. Sorun üretimde değil, koordinatörün aktarım mekanizmasında.</p>
-<p><strong>Why D is wrong:</strong> Isolation principle tuzağı. Subagent'lara koordinatörün tam konuşma geçmişini vermek doğru mimari yaklaşım değil — bu izolasyon ilkesini ihlal eder. Çözüm, koordinatörün structured metadata ile context passing yapmasıdır.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
-<p>Task Statement 1.2'de koordinatörün subagent'ları yönettiğini öğrendik. Şimdi asıl soruya geliyoruz: <strong>koordinatör subagent'ları nasıl oluşturur ve onlara bilgiyi nasıl aktarır?</strong></p>
+<h3>Doğru Cevap: B</h3>
+<p><strong>Neden B doğru:</strong> Sorun bilginin <em>nasıl aktarıldığında</em>. Web search ve document analysis agent'ları doğru çalışıyor — veriyi üretiyorlar. Ama koordinatör bu verileri synthesis agent'a aktarırken düz metin olarak gönderiyor, metadata'yı (kaynak URL, doküman adı, sayfa numarası) ayrıştırılmış şekilde dahil etmiyor. Synthesis agent ham metni görüyor ama hangi iddianın hangi kaynaktan geldiğini ayırt edemiyor. Çözüm: subagent'ların çıktısını claim-source eşleştirmesi yapan yapılandırılmış formata dönüştürmek.</p>
+<p><strong>Neden A yanlış:</strong> Prompt'a talimat eklemek yardımcı olabilir ama kök neden bu değil. Synthesis agent'a "kaynak belirt" desen bile, eğer kendisine gelen veride kaynak bilgisi yapılandırılmış şekilde yoksa, atıf yapacak bir şeyi yok. Prompt talimatı, eksik veriyi yaratamaz.</p>
+<p><strong>Neden C yanlış:</strong> Soruda açıkça belirtiliyor — web search subagent mükemmel çalışıyor ve zengin veriler üretiyor. Sorun üretimde değil, koordinatörün aktarım mekanizmasında.</p>
+<p><strong>Neden D yanlış:</strong> Isolation principle tuzağı. Subagent'lara koordinatörün tam konuşma geçmişini vermek doğru mimari yaklaşım değil — bu izolasyon ilkesini ihlal eder. Çözüm, koordinatörün structured metadata ile context passing yapmasıdır.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
+<p>Task Statement 1.2 covered how the coordinator manages subagents. Now the real question: <strong>how does the coordinator create subagents, and how does it pass them information?</strong></p>
 <hr />
 <h2>The Task Tool</h2>
-<p>Koordinatörün subagent oluşturma mekanizması <strong>Task tool</strong>'dur. Kritik detay: koordinatörün <code>allowedTools</code> listesinde <code>"Task"</code> yoksa, subagent oluşturamaz — hiçbir şekilde.</p>
-<p>Her subagent bir <strong>AgentDefinition</strong> ile tanımlanır. Bu tanım üç şey içerir:</p>
+<p>The coordinator's mechanism for creating subagents is the <strong>Task tool</strong>. Critical detail: if <code>"Task"</code> isn't in the coordinator's <code>allowedTools</code> list, it cannot spawn subagents — full stop.</p>
+<p>Every subagent is defined by an <strong>AgentDefinition</strong>, which contains three things:</p>
 <ul>
-<li><strong>Description</strong> — subagent'ın ne yaptığının kısa açıklaması</li>
-<li><strong>System prompt</strong> — subagent'ın davranış kuralları ve talimatları</li>
-<li><strong>Tool restrictions</strong> — subagent'ın erişebildiği araçlar (sadece ihtiyacı olanlar)</li>
+<li><strong>Description</strong> — a short summary of what the subagent does</li>
+<li><strong>System prompt</strong> — the subagent's behavioral rules and instructions</li>
+<li><strong>Tool restrictions</strong> — which tools the subagent can access (only what it needs)</li>
 </ul>
 <hr />
-<h2>Context Passing — En Kritik Konu</h2>
-<p>1.2'deki isolation principle'ı hatırla: subagent'lar hiçbir şeyi otomatik olarak miras almaz. Peki koordinatör bilgiyi nasıl aktarır? Üç temel kural var:</p>
-<h3>Kural 1: Önceki Agent Bulgularını Doğrudan Prompt'a Dahil Et</h3>
-<p>Örneğin, bir synthesis agent'a rapor yazdıracaksan, web search agent'ın bulduğu sonuçları ve document analysis agent'ın çıkardığı bilgileri synthesis agent'ın prompt'una kopyalaman gerekir. Synthesis agent bunları "bilmez" — sen vermezsen göremez.</p>
-<h3>Kural 2: Yapılandırılmış Veri Formatları Kullan — İçeriği Metadatadan Ayır</h3>
-<p>Bu çok önemli ve sınavda sıkça test ediliyor. Subagent'lara bilgi aktarırken sadece ham metin göndermek yetmez. Kaynak URL'lerini, doküman adlarını, sayfa numaralarını içerikten ayrı olarak yapılandırılmış formatta göndermelisin. Böylece attribution (kaynak atıfı) agent'lar arasında korunur.</p>
-<p>Kötü örnek:</p>
+<h2>Context Passing — The Most Critical Topic</h2>
+<p>Recall the isolation principle from 1.2: subagents inherit nothing automatically. So how does the coordinator pass information? Three core rules:</p>
+<h3>Rule 1: Include Prior Agent Findings Directly in the Prompt</h3>
+<p>For example, if you're having a synthesis agent write a report, you need to copy the web search agent's results and the document analysis agent's extracted findings directly into the synthesis agent's prompt. The synthesis agent doesn't "know" about them — it can't see anything you don't give it.</p>
+<h3>Rule 2: Use Structured Data Formats — Separate Content from Metadata</h3>
+<p>This is heavily tested. Sending subagents raw text isn't enough. Source URLs, document names, and page numbers need to travel separately from the content, in a structured format, so attribution survives the handoff between agents.</p>
+<p>Bad example:</p>
 <pre><code>&quot;The global solar market grew 25% in 2024 according to some reports.&quot;
 </code></pre>
-<p>İyi örnek:</p>
+<p>Good example:</p>
 <pre><code class="language-json">{
   &quot;claim&quot;: &quot;The global solar market grew 25% in 2024&quot;,
   &quot;source_url&quot;: &quot;https://iea.org/reports/solar-2024&quot;,
@@ -746,25 +746,25 @@ elif response.stop_reason == &quot;tool_use&quot;:
   &quot;page&quot;: 12
 }
 </code></pre>
-<h3>Kural 3: Hedef ve Kalite Kriterleri Belirt, Prosedürel Talimatlar Değil</h3>
-<p>Koordinatör prompt'ları araştırma hedeflerini ve kalite kriterlerini belirtmeli, adım adım prosedürel talimatlar vermemeli. Bu, subagent'ın bağlama göre uyum sağlamasını mümkün kılar.</p>
+<h3>Rule 3: State Goals and Quality Criteria, Not Step-by-Step Procedures</h3>
+<p>Coordinator prompts should specify research goals and quality bars, not procedural, step-by-step instructions. This lets the subagent adapt to what it actually finds.</p>
 <ul>
-<li><strong>Yanlış:</strong> "Önce şunu ara, sonra şunu oku, sonra şunu yaz."</li>
-<li><strong>Doğru:</strong> "Renewable energy alanındaki son 2 yılın gelişmelerini araştır. Her iddia için kaynak belirt. En az 5 farklı enerji türünü kapsa."</li>
+<li><strong>Wrong:</strong> "First search for X, then read Y, then write Z."</li>
+<li><strong>Right:</strong> "Research developments in renewable energy from the last 2 years. Cite a source for every claim. Cover at least 5 different energy types."</li>
 </ul>
 <hr />
-<h2>Parallel Spawning — Hız Optimizasyonu</h2>
-<p>Koordinatör tek bir yanıtta <strong>birden fazla Task tool çağrısı</strong> yapabilir. Bu, subagent'ları <strong>paralel</strong> olarak başlatır.</p>
-<p>Örneğin, koordinatör tek bir yanıtta şunu yapabilir:</p>
+<h2>Parallel Spawning — Speed Optimization</h2>
+<p>The coordinator can make <strong>multiple Task tool calls in a single turn</strong>. This spawns subagents <strong>in parallel</strong>.</p>
+<p>For example, in one turn the coordinator can:</p>
 <ul>
-<li>Task tool → web search agent'ı başlat</li>
-<li>Task tool → document analysis agent'ı başlat</li>
+<li>Task tool → spawn the web search agent</li>
+<li>Task tool → spawn the document analysis agent</li>
 </ul>
-<p>Bu, her birini ayrı turda sırayla başlatmaktan çok daha hızlıdır. Sınav latency (gecikme) farkındalığını test eder — paralel başlatma her zaman tercih edilen yaklaşımdır.</p>
+<p>This is much faster than spawning each one sequentially across separate turns. The exam tests latency awareness — parallel spawning is always the preferred approach when subagents don't depend on each other's output.</p>
 <hr />
 <h2>fork_session</h2>
-<p><code>fork_session</code> paylaşılan bir analiz temelinden <strong>bağımsız dallar</strong> oluşturur.</p>
-<p>Kullanım senaryosu: Aynı kod tabanı analizinden iki farklı test stratejisini karşılaştırmak istiyorsun. <code>fork_session</code> ile ortak başlangıç noktasından iki bağımsız dal yaratırsın. Her dal dallanma noktasından sonra birbirinden bağımsız çalışır.</p>
+<p><code>fork_session</code> creates <strong>independent branches</strong> from a shared analysis baseline.</p>
+<p>Use case: you want to compare two different testing strategies starting from the same codebase analysis. <code>fork_session</code> lets you branch off from that common starting point into two independent paths. Each branch runs independently of the other after the split.</p>
 <hr />
 <h2>Key Exam Takeaways</h2>
 <table>
@@ -777,7 +777,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <tbody>
 <tr>
 <td>Task tool</td>
-<td>Subagent oluşturma mekanizması — koordinatörün <code>allowedTools</code>'unda olmalı</td>
+<td>The subagent-creation mechanism — must be in the coordinator's <code>allowedTools</code></td>
 </tr>
 <tr>
 <td>AgentDefinition</td>
@@ -785,46 +785,46 @@ elif response.stop_reason == &quot;tool_use&quot;:
 </tr>
 <tr>
 <td>Context passing</td>
-<td>Önceki agent bulgularını doğrudan prompt'a dahil et, structured metadata ile</td>
+<td>Include prior agent findings directly in the prompt, with structured metadata</td>
 </tr>
 <tr>
 <td>Structured metadata</td>
-<td>Claim-source eşleştirmesi — içeriği metadatadan ayır (URL, doküman adı, sayfa no)</td>
+<td>Claim-source pairing — separate content from metadata (URL, document name, page)</td>
 </tr>
 <tr>
 <td>Coordinator prompts</td>
-<td>Hedef ve kalite kriterleri belirt, adım adım talimat verme</td>
+<td>State goals and quality criteria, not step-by-step instructions</td>
 </tr>
 <tr>
 <td>Parallel spawning</td>
-<td>Tek yanıtta birden fazla Task tool çağrısı → subagent'lar paralel başlar → daha hızlı</td>
+<td>Multiple Task tool calls in one turn → subagents start in parallel → faster</td>
 </tr>
 <tr>
 <td>fork_session</td>
-<td>Paylaşılan analiz temelinden bağımsız dallar oluşturur</td>
+<td>Creates independent branches from a shared analysis baseline</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2>Practice Scenario</h2>
 <blockquote>
-<p>Bir multi-agent research sistemi var. Web search subagent ve document analysis subagent mükemmel çalışıyor — her ikisi de zengin, kaynaklı veriler üretiyor. Ancak synthesis subagent'ın ürettiği nihai raporda birçok iddia <strong>kaynak atıfsız</strong> — hangi bilginin nereden geldiği belli değil.</p>
-<p><strong>Kök neden nedir ve nasıl düzeltilir?</strong></p>
-<p><strong>A)</strong> Synthesis subagent'ın system prompt'u kaynak atıfı istemiyor — prompt'a "her iddia için kaynak belirt" talimatı eklenmeli.</p>
-<p><strong>B)</strong> Koordinatörün context passing mekanizması yapılandırılmış metadata içermiyor — subagent'ların çıktısı claim-source eşleştirmesi yapan structured format'a dönüştürülmeli.</p>
-<p><strong>C)</strong> Web search subagent kaynak URL'lerini döndürmüyor — arama sonuçlarına URL eklenmeli.</p>
-<p><strong>D)</strong> Synthesis subagent'a koordinatörün tam konuşma geçmişi verilmeli ki kaynakları görebilsin.</p>
+<p>A multi-agent research system exists. The web search subagent and document analysis subagent both work perfectly — each produces rich, well-sourced data. But the final report produced by the synthesis subagent has many claims <strong>without attribution</strong> — it's unclear where each piece of information came from.</p>
+<p><strong>What's the root cause, and how do you fix it?</strong></p>
+<p><strong>A)</strong> The synthesis subagent's system prompt doesn't ask for attribution — add an instruction to "cite a source for every claim."</p>
+<p><strong>B)</strong> The coordinator's context-passing mechanism doesn't include structured metadata — the subagents' output should be converted into a structured format that pairs each claim with its source.</p>
+<p><strong>C)</strong> The web search subagent isn't returning source URLs — add URLs to the search results.</p>
+<p><strong>D)</strong> The synthesis subagent should be given the coordinator's full conversation history so it can see the sources.</p>
 </blockquote>
 <h3>Correct Answer: B</h3>
-<p><strong>Why B is correct:</strong> Sorun bilginin <em>nasıl aktarıldığında</em>. Web search ve document analysis agent'ları doğru çalışıyor — veriyi üretiyorlar. Ama koordinatör bu verileri synthesis agent'a aktarırken düz metin olarak gönderiyor, metadata'yı (kaynak URL, doküman adı, sayfa numarası) ayrıştırılmış şekilde dahil etmiyor. Synthesis agent ham metni görüyor ama hangi iddianın hangi kaynaktan geldiğini ayırt edemiyor. Çözüm: subagent'ların çıktısını claim-source eşleştirmesi yapan yapılandırılmış formata dönüştürmek.</p>
-<p><strong>Why A is wrong:</strong> Prompt'a talimat eklemek yardımcı olabilir ama kök neden bu değil. Synthesis agent'a "kaynak belirt" desen bile, eğer kendisine gelen veride kaynak bilgisi yapılandırılmış şekilde yoksa, atıf yapacak bir şeyi yok. Prompt talimatı, eksik veriyi yaratamaz.</p>
-<p><strong>Why C is wrong:</strong> Soruda açıkça belirtiliyor — web search subagent mükemmel çalışıyor ve zengin veriler üretiyor. Sorun üretimde değil, koordinatörün aktarım mekanizmasında.</p>
-<p><strong>Why D is wrong:</strong> Isolation principle tuzağı. Subagent'lara koordinatörün tam konuşma geçmişini vermek doğru mimari yaklaşım değil — bu izolasyon ilkesini ihlal eder. Çözüm, koordinatörün structured metadata ile context passing yapmasıdır.</p></div></details>
-<details class="lesson" data-narration-en="audio/en/D1-4.mp3"><summary><span class="lidx">1.4</span><span class="ltitle"><span class="l-tr">Workflow Enforcement and Handoff</span><span class="l-en">Workflow Enforcement and Handoff</span></span></summary><div class="prose l-tr"><h2>The Core Idea</h2>
+<p><strong>Why B is correct:</strong> The problem is in <em>how</em> the information is passed along. The web search and document analysis agents are working correctly — they're producing the data. But the coordinator is passing that data to the synthesis agent as plain text, without including the metadata (source URL, document name, page number) in a structured, parseable way. The synthesis agent sees raw text but can't tell which claim came from which source. The fix: convert the subagents' output into a structured format that pairs each claim with its source.</p>
+<p><strong>Why A is wrong:</strong> Adding a prompt instruction might help, but it isn't the root cause. Even if you tell the synthesis agent to "cite sources," if the data it receives doesn't carry structured source information, there's nothing to attribute. A prompt instruction can't invent missing data.</p>
+<p><strong>Why C is wrong:</strong> The scenario explicitly states the web search subagent works perfectly and produces rich, well-sourced data. The problem isn't at the source — it's in the coordinator's hand-off mechanism.</p>
+<p><strong>Why D is wrong:</strong> This is the isolation-principle trap. Giving a subagent the coordinator's full conversation history is not the correct architectural approach — it violates the isolation principle. The fix is for the coordinator to do context passing with structured metadata, not to break isolation.</p></div></details>
+<details class="lesson" data-narration-en="audio/en/D1-4.mp3" data-narration-tr="audio/tr/D1-4.mp3"><summary><span class="lidx">1.4</span><span class="ltitle"><span class="l-tr">İş Akışı Zorlaması ve Devir Teslim (Workflow Enforcement and Handoff)</span><span class="l-en">Workflow Enforcement and Handoff</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Agentic loops, multi-agent orchestration, context passing — bunların hepsi Claude'un <strong>esnek</strong> ve <strong>akıllı</strong> kararlar vermesine dayanıyor. Ama bazı kararlar esnekliğe bırakılamaz. Bazı kurallar <strong>her seferinde, istisnasız</strong> uygulanmalıdır.</p>
 <p>Bu task statement tam olarak bunu öğretiyor: <strong>ne zaman Claude'a güvenirsin, ne zaman programmatik olarak zorlarsın?</strong></p>
 <hr />
-<h2>The Enforcement Spectrum</h2>
+<h2>Zorlama Spektrumu</h2>
 <p>İki yaklaşım var:</p>
 <h3>Prompt-Based Guidance (Olasılıksal)</h3>
 <p>System prompt'a talimat yazarsın — "Müşteriyi her zaman önce doğrula." Bu çoğu zaman çalışır. Ama %100 garanti değildir. Claude bazen atlayabilir. Non-zero failure rate.</p>
@@ -841,7 +841,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p>Sınav, yüksek riskli senaryolarda prompt-based çözümleri şık olarak sunacak. <strong>Reddet.</strong></p>
 </blockquote>
 <hr />
-<h2>Multi-Concern Request Handling</h2>
+<h2>Çoklu Sorunlu İstekleri Yönetme</h2>
 <p>Bir müşteri aynı anda birden fazla sorun bildirdiğinde:</p>
 <ol>
 <li>İsteği ayrı sorunlara <strong>ayrıştır</strong> (decompose)</li>
@@ -849,7 +849,7 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <li>Tek bir <strong>birleşik çözüm</strong> sentezle</li>
 </ol>
 <hr />
-<h2>Structured Handoff Protocols</h2>
+<h2>Yapılandırılmış Devir Teslim Protokolleri</h2>
 <p>Bazen agent sorunu çözemez ve bir insan agent'a yönlendirmesi gerekir. Bu escalation'da kritik kural:</p>
 <blockquote>
 <p><strong>İnsan agent konuşma transcript'ine erişemez.</strong> Handoff özeti kendi kendine yeterli (self-contained) olmalıdır.</p>
@@ -863,12 +863,12 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <li><strong>Önerilen aksiyon</strong> — insan agent'ın ne yapması gerektiği</li>
 </ul>
 <hr />
-<h2>Key Exam Takeaways</h2>
+<h2>Sınav İçin Temel Çıkarımlar</h2>
 <table>
 <thead>
 <tr>
-<th>Concept</th>
-<th>Remember</th>
+<th>Kavram</th>
+<th>Hatırla</th>
 </tr>
 </thead>
 <tbody>
@@ -893,13 +893,13 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <td>Self-contained özet: müşteri ID, özet, kök neden, tutar, önerilen aksiyon</td>
 </tr>
 <tr>
-<td>Exam trap</td>
+<td>Sınav tuzağı</td>
 <td>Yüksek riskli senaryolarda prompt-based çözümler şık olarak sunulur — reddet</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2>Practice Scenario</h2>
+<h2>Pratik Senaryo</h2>
 <blockquote>
 <p>Production verileri gösteriyor ki vakaların %8'inde, bir müşteri destek agent'ı hesap sahipliğini doğrulamadan (verify account ownership) iade işlemi yapıyor. Bu bazen yanlış hesaplara iade yapılmasına yol açıyor.</p>
 <p><strong>Bu sorunu nasıl çözersiniz?</strong></p>
@@ -908,51 +908,51 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>C)</strong> Few-shot örnekler ekle — doğru sıralamayı gösteren 3-4 örnek konuşma ekle.</p>
 <p><strong>D)</strong> Bir routing classifier ekle — iade isteklerini önce doğrulama akışına yönlendirsin.</p>
 </blockquote>
-<h3>Correct Answer: A</h3>
-<p><strong>Why A is correct:</strong> Finansal sonuçları olan bir işlem — yanlış hesaba iade yapılıyor. Bu %100 garanti gerektiriyor. Programmatik prerequisite gate, <code>verify_identity</code> tamamlanmadan refund tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.</p>
-<p><strong>Why B is wrong:</strong> Prompt güçlendirme olasılıksal — %92'den %97'ye çıkarabilir ama %100 garanti edemez. Zaten mevcut durumda %8 hata var, bu da prompt'un yetmediğinin kanıtı. Finansal risk devam eder.</p>
-<p><strong>Why C is wrong:</strong> Few-shot örnekler de prompt-based guidance kategorisinde. Modelin davranışını <em>yönlendirir</em> ama <em>zorlamaz</em>. Aynı sorun — deterministik değil.</p>
-<p><strong>Why D is wrong:</strong> Routing classifier sorunu farklı bir yere taşır ama çözmez. Classifier da hata yapabilir. Ve asıl mesele şu: refund tool'u hâlâ doğrulama olmadan çağrılabilir durumda. Gate yok, garanti yok.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
-<p>Agentic loops, multi-agent orchestration, context passing — bunların hepsi Claude'un <strong>esnek</strong> ve <strong>akıllı</strong> kararlar vermesine dayanıyor. Ama bazı kararlar esnekliğe bırakılamaz. Bazı kurallar <strong>her seferinde, istisnasız</strong> uygulanmalıdır.</p>
-<p>Bu task statement tam olarak bunu öğretiyor: <strong>ne zaman Claude'a güvenirsin, ne zaman programmatik olarak zorlarsın?</strong></p>
+<h3>Doğru Cevap: A</h3>
+<p><strong>Neden A doğru:</strong> Finansal sonuçları olan bir işlem — yanlış hesaba iade yapılıyor. Bu %100 garanti gerektiriyor. Programmatik prerequisite gate, <code>verify_identity</code> tamamlanmadan refund tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.</p>
+<p><strong>Neden B yanlış:</strong> Prompt güçlendirme olasılıksal — %92'den %97'ye çıkarabilir ama %100 garanti edemez. Zaten mevcut durumda %8 hata var, bu da prompt'un yetmediğinin kanıtı. Finansal risk devam eder.</p>
+<p><strong>Neden C yanlış:</strong> Few-shot örnekler de prompt-based guidance kategorisinde. Modelin davranışını <em>yönlendirir</em> ama <em>zorlamaz</em>. Aynı sorun — deterministik değil.</p>
+<p><strong>Neden D yanlış:</strong> Routing classifier sorunu farklı bir yere taşır ama çözmez. Classifier da hata yapabilir. Ve asıl mesele şu: refund tool'u hâlâ doğrulama olmadan çağrılabilir durumda. Gate yok, garanti yok.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
+<p>Agentic loops, multi-agent orchestration, context passing — all of these rely on Claude making <strong>flexible</strong> and <strong>intelligent</strong> decisions. But some decisions can't be left to flexibility. Some rules must hold <strong>every single time, no exceptions</strong>.</p>
+<p>That's exactly what this task statement teaches: <strong>when do you trust Claude, and when do you enforce something programmatically?</strong></p>
 <hr />
 <h2>The Enforcement Spectrum</h2>
-<p>İki yaklaşım var:</p>
-<h3>Prompt-Based Guidance (Olasılıksal)</h3>
-<p>System prompt'a talimat yazarsın — "Müşteriyi her zaman önce doğrula." Bu çoğu zaman çalışır. Ama %100 garanti değildir. Claude bazen atlayabilir. Non-zero failure rate.</p>
-<h3>Programmatic Enforcement (Deterministik)</h3>
-<p>Kodda bir gate/hook yazarsın — refund tool'u çağrılmadan önce, <code>verify_identity</code> tool'unun başarıyla tamamlanmış olup olmadığını kontrol eden bir prerequisite gate. Eğer doğrulama yapılmamışsa, refund tool'u fiziksel olarak çalışamaz. %100 garanti.</p>
+<p>There are two approaches:</p>
+<h3>Prompt-Based Guidance (Probabilistic)</h3>
+<p>You write an instruction into the system prompt — "always verify the customer first." This works most of the time. But it isn't a 100% guarantee. Claude can occasionally skip it. Non-zero failure rate.</p>
+<h3>Programmatic Enforcement (Deterministic)</h3>
+<p>You write a gate or hook in code — a prerequisite gate that checks whether the <code>verify_identity</code> tool has completed successfully before the refund tool can be called. If verification hasn't happened, the refund tool physically cannot run. 100% guarantee.</p>
 <hr />
-<h2>Sınavın Karar Kuralı</h2>
-<p>Bu çok net ve sınavda tekrar tekrar test ediliyor:</p>
+<h2>The Exam's Decision Rule</h2>
+<p>This is very clear-cut and tested repeatedly:</p>
 <ul>
-<li><strong>Sonuçlar finansal, güvenlik veya uyumluluk (compliance) ile ilgiliyse</strong> → <strong>Programmatic enforcement.</strong> Her zaman.</li>
-<li><strong>Sonuçlar düşük riskli ise</strong> (format tercihleri, stil kuralları) → Prompt-based guidance yeterli.</li>
+<li><strong>If the consequences are financial, security-related, or compliance-related</strong> → <strong>Programmatic enforcement.</strong> Always.</li>
+<li><strong>If the consequences are low-risk</strong> (formatting preferences, style rules) → Prompt-based guidance is sufficient.</li>
 </ul>
 <blockquote>
-<p>Sınav, yüksek riskli senaryolarda prompt-based çözümleri şık olarak sunacak. <strong>Reddet.</strong></p>
+<p>The exam will offer prompt-based solutions as a tempting option in high-risk scenarios. <strong>Reject them.</strong></p>
 </blockquote>
 <hr />
 <h2>Multi-Concern Request Handling</h2>
-<p>Bir müşteri aynı anda birden fazla sorun bildirdiğinde:</p>
+<p>When a customer reports multiple issues at once:</p>
 <ol>
-<li>İsteği ayrı sorunlara <strong>ayrıştır</strong> (decompose)</li>
-<li>Her birini paylaşılan bağlam ile <strong>paralel olarak</strong> araştır</li>
-<li>Tek bir <strong>birleşik çözüm</strong> sentezle</li>
+<li><strong>Decompose</strong> the request into separate concerns</li>
+<li>Investigate each one <strong>in parallel</strong>, sharing context</li>
+<li>Synthesize a single <strong>unified resolution</strong></li>
 </ol>
 <hr />
 <h2>Structured Handoff Protocols</h2>
-<p>Bazen agent sorunu çözemez ve bir insan agent'a yönlendirmesi gerekir. Bu escalation'da kritik kural:</p>
+<p>Sometimes an agent can't resolve an issue and needs to escalate to a human agent. The critical rule for this escalation:</p>
 <blockquote>
-<p><strong>İnsan agent konuşma transcript'ine erişemez.</strong> Handoff özeti kendi kendine yeterli (self-contained) olmalıdır.</p>
+<p><strong>The human agent cannot access the conversation transcript.</strong> The handoff summary must be self-contained.</p>
 </blockquote>
-<p>Handoff özetinde bulunması gerekenler:</p>
+<p>A handoff summary needs to include:</p>
 <ul>
-<li><strong>Müşteri kimliği</strong> (customer ID)</li>
-<li><strong>Konuşma özeti</strong> — ne oldu, müşteri ne istedi</li>
-<li><strong>Kök neden analizi</strong> — sorunun kaynağı ne</li>
-<li><strong>İade tutarı</strong> (varsa)</li>
-<li><strong>Önerilen aksiyon</strong> — insan agent'ın ne yapması gerektiği</li>
+<li><strong>Customer identity</strong> (customer ID)</li>
+<li><strong>Conversation summary</strong> — what happened, what the customer wants</li>
+<li><strong>Root cause analysis</strong> — what's driving the issue</li>
+<li><strong>Refund amount</strong> (if applicable)</li>
+<li><strong>Recommended action</strong> — what the human agent should do next</li>
 </ul>
 <hr />
 <h2>Key Exam Takeaways</h2>
@@ -966,46 +966,46 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <tbody>
 <tr>
 <td>Prompt-based guidance</td>
-<td>Olasılıksal — çoğu zaman çalışır, %100 garanti değil</td>
+<td>Probabilistic — works most of the time, not a 100% guarantee</td>
 </tr>
 <tr>
 <td>Programmatic enforcement</td>
-<td>Deterministik — prerequisite gate ile fiziksel engel, %100 garanti</td>
+<td>Deterministic — a prerequisite gate physically blocks the action, 100% guarantee</td>
 </tr>
 <tr>
-<td>Karar kuralı</td>
-<td>Finansal / güvenlik / compliance → programmatic. Düşük risk → prompt yeterli</td>
+<td>Decision rule</td>
+<td>Financial / security / compliance → programmatic. Low risk → prompt is enough</td>
 </tr>
 <tr>
 <td>Multi-concern requests</td>
-<td>Ayrıştır → paralel araştır → birleşik çözüm sentezle</td>
+<td>Decompose → investigate in parallel → synthesize a unified resolution</td>
 </tr>
 <tr>
 <td>Handoff protocol</td>
-<td>Self-contained özet: müşteri ID, özet, kök neden, tutar, önerilen aksiyon</td>
+<td>Self-contained summary: customer ID, summary, root cause, amount, recommended action</td>
 </tr>
 <tr>
 <td>Exam trap</td>
-<td>Yüksek riskli senaryolarda prompt-based çözümler şık olarak sunulur — reddet</td>
+<td>Prompt-based solutions get offered as an option in high-risk scenarios — reject them</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2>Practice Scenario</h2>
 <blockquote>
-<p>Production verileri gösteriyor ki vakaların %8'inde, bir müşteri destek agent'ı hesap sahipliğini doğrulamadan (verify account ownership) iade işlemi yapıyor. Bu bazen yanlış hesaplara iade yapılmasına yol açıyor.</p>
-<p><strong>Bu sorunu nasıl çözersiniz?</strong></p>
-<p><strong>A)</strong> Refund tool'unun çalışabilmesi için <code>verify_identity</code> tool'unun başarıyla tamamlanmış olmasını şart koşan programmatik bir prerequisite gate ekle.</p>
-<p><strong>B)</strong> System prompt'u güçlendir: "Asla kimlik doğrulaması yapmadan iade işlemi yapma" talimatını ekle ve bunu kalın yazıyla vurgula.</p>
-<p><strong>C)</strong> Few-shot örnekler ekle — doğru sıralamayı gösteren 3-4 örnek konuşma ekle.</p>
-<p><strong>D)</strong> Bir routing classifier ekle — iade isteklerini önce doğrulama akışına yönlendirsin.</p>
+<p>Production data shows that in 8% of cases, a customer support agent processes a refund without verifying account ownership. This has occasionally led to refunds being issued to the wrong account.</p>
+<p><strong>How do you fix this?</strong></p>
+<p><strong>A)</strong> Add a programmatic prerequisite gate that requires the <code>verify_identity</code> tool to have completed successfully before the refund tool can run.</p>
+<p><strong>B)</strong> Strengthen the system prompt: add the instruction "never process a refund without identity verification" and emphasize it in bold.</p>
+<p><strong>C)</strong> Add few-shot examples — 3-4 example conversations showing the correct sequence.</p>
+<p><strong>D)</strong> Add a routing classifier that routes refund requests to a verification flow first.</p>
 </blockquote>
 <h3>Correct Answer: A</h3>
-<p><strong>Why A is correct:</strong> Finansal sonuçları olan bir işlem — yanlış hesaba iade yapılıyor. Bu %100 garanti gerektiriyor. Programmatik prerequisite gate, <code>verify_identity</code> tamamlanmadan refund tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.</p>
-<p><strong>Why B is wrong:</strong> Prompt güçlendirme olasılıksal — %92'den %97'ye çıkarabilir ama %100 garanti edemez. Zaten mevcut durumda %8 hata var, bu da prompt'un yetmediğinin kanıtı. Finansal risk devam eder.</p>
-<p><strong>Why C is wrong:</strong> Few-shot örnekler de prompt-based guidance kategorisinde. Modelin davranışını <em>yönlendirir</em> ama <em>zorlamaz</em>. Aynı sorun — deterministik değil.</p>
-<p><strong>Why D is wrong:</strong> Routing classifier sorunu farklı bir yere taşır ama çözmez. Classifier da hata yapabilir. Ve asıl mesele şu: refund tool'u hâlâ doğrulama olmadan çağrılabilir durumda. Gate yok, garanti yok.</p></div></details>
-<details class="lesson" data-narration-en="audio/en/D1-5.mp3"><summary><span class="lidx">1.5</span><span class="ltitle"><span class="l-tr">Agent SDK Hooks</span><span class="l-en">Agent SDK Hooks</span></span></summary><div class="prose l-tr"><h2>The Core Idea</h2>
+<p><strong>Why A is correct:</strong> This is a transaction with financial consequences — refunds are being issued to the wrong account. That requires a 100% guarantee. A programmatic prerequisite gate physically blocks the refund tool from running until <code>verify_identity</code> completes. Zero failure rate.</p>
+<p><strong>Why B is wrong:</strong> Strengthening the prompt is probabilistic — it might raise success from 92% to 97%, but it can't guarantee 100%. The current 8% failure rate is itself proof the prompt isn't sufficient. Financial risk remains.</p>
+<p><strong>Why C is wrong:</strong> Few-shot examples are also in the prompt-based-guidance category. They <em>guide</em> the model's behavior but don't <em>enforce</em> it. Same problem — not deterministic.</p>
+<p><strong>Why D is wrong:</strong> A routing classifier moves the problem elsewhere without solving it. The classifier itself can make mistakes. And the core issue remains: the refund tool can still be called without verification. No gate, no guarantee.</p></div></details>
+<details class="lesson" data-narration-en="audio/en/D1-5.mp3" data-narration-tr="audio/tr/D1-5.mp3"><summary><span class="lidx">1.5</span><span class="ltitle"><span class="l-tr">Agent SDK Hook&#x27;ları (Agent SDK Hooks)</span><span class="l-en">Agent SDK Hooks</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Task Statement 1.4'te programmatic enforcement'ın neden gerekli olduğunu öğrendik. Şimdi <strong>nasıl</strong> uygulandığını öğreniyoruz. Cevap: <strong>hooks</strong>.</p>
 <p>Hook'lar, tool çağrılarının <strong>önüne</strong> veya <strong>sonrasına</strong> yerleştirdiğin kod parçaları. İki ana türü var:</p>
 <hr />
@@ -1051,12 +1051,12 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>Tek bir başarısızlık para kaybı veya yasal risk yaratıyorsa → hook kullan.</strong></p>
 </blockquote>
 <hr />
-<h2>Key Exam Takeaways</h2>
+<h2>Sınav İçin Temel Çıkarımlar</h2>
 <table>
 <thead>
 <tr>
-<th>Concept</th>
-<th>Remember</th>
+<th>Kavram</th>
+<th>Hatırla</th>
 </tr>
 </thead>
 <tbody>
@@ -1077,63 +1077,63 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <td>Çoğu zaman çalışır — tercihler ve yumuşak kurallar için yeterli</td>
 </tr>
 <tr>
-<td>Decision rule</td>
+<td>Karar kuralı</td>
 <td>Tek bir hata para kaybı veya yasal risk yaratıyorsa → her zaman hook</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2>Practice Scenario</h2>
+<h2>Pratik Senaryo</h2>
 <blockquote>
 <p>Bir agent zaman zaman uluslararası transferleri gerekli compliance kontrolleri yapmadan işliyor. Bu düzenleyici (regulatory) risk yaratıyor.</p>
 <p><strong>Çözüm: hook mu, yoksa geliştirilmiş prompt talimatları mı? Neden?</strong></p>
 </blockquote>
-<h3>Correct Answer: Hook</h3>
+<h3>Doğru Cevap: Hook</h3>
 <p><strong>Açıklama:</strong> Regulatory risk = tek bir başarısızlık yasal sonuç doğurur. Prompt talimatları başarı oranını artırabilir (örneğin %92'den %97'ye) ama %100 garanti edemez. Tool call interception hook, compliance kontrolü tamamlanmadan transfer tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.</p>
 <p><strong>Neden prompt yetmez:</strong> Uluslararası transferler finansal düzenlemeye tabidir. Tek bir kontrolsüz transfer bile ceza veya yasal soruşturma riskini taşır. Olasılıksal bir çözüm bu risk seviyesi için kabul edilemez. Deterministik garanti şarttır.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
-<p>Task Statement 1.4'te programmatic enforcement'ın neden gerekli olduğunu öğrendik. Şimdi <strong>nasıl</strong> uygulandığını öğreniyoruz. Cevap: <strong>hooks</strong>.</p>
-<p>Hook'lar, tool çağrılarının <strong>önüne</strong> veya <strong>sonrasına</strong> yerleştirdiğin kod parçaları. İki ana türü var:</p>
+<p>Task Statement 1.4 covered why programmatic enforcement is necessary. Now we learn <strong>how</strong> it's implemented. The answer: <strong>hooks</strong>.</p>
+<p>Hooks are pieces of code you place <strong>before</strong> or <strong>after</strong> a tool call. There are two main types:</p>
 <hr />
-<h2>PostToolUse Hooks (Tool Çalıştıktan Sonra)</h2>
-<p>Tool çalıştıktan <strong>sonra</strong>, sonuç Claude'a gitmeden <strong>önce</strong> araya girer.</p>
-<p><strong>Kullanım amacı: Veri normalizasyonu.</strong></p>
-<p>Farklı MCP tool'ları farklı formatlarla veri döndürür — biri Unix timestamp verir, diğeri ISO 8601. Biri sayısal status code döndürür, diğeri string. PostToolUse hook tüm bu farklı formatları standart bir formata dönüştürür.</p>
-<p>Sonuç: Claude her zaman temiz, tutarlı veri görür — hangi tool'un ürettiği farketmez.</p>
+<h2>PostToolUse Hooks (After the Tool Runs)</h2>
+<p>Intervenes <strong>after</strong> the tool runs, <strong>before</strong> the result reaches Claude.</p>
+<p><strong>Purpose: data normalization.</strong></p>
+<p>Different MCP tools return data in different formats — one returns a Unix timestamp, another ISO 8601. One returns a numeric status code, another a string. A PostToolUse hook converts all of these varied formats into a standard one.</p>
+<p>Result: Claude always sees clean, consistent data — regardless of which tool produced it.</p>
 <hr />
-<h2>Tool Call Interception Hooks (Tool Çağrılmadan Önce)</h2>
-<p>Tool çağrılmadan <strong>önce</strong> araya girer.</p>
-<p><strong>Kullanım amacı: İş kurallarını zorlamak.</strong></p>
-<p>Örnekler:</p>
+<h2>Tool Call Interception Hooks (Before the Tool Runs)</h2>
+<p>Intervenes <strong>before</strong> the tool is called.</p>
+<p><strong>Purpose: enforcing business rules.</strong></p>
+<p>Examples:</p>
 <ul>
-<li>$500 üzerindeki iadeleri engelle ve insan escalation workflow'una yönlendir</li>
-<li>Uluslararası transferlerde compliance kontrolü olmadan işlem yapılmasını engelle</li>
-<li>Belirli operasyonlar için yönetici onayı gerektir</li>
+<li>Block refunds over $500 and route them to a human escalation workflow</li>
+<li>Prevent international transfers from being processed without a compliance check</li>
+<li>Require manager approval for specific operations</li>
 </ul>
 <hr />
-<h2>Karar Çerçevesi</h2>
+<h2>Decision Framework</h2>
 <table>
 <thead>
 <tr>
-<th>Yaklaşım</th>
-<th>Garanti</th>
-<th>Kullanım Alanı</th>
+<th>Approach</th>
+<th>Guarantee</th>
+<th>Use for</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Hooks</strong></td>
-<td>Deterministik — %100 çalışır</td>
-<td>İş kuralları, compliance, finansal kontroller</td>
+<td>Deterministic — runs 100% of the time</td>
+<td>Business rules, compliance, financial controls</td>
 </tr>
 <tr>
 <td><strong>Prompts</strong></td>
-<td>Olasılıksal — çoğu zaman çalışır</td>
-<td>Tercihler, stil kuralları, yumuşak rehberlik</td>
+<td>Probabilistic — works most of the time</td>
+<td>Preferences, style rules, soft guidance</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p><strong>Tek bir başarısızlık para kaybı veya yasal risk yaratıyorsa → hook kullan.</strong></p>
+<p><strong>If a single failure would cost money or create legal risk → use a hook.</strong></p>
 </blockquote>
 <hr />
 <h2>Key Exam Takeaways</h2>
@@ -1147,36 +1147,36 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <tbody>
 <tr>
 <td>PostToolUse hooks</td>
-<td>Tool sonuçlarını Claude'a göndermeden önce yakalar — veri normalizasyonu için</td>
+<td>Intercepts tool results before Claude sees them — for data normalization</td>
 </tr>
 <tr>
 <td>Tool call interception</td>
-<td>Tool çağrılmadan önce yakalar — iş kurallarını zorlamak için</td>
+<td>Intercepts before the tool runs — for enforcing business rules</td>
 </tr>
 <tr>
-<td>Hook = deterministik</td>
-<td>%100 garanti — business rules, compliance, finansal kontroller</td>
+<td>Hook = deterministic</td>
+<td>100% guarantee — business rules, compliance, financial controls</td>
 </tr>
 <tr>
-<td>Prompt = olasılıksal</td>
-<td>Çoğu zaman çalışır — tercihler ve yumuşak kurallar için yeterli</td>
+<td>Prompt = probabilistic</td>
+<td>Works most of the time — sufficient for preferences and soft rules</td>
 </tr>
 <tr>
 <td>Decision rule</td>
-<td>Tek bir hata para kaybı veya yasal risk yaratıyorsa → her zaman hook</td>
+<td>If a single failure costs money or creates legal risk → always a hook</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2>Practice Scenario</h2>
 <blockquote>
-<p>Bir agent zaman zaman uluslararası transferleri gerekli compliance kontrolleri yapmadan işliyor. Bu düzenleyici (regulatory) risk yaratıyor.</p>
-<p><strong>Çözüm: hook mu, yoksa geliştirilmiş prompt talimatları mı? Neden?</strong></p>
+<p>An agent occasionally processes international transfers without the required compliance checks. This creates regulatory risk.</p>
+<p><strong>Solution: a hook, or improved prompt instructions? Why?</strong></p>
 </blockquote>
 <h3>Correct Answer: Hook</h3>
-<p><strong>Açıklama:</strong> Regulatory risk = tek bir başarısızlık yasal sonuç doğurur. Prompt talimatları başarı oranını artırabilir (örneğin %92'den %97'ye) ama %100 garanti edemez. Tool call interception hook, compliance kontrolü tamamlanmadan transfer tool'unun çalışmasını fiziksel olarak engeller. Sıfır hata oranı.</p>
-<p><strong>Neden prompt yetmez:</strong> Uluslararası transferler finansal düzenlemeye tabidir. Tek bir kontrolsüz transfer bile ceza veya yasal soruşturma riskini taşır. Olasılıksal bir çözüm bu risk seviyesi için kabul edilemez. Deterministik garanti şarttır.</p></div></details>
-<details class="lesson" data-narration-en="audio/en/D1-6.mp3"><summary><span class="lidx">1.6</span><span class="ltitle"><span class="l-tr">Task Decomposition Strategies</span><span class="l-en">Task Decomposition Strategies</span></span></summary><div class="prose l-tr"><h2>The Core Idea</h2>
+<p><strong>Explanation:</strong> Regulatory risk means a single failure creates legal consequences. Prompt instructions can raise the success rate (say, from 92% to 97%) but can't guarantee 100%. A tool call interception hook physically blocks the transfer tool from running until the compliance check completes. Zero failure rate.</p>
+<p><strong>Why a prompt isn't enough:</strong> International transfers are subject to financial regulation. Even a single uncontrolled transfer carries the risk of penalties or legal investigation. A probabilistic solution is unacceptable at this risk level. A deterministic guarantee is required.</p></div></details>
+<details class="lesson" data-narration-en="audio/en/D1-6.mp3" data-narration-tr="audio/tr/D1-6.mp3"><summary><span class="lidx">1.6</span><span class="ltitle"><span class="l-tr">Görev Ayrıştırma Stratejileri (Task Decomposition Strategies)</span><span class="l-en">Task Decomposition Strategies</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Büyük görevleri nasıl parçalara ayırırsın? İki temel pattern var ve her birinin ne zaman doğru olduğunu bilmen gerekiyor.</p>
 <hr />
 <h2>Pattern 1: Fixed Sequential Pipelines (Prompt Chaining)</h2>
@@ -1211,12 +1211,12 @@ elif response.stop_reason == &quot;tool_use&quot;:
 </ul>
 <p>Per-file geçişleri yerel sorunları tutarlı şekilde yakalar; entegrasyon geçişi dosyalar arası sorunları yakalar.</p>
 <hr />
-<h2>Key Exam Takeaways</h2>
+<h2>Sınav İçin Temel Çıkarımlar</h2>
 <table>
 <thead>
 <tr>
-<th>Concept</th>
-<th>Remember</th>
+<th>Kavram</th>
+<th>Hatırla</th>
 </tr>
 </thead>
 <tbody>
@@ -1237,13 +1237,13 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <td>Per-file local analysis + cross-file integration — attention dilution'ın çözümü</td>
 </tr>
 <tr>
-<td>Exam trap</td>
+<td>Sınav tuzağı</td>
 <td>"Prompt'a eşit dikkat göster yaz" gibi çözümler yapısal sorunu çözmez — reddet</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2>Practice Scenario</h2>
+<h2>Pratik Senaryo</h2>
 <blockquote>
 <p>Bir kod inceleme agent'ı 14 dosyalık bir pull request'i tek geçişte analiz ediyor. Sonuçlar:</p>
 <ul>
@@ -1256,44 +1256,44 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>C)</strong> Agent'ın system prompt'una "her dosyaya eşit dikkat göster" talimatı eklenmeli.</p>
 <p><strong>D)</strong> Dosyalar alfabetik sırayla değil, öncelik sırasına göre sıralanmalı.</p>
 </blockquote>
-<h3>Correct Answer: B</h3>
-<p><strong>Why B is correct:</strong> 14 dosyayı tek geçişte işlemek Claude'un dikkatini dağıtıyor. Tutarsız derinlik ve aynı pattern'a farklı tepkiler vermesi bunun klasik belirtisi. Multi-pass mimari — önce her dosyayı ayrı ayrı analiz et, sonra dosyalar arası entegrasyon geçişi yap — her iki sorunu da çözer.</p>
-<p><strong>Why A is wrong:</strong> Sorun context window boyutu değil, dikkat dağılımı. Daha büyük model aynı sorunu yaşar çünkü tek geçişte 14 dosyaya odaklanmaya çalışmak yapısal bir problem.</p>
-<p><strong>Why C is wrong:</strong> Prompt talimatı olasılıksal. "Eşit dikkat göster" demek attention dilution'ı çözmez — bu yapısal bir mimari sorunu, prompt sorunu değil.</p>
-<p><strong>Why D is wrong:</strong> Sıralama değişikliği hangi dosyaların ihmal edildiğini değiştirir ama sorunu çözmez. Hâlâ tek geçiş, hâlâ dikkat dağılımı.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
-<p>Büyük görevleri nasıl parçalara ayırırsın? İki temel pattern var ve her birinin ne zaman doğru olduğunu bilmen gerekiyor.</p>
+<h3>Doğru Cevap: B</h3>
+<p><strong>Neden B doğru:</strong> 14 dosyayı tek geçişte işlemek Claude'un dikkatini dağıtıyor. Tutarsız derinlik ve aynı pattern'a farklı tepkiler vermesi bunun klasik belirtisi. Multi-pass mimari — önce her dosyayı ayrı ayrı analiz et, sonra dosyalar arası entegrasyon geçişi yap — her iki sorunu da çözer.</p>
+<p><strong>Neden A yanlış:</strong> Sorun context window boyutu değil, dikkat dağılımı. Daha büyük model aynı sorunu yaşar çünkü tek geçişte 14 dosyaya odaklanmaya çalışmak yapısal bir problem.</p>
+<p><strong>Neden C yanlış:</strong> Prompt talimatı olasılıksal. "Eşit dikkat göster" demek attention dilution'ı çözmez — bu yapısal bir mimari sorunu, prompt sorunu değil.</p>
+<p><strong>Neden D yanlış:</strong> Sıralama değişikliği hangi dosyaların ihmal edildiğini değiştirir ama sorunu çözmez. Hâlâ tek geçiş, hâlâ dikkat dağılımı.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
+<p>How do you break large tasks into pieces? There are two fundamental patterns, and you need to know when each one is the right call.</p>
 <hr />
 <h2>Pattern 1: Fixed Sequential Pipelines (Prompt Chaining)</h2>
-<p>İşi önceden belirlenmiş sıralı adımlara bölersin. Her adımın çıktısı bir sonraki adımın girdisi olur.</p>
-<p>Örnek — kod inceleme:</p>
+<p>You split the work into predetermined, ordered steps. Each step's output becomes the next step's input.</p>
+<p>Example — code review:</p>
 <ol>
-<li>Her dosyayı tek tek analiz et</li>
-<li>Sonra tüm dosyalar arası bağımlılıkları kontrol eden bir entegrasyon geçişi yap</li>
+<li>Analyze each file individually</li>
+<li>Then run an integration pass that checks dependencies across all files</li>
 </ol>
-<p><strong>Ne zaman kullanılır:</strong> Tahmin edilebilir, yapılandırılmış görevler — kod inceleme, doküman işleme, veri dönüştürme.</p>
-<p><strong>Avantajı:</strong> Tutarlı ve güvenilir.</p>
-<p><strong>Sınırlaması:</strong> Beklenmedik bulgulara uyum sağlayamaz.</p>
+<p><strong>When to use it:</strong> Predictable, structured tasks — code review, document processing, data transformation.</p>
+<p><strong>Advantage:</strong> Consistent and reliable.</p>
+<p><strong>Limitation:</strong> Can't adapt to unexpected findings.</p>
 <hr />
 <h2>Pattern 2: Dynamic Adaptive Decomposition</h2>
-<p>Alt görevleri her adımda keşfedilen bilgiye göre dinamik olarak üretirsin.</p>
-<p>Örnek — "legacy bir kod tabanına test ekle":</p>
+<p>You generate subtasks dynamically, based on what's discovered at each step.</p>
+<p>Example — "add tests to a legacy codebase":</p>
 <ul>
-<li>Önce yapıyı haritalarsın</li>
-<li>Yüksek etkili alanları belirlersin</li>
-<li>Bağımlılıklar ortaya çıktıkça önceliklendirilmiş bir plan oluşturursun</li>
+<li>First, map the structure</li>
+<li>Identify high-impact areas</li>
+<li>Build a prioritized plan as dependencies emerge</li>
 </ul>
-<p><strong>Ne zaman kullanılır:</strong> Açık uçlu araştırma görevleri, keşif gerektiren problemler.</p>
-<p><strong>Avantajı:</strong> Probleme uyum sağlar.</p>
-<p><strong>Sınırlaması:</strong> Daha az öngörülebilir.</p>
+<p><strong>When to use it:</strong> Open-ended research tasks, problems that require exploration.</p>
+<p><strong>Advantage:</strong> Adapts to the problem.</p>
+<p><strong>Limitation:</strong> Less predictable.</p>
 <hr />
-<h2>Attention Dilution Problemi (Sınav Tuzağı)</h2>
-<p>Bu çok önemli. Tek bir geçişte çok fazla dosyayı veya veriyi işlersen, Claude'un dikkati dağılır. Sonuç: bazı dosyalara detaylı geri bildirim verir, diğerlerindeki bariz hataları kaçırır. Daha da kötüsü — <strong>aynı pattern'ı bir dosyada sorunlu olarak işaretlerken, başka bir dosyada aynı kodu onaylar</strong>. Bu tutarsızlık attention dilution'ın belirtisidir.</p>
-<p><strong>Çözüm: Multi-pass architecture.</strong></p>
+<h2>The Attention Dilution Problem (Exam Trap)</h2>
+<p>This one matters a lot. If you process too many files or too much data in a single pass, Claude's attention gets diluted. The result: it gives detailed feedback on some files while missing obvious errors in others. Worse — <strong>it can flag the same pattern as a problem in one file while approving the identical code in another</strong>. This inconsistency is the telltale sign of attention dilution.</p>
+<p><strong>The fix: multi-pass architecture.</strong></p>
 <ul>
-<li><strong>Pass 1 — Per-file local analysis:</strong> Her dosyayı ayrı ayrı incele. Yerel sorunları yakala.</li>
-<li><strong>Pass 2 — Cross-file integration:</strong> Dosyalar arası veri akışı, bağımlılık ve tutarsızlıkları kontrol et.</li>
+<li><strong>Pass 1 — Per-file local analysis:</strong> Review each file individually. Catch local issues.</li>
+<li><strong>Pass 2 — Cross-file integration:</strong> Check data flow, dependencies, and inconsistencies across files.</li>
 </ul>
-<p>Per-file geçişleri yerel sorunları tutarlı şekilde yakalar; entegrasyon geçişi dosyalar arası sorunları yakalar.</p>
+<p>The per-file pass consistently catches local issues; the integration pass catches cross-file issues.</p>
 <hr />
 <h2>Key Exam Takeaways</h2>
 <table>
@@ -1306,46 +1306,46 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <tbody>
 <tr>
 <td>Fixed sequential pipelines</td>
-<td>Önceden belirlenmiş sıralı adımlar — tahmin edilebilir görevler için</td>
+<td>Predetermined, ordered steps — for predictable tasks</td>
 </tr>
 <tr>
 <td>Dynamic adaptive decomposition</td>
-<td>Keşfedilen bilgiye göre dinamik alt görevler — açık uçlu araştırma için</td>
+<td>Dynamic subtasks based on discovered information — for open-ended research</td>
 </tr>
 <tr>
 <td>Attention dilution</td>
-<td>Tek geçişte çok fazla veri → tutarsız derinlik ve çelişkili değerlendirmeler</td>
+<td>Too much data in one pass → inconsistent depth and contradictory judgments</td>
 </tr>
 <tr>
 <td>Multi-pass architecture</td>
-<td>Per-file local analysis + cross-file integration — attention dilution'ın çözümü</td>
+<td>Per-file local analysis + cross-file integration — the fix for attention dilution</td>
 </tr>
 <tr>
 <td>Exam trap</td>
-<td>"Prompt'a eşit dikkat göster yaz" gibi çözümler yapısal sorunu çözmez — reddet</td>
+<td>Solutions like "add an instruction to pay equal attention to everything" don't fix the structural problem — reject them</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2>Practice Scenario</h2>
 <blockquote>
-<p>Bir kod inceleme agent'ı 14 dosyalık bir pull request'i tek geçişte analiz ediyor. Sonuçlar:</p>
+<p>A code review agent analyzes a 14-file pull request in a single pass. The results:</p>
 <ul>
-<li>Bazı dosyalara çok detaylı geri bildirim veriyor, diğerlerindeki bariz bug'ları kaçırıyor</li>
-<li>Bir pattern'ı 3. dosyada "anti-pattern" olarak işaretliyor, ama 11. dosyada aynı kodu onaylıyor</li>
+<li>It gives very detailed feedback on some files while missing obvious bugs in others</li>
+<li>It flags a pattern as an "anti-pattern" in file 3, but approves the same code in file 11</li>
 </ul>
-<p><strong>Sorun nedir ve nasıl düzeltilir?</strong></p>
-<p><strong>A)</strong> Agent'ın context window'u yetersiz — daha büyük bir model kullanılmalı.</p>
-<p><strong>B)</strong> Tek geçişte 14 dosya işlemek attention dilution'a neden oluyor — per-file local analysis + cross-file integration olmak üzere multi-pass mimarisine geçilmeli.</p>
-<p><strong>C)</strong> Agent'ın system prompt'una "her dosyaya eşit dikkat göster" talimatı eklenmeli.</p>
-<p><strong>D)</strong> Dosyalar alfabetik sırayla değil, öncelik sırasına göre sıralanmalı.</p>
+<p><strong>What's the problem, and how do you fix it?</strong></p>
+<p><strong>A)</strong> The agent's context window is too small — use a bigger model.</p>
+<p><strong>B)</strong> Processing 14 files in a single pass is causing attention dilution — switch to a multi-pass architecture: per-file local analysis plus cross-file integration.</p>
+<p><strong>C)</strong> Add an instruction to the agent's system prompt: "pay equal attention to every file."</p>
+<p><strong>D)</strong> Sort the files by priority instead of alphabetically.</p>
 </blockquote>
 <h3>Correct Answer: B</h3>
-<p><strong>Why B is correct:</strong> 14 dosyayı tek geçişte işlemek Claude'un dikkatini dağıtıyor. Tutarsız derinlik ve aynı pattern'a farklı tepkiler vermesi bunun klasik belirtisi. Multi-pass mimari — önce her dosyayı ayrı ayrı analiz et, sonra dosyalar arası entegrasyon geçişi yap — her iki sorunu da çözer.</p>
-<p><strong>Why A is wrong:</strong> Sorun context window boyutu değil, dikkat dağılımı. Daha büyük model aynı sorunu yaşar çünkü tek geçişte 14 dosyaya odaklanmaya çalışmak yapısal bir problem.</p>
-<p><strong>Why C is wrong:</strong> Prompt talimatı olasılıksal. "Eşit dikkat göster" demek attention dilution'ı çözmez — bu yapısal bir mimari sorunu, prompt sorunu değil.</p>
-<p><strong>Why D is wrong:</strong> Sıralama değişikliği hangi dosyaların ihmal edildiğini değiştirir ama sorunu çözmez. Hâlâ tek geçiş, hâlâ dikkat dağılımı.</p></div></details>
-<details class="lesson" data-narration-en="audio/en/D1-7.mp3"><summary><span class="lidx">1.7</span><span class="ltitle"><span class="l-tr">Session State and Resumption</span><span class="l-en">Session State and Resumption</span></span></summary><div class="prose l-tr"><h2>The Core Idea</h2>
+<p><strong>Why B is correct:</strong> Processing 14 files in a single pass dilutes Claude's attention. Inconsistent depth and contradictory reactions to the same pattern are the classic symptoms. A multi-pass architecture — analyze each file individually first, then run a cross-file integration pass — fixes both problems.</p>
+<p><strong>Why A is wrong:</strong> The problem isn't context window size, it's attention dilution. A bigger model would face the same issue, because trying to focus on 14 files in one pass is a structural problem.</p>
+<p><strong>Why C is wrong:</strong> A prompt instruction is probabilistic. Saying "pay equal attention" doesn't fix attention dilution — this is a structural architecture problem, not a prompt problem.</p>
+<p><strong>Why D is wrong:</strong> Reordering the files changes which ones get neglected but doesn't fix the underlying issue. It's still a single pass, still diluted attention.</p></div></details>
+<details class="lesson" data-narration-en="audio/en/D1-7.mp3" data-narration-tr="audio/tr/D1-7.mp3"><summary><span class="lidx">1.7</span><span class="ltitle"><span class="l-tr">Oturum Durumu ve Devam Ettirme (Session State and Resumption)</span><span class="l-en">Session State and Resumption</span></span></summary><div class="prose l-tr"><h2>Temel Fikir</h2>
 <p>Agent'lar uzun süre çalışabilir. Bazen bir oturumu bırakıp sonra geri dönmen gerekir. Ya da agent uzun süredir çalışıyordur ve context bozulmaya başlamıştır. Bu task statement, <strong>oturumu nasıl yönetirsin</strong> sorusunu cevaplıyor.</p>
 <hr />
 <h2>Üç Seçenek</h2>
@@ -1392,12 +1392,12 @@ elif response.stop_reason == &quot;tool_use&quot;:
 </tbody>
 </table>
 <hr />
-<h2>Key Exam Takeaways</h2>
+<h2>Sınav İçin Temel Çıkarımlar</h2>
 <table>
 <thead>
 <tr>
-<th>Concept</th>
-<th>Remember</th>
+<th>Kavram</th>
+<th>Hatırla</th>
 </tr>
 </thead>
 <tbody>
@@ -1422,13 +1422,13 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <td>Resume + değişen dosyalar varsa → agent'a hangi dosyaların değiştiğini bildir</td>
 </tr>
 <tr>
-<td>Exam trap</td>
+<td>Sınav tuzağı</td>
 <td>"Her şeyi sıfırdan keşfet" veya "daha büyük model kullan" gibi çözümler sorunu çözmez</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2>Practice Scenario</h2>
+<h2>Pratik Senaryo</h2>
 <blockquote>
 <p>Bir developer, bir kod tabanı üzerinde çalışan agent oturumunu resume ediyor. Arada 3 dosyada önemli değişiklikler yapmış. Agent, bu dosyalar hakkında çelişkili tavsiyeler veriyor — bir yerde "bu fonksiyonu refactor et" diyor ama fonksiyon zaten değiştirilmiş.</p>
 <p><strong>Sorun nedir ve doğru yaklaşım hangisidir?</strong></p>
@@ -1437,53 +1437,53 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <p><strong>C)</strong> Agent'ın system prompt'una "dosyaları tekrar kontrol et" talimatı eklenmeli.</p>
 <p><strong>D)</strong> fork_session ile iki dal oluşturulup en iyi sonuç seçilmeli.</p>
 </blockquote>
-<h3>Correct Answer: B</h3>
-<p><strong>Why B is correct:</strong> Agent eski tool sonuçlarına dayanarak reasoning yapıyor — dosyalar değişmiş ama agent bunu bilmiyor. Çözüm iki katmanlı: eğer değişiklikler sınırlıysa resume edip spesifik dosya değişikliklerini bildir; eğer değişiklikler kapsamlıysa veya context tamamen bozulmuşsa fresh start with summary injection yap.</p>
-<p><strong>Why A is wrong:</strong> Sorun context window boyutu değil, stale data. Daha büyük model de eski veriye dayanarak aynı hataları yapar.</p>
-<p><strong>Why C is wrong:</strong> Prompt talimatı olasılıksal ve sorunu yanlış yerde çözmeye çalışıyor. Asıl mesele agent'ın context'indeki verinin bayat olması.</p>
-<p><strong>Why D is wrong:</strong> fork_session farklı yaklaşımları karşılaştırmak için kullanılır. Buradaki sorun stale context — dallanma yapsan bile her iki dal da aynı bayat veriden başlar.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
-<p>Agent'lar uzun süre çalışabilir. Bazen bir oturumu bırakıp sonra geri dönmen gerekir. Ya da agent uzun süredir çalışıyordur ve context bozulmaya başlamıştır. Bu task statement, <strong>oturumu nasıl yönetirsin</strong> sorusunu cevaplıyor.</p>
+<h3>Doğru Cevap: B</h3>
+<p><strong>Neden B doğru:</strong> Agent eski tool sonuçlarına dayanarak reasoning yapıyor — dosyalar değişmiş ama agent bunu bilmiyor. Çözüm iki katmanlı: eğer değişiklikler sınırlıysa resume edip spesifik dosya değişikliklerini bildir; eğer değişiklikler kapsamlıysa veya context tamamen bozulmuşsa fresh start with summary injection yap.</p>
+<p><strong>Neden A yanlış:</strong> Sorun context window boyutu değil, stale data. Daha büyük model de eski veriye dayanarak aynı hataları yapar.</p>
+<p><strong>Neden C yanlış:</strong> Prompt talimatı olasılıksal ve sorunu yanlış yerde çözmeye çalışıyor. Asıl mesele agent'ın context'indeki verinin bayat olması.</p>
+<p><strong>Neden D yanlış:</strong> fork_session farklı yaklaşımları karşılaştırmak için kullanılır. Buradaki sorun stale context — dallanma yapsan bile her iki dal da aynı bayat veriden başlar.</p></div><div class="prose l-en"><h2>The Core Idea</h2>
+<p>Agents can run for a long time. Sometimes you need to step away from a session and come back to it later. Or an agent has been running for a while and its context has started to degrade. This task statement answers the question: <strong>how do you manage a session?</strong></p>
 <hr />
-<h2>Üç Seçenek</h2>
-<h3>Seçenek 1: Resume (--resume <session-name>)</h3>
-<p>Belirli bir oturumu kaldığı yerden devam ettirir. Önceki tüm bağlam — tool çağrıları, sonuçlar, Claude'un reasoning'i — aynen korunur.</p>
-<p><strong>Ne zaman kullanılır:</strong> Önceki bağlam hâlâ geçerli, dosyalar önemli ölçüde değişmemiş. Örneğin, bir araştırma oturumunu yarım bıraktın ve ertesi gün devam edeceksin — veriler hâlâ güncel.</p>
-<h3>Seçenek 2: fork_session</h3>
-<p>Paylaşılan bir analiz temelinden <strong>bağımsız dallar</strong> oluşturur.</p>
-<p><strong>Ne zaman kullanılır:</strong> Aynı başlangıç noktasından farklı yaklaşımları denemek istiyorsun. Örneğin, bir kod tabanı analizinden iki farklı refactoring stratejisini karşılaştırmak. Her dal birbirinden bağımsız çalışır.</p>
-<h3>Seçenek 3: Fresh Start with Summary Injection</h3>
-<p>Yeni bir oturum başlatırsın ama önceki bulguların <strong>yapılandırılmış bir özetini</strong> başlangıç context'ine enjekte edersin. Sıfırdan keşif yapmaz — önceki bilgiyi özet olarak alır ve oradan devam eder.</p>
-<p><strong>Ne zaman kullanılır:</strong> Tool sonuçları bayatlamış (stale), dosyalar değişmiş, ya da uzun bir oturumda context kalitesi düşmüş.</p>
+<h2>Three Options</h2>
+<h3>Option 1: Resume (--resume <session-name>)</h3>
+<p>Continues a specific session exactly where it left off. All prior context — tool calls, results, Claude's reasoning — is preserved as-is.</p>
+<p><strong>When to use it:</strong> The prior context is still valid and the files haven't meaningfully changed. For example, you paused a research session and are picking it back up the next day — the data is still current.</p>
+<h3>Option 2: fork_session</h3>
+<p>Creates <strong>independent branches</strong> from a shared analysis baseline.</p>
+<p><strong>When to use it:</strong> You want to try different approaches from the same starting point. For example, comparing two different refactoring strategies starting from the same codebase analysis. Each branch runs independently of the others.</p>
+<h3>Option 3: Fresh Start with Summary Injection</h3>
+<p>You start a new session, but inject a <strong>structured summary</strong> of prior findings into the starting context. It doesn't rediscover everything from scratch — it picks up the prior knowledge as a summary and continues from there.</p>
+<p><strong>When to use it:</strong> Tool results have gone stale, files have changed, or context quality has degraded over a long session.</p>
 <hr />
-<h2>Stale Context Problemi (Sınav Tuzağı)</h2>
-<p>Bu çok önemli. Bir developer oturumu resume eder ama arada dosyaları değiştirmiştir. Agent, eski tool sonuçlarına dayanarak reasoning yapar — artık var olmayan kod hakkında tavsiye verir ya da çelişkili öneriler sunar.</p>
-<p><strong>Çözüm:</strong> Resume ediyorsan ve dosyalar değiştiyse, agent'a <strong>hangi dosyaların değiştiğini spesifik olarak bildir</strong> — hedefli yeniden analiz yapsın. Her şeyi sıfırdan keşfetmesini isteme.</p>
-<p><strong>Ama eğer değişiklikler çok kapsamlıysa veya tool sonuçları tamamen bayatsa</strong> → fresh start with summary injection daha güvenilir.</p>
+<h2>The Stale Context Problem (Exam Trap)</h2>
+<p>This one matters a lot. A developer resumes a session, but has changed files in the meantime. The agent reasons based on outdated tool results — it gives advice about code that no longer exists, or offers contradictory recommendations.</p>
+<p><strong>The fix:</strong> If you're resuming and files have changed, <strong>tell the agent specifically which files changed</strong> so it can do a targeted re-analysis. Don't ask it to rediscover everything from scratch.</p>
+<p><strong>But if the changes are extensive, or the tool results are completely stale</strong> → a fresh start with summary injection is more reliable.</p>
 <hr />
-<h2>Karar Tablosu</h2>
+<h2>Decision Table</h2>
 <table>
 <thead>
 <tr>
-<th>Durum</th>
-<th>Doğru Yaklaşım</th>
+<th>Situation</th>
+<th>Correct Approach</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Bağlam hâlâ geçerli, dosyalar değişmemiş</td>
+<td>Context is still valid, files unchanged</td>
 <td><strong>Resume</strong></td>
 </tr>
 <tr>
-<td>Aynı temelden farklı yaklaşımları denemek</td>
+<td>Trying different approaches from the same baseline</td>
 <td><strong>fork_session</strong></td>
 </tr>
 <tr>
-<td>Tool sonuçları bayat, dosyalar değişmiş, context bozulmuş</td>
+<td>Tool results stale, files changed, context degraded</td>
 <td><strong>Fresh start with summary injection</strong></td>
 </tr>
 <tr>
-<td>Resume + birkaç dosya değişmiş</td>
-<td>Resume + <strong>spesifik dosya değişikliklerini bildir</strong></td>
+<td>Resume + a few files changed</td>
+<td>Resume + <strong>report the specific file changes</strong></td>
 </tr>
 </tbody>
 </table>
@@ -1499,45 +1499,45 @@ elif response.stop_reason == &quot;tool_use&quot;:
 <tbody>
 <tr>
 <td>Resume</td>
-<td>Bağlam geçerli, dosyalar değişmemiş → kaldığı yerden devam</td>
+<td>Context still valid, files unchanged → continue where you left off</td>
 </tr>
 <tr>
 <td>fork_session</td>
-<td>Paylaşılan temelden bağımsız dallar — farklı yaklaşımları karşılaştırmak için</td>
+<td>Independent branches from a shared baseline — for comparing different approaches</td>
 </tr>
 <tr>
 <td>Fresh start with summary injection</td>
-<td>Stale context, değişen dosyalar → yeni oturum + önceki bulguların yapılandırılmış özeti</td>
+<td>Stale context, changed files → new session + a structured summary of prior findings</td>
 </tr>
 <tr>
-<td>Stale context problemi</td>
-<td>Resume sonrası çelişkili tavsiyeler → agent bayat tool sonuçlarına dayanıyor</td>
+<td>Stale context problem</td>
+<td>Contradictory advice after resume → the agent is relying on stale tool results</td>
 </tr>
 <tr>
-<td>Spesifik dosya bildirimi</td>
-<td>Resume + değişen dosyalar varsa → agent'a hangi dosyaların değiştiğini bildir</td>
+<td>Reporting specific file changes</td>
+<td>Resume + files changed → tell the agent exactly which files changed</td>
 </tr>
 <tr>
 <td>Exam trap</td>
-<td>"Her şeyi sıfırdan keşfet" veya "daha büyük model kullan" gibi çözümler sorunu çözmez</td>
+<td>Solutions like "rediscover everything from scratch" or "use a bigger model" don't fix the problem</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2>Practice Scenario</h2>
 <blockquote>
-<p>Bir developer, bir kod tabanı üzerinde çalışan agent oturumunu resume ediyor. Arada 3 dosyada önemli değişiklikler yapmış. Agent, bu dosyalar hakkında çelişkili tavsiyeler veriyor — bir yerde "bu fonksiyonu refactor et" diyor ama fonksiyon zaten değiştirilmiş.</p>
-<p><strong>Sorun nedir ve doğru yaklaşım hangisidir?</strong></p>
-<p><strong>A)</strong> Agent'ın context window'u yetersiz — daha büyük model kullanılmalı.</p>
-<p><strong>B)</strong> Agent stale tool sonuçlarına dayanarak reasoning yapıyor — oturum resume edilirken değişen dosyalar spesifik olarak bildirilmeli, ya da tool sonuçları tamamen bayatsa fresh start with summary injection yapılmalı.</p>
-<p><strong>C)</strong> Agent'ın system prompt'una "dosyaları tekrar kontrol et" talimatı eklenmeli.</p>
-<p><strong>D)</strong> fork_session ile iki dal oluşturulup en iyi sonuç seçilmeli.</p>
+<p>A developer resumes an agent session working on a codebase. In the meantime, they made significant changes to 3 files. The agent gives contradictory advice about these files — at one point saying "refactor this function," even though the function has already been changed.</p>
+<p><strong>What's the problem, and what's the correct approach?</strong></p>
+<p><strong>A)</strong> The agent's context window is too small — use a bigger model.</p>
+<p><strong>B)</strong> The agent is reasoning based on stale tool results — when resuming the session, the changed files should be reported specifically, or if the tool results are entirely stale, do a fresh start with summary injection.</p>
+<p><strong>C)</strong> Add an instruction to the agent's system prompt to "recheck the files."</p>
+<p><strong>D)</strong> Create two branches with fork_session and pick the better result.</p>
 </blockquote>
 <h3>Correct Answer: B</h3>
-<p><strong>Why B is correct:</strong> Agent eski tool sonuçlarına dayanarak reasoning yapıyor — dosyalar değişmiş ama agent bunu bilmiyor. Çözüm iki katmanlı: eğer değişiklikler sınırlıysa resume edip spesifik dosya değişikliklerini bildir; eğer değişiklikler kapsamlıysa veya context tamamen bozulmuşsa fresh start with summary injection yap.</p>
-<p><strong>Why A is wrong:</strong> Sorun context window boyutu değil, stale data. Daha büyük model de eski veriye dayanarak aynı hataları yapar.</p>
-<p><strong>Why C is wrong:</strong> Prompt talimatı olasılıksal ve sorunu yanlış yerde çözmeye çalışıyor. Asıl mesele agent'ın context'indeki verinin bayat olması.</p>
-<p><strong>Why D is wrong:</strong> fork_session farklı yaklaşımları karşılaştırmak için kullanılır. Buradaki sorun stale context — dallanma yapsan bile her iki dal da aynı bayat veriden başlar.</p></div></details>
+<p><strong>Why B is correct:</strong> The agent is reasoning based on outdated tool results — the files have changed, but the agent doesn't know. The fix has two layers: if the changes are limited, resume and report the specific file changes; if the changes are extensive or the context is thoroughly degraded, do a fresh start with summary injection.</p>
+<p><strong>Why A is wrong:</strong> The problem isn't context window size, it's stale data. A bigger model would make the same mistakes reasoning from the same outdated data.</p>
+<p><strong>Why C is wrong:</strong> A prompt instruction is probabilistic and tries to fix the problem in the wrong place. The real issue is that the data in the agent's context is stale.</p>
+<p><strong>Why D is wrong:</strong> fork_session is for comparing different approaches. The problem here is stale context — even if you branch, both branches would start from the same stale data.</p></div></details>
 </div>
 <h2 class="secttl" id="domain-1-quiz"><span class="l-tr">Yeterlilik testi</span><span class="l-en">Practice quiz</span></h2>
 <div class="prose qintro"></div>

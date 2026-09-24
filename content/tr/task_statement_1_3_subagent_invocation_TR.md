@@ -1,16 +1,16 @@
-# Task Statement 1.3: Subagent Invocation and Context Passing
+# Task Statement 1.3: Subagent Çağırma ve Bağlam Aktarımı (Subagent Invocation and Context Passing)
 
-## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+## Domain 1 — Agentic Mimari ve Orkestrasyon (Sınavın %27'si)
 
 ---
 
-## The Core Idea
+## Temel Fikir
 
 Task Statement 1.2'de koordinatörün subagent'ları yönettiğini öğrendik. Şimdi asıl soruya geliyoruz: **koordinatör subagent'ları nasıl oluşturur ve onlara bilgiyi nasıl aktarır?**
 
 ---
 
-## The Task Tool
+## Task Tool
 
 Koordinatörün subagent oluşturma mekanizması **Task tool**'dur. Kritik detay: koordinatörün `allowedTools` listesinde `"Task"` yoksa, subagent oluşturamaz — hiçbir şekilde.
 
@@ -79,21 +79,21 @@ Kullanım senaryosu: Aynı kod tabanı analizinden iki farklı test stratejisini
 
 ---
 
-## Key Exam Takeaways
+## Sınav İçin Temel Çıkarımlar
 
-| Concept | Remember |
+| Kavram | Hatırla |
 |---|---|
 | Task tool | Subagent oluşturma mekanizması — koordinatörün `allowedTools`'unda olmalı |
 | AgentDefinition | Description + system prompt + tool restrictions |
 | Context passing | Önceki agent bulgularını doğrudan prompt'a dahil et, structured metadata ile |
 | Structured metadata | Claim-source eşleştirmesi — içeriği metadatadan ayır (URL, doküman adı, sayfa no) |
-| Coordinator prompts | Hedef ve kalite kriterleri belirt, adım adım talimat verme |
+| Koordinatör prompt'ları | Hedef ve kalite kriterleri belirt, adım adım talimat verme |
 | Parallel spawning | Tek yanıtta birden fazla Task tool çağrısı → subagent'lar paralel başlar → daha hızlı |
 | fork_session | Paylaşılan analiz temelinden bağımsız dallar oluşturur |
 
 ---
 
-## Practice Scenario
+## Pratik Senaryo
 
 > Bir multi-agent research sistemi var. Web search subagent ve document analysis subagent mükemmel çalışıyor — her ikisi de zengin, kaynaklı veriler üretiyor. Ancak synthesis subagent'ın ürettiği nihai raporda birçok iddia **kaynak atıfsız** — hangi bilginin nereden geldiği belli değil.
 >
@@ -107,12 +107,12 @@ Kullanım senaryosu: Aynı kod tabanı analizinden iki farklı test stratejisini
 >
 > **D)** Synthesis subagent'a koordinatörün tam konuşma geçmişi verilmeli ki kaynakları görebilsin.
 
-### Correct Answer: B
+### Doğru Cevap: B
 
-**Why B is correct:** Sorun bilginin *nasıl aktarıldığında*. Web search ve document analysis agent'ları doğru çalışıyor — veriyi üretiyorlar. Ama koordinatör bu verileri synthesis agent'a aktarırken düz metin olarak gönderiyor, metadata'yı (kaynak URL, doküman adı, sayfa numarası) ayrıştırılmış şekilde dahil etmiyor. Synthesis agent ham metni görüyor ama hangi iddianın hangi kaynaktan geldiğini ayırt edemiyor. Çözüm: subagent'ların çıktısını claim-source eşleştirmesi yapan yapılandırılmış formata dönüştürmek.
+**Neden B doğru:** Sorun bilginin *nasıl aktarıldığında*. Web search ve document analysis agent'ları doğru çalışıyor — veriyi üretiyorlar. Ama koordinatör bu verileri synthesis agent'a aktarırken düz metin olarak gönderiyor, metadata'yı (kaynak URL, doküman adı, sayfa numarası) ayrıştırılmış şekilde dahil etmiyor. Synthesis agent ham metni görüyor ama hangi iddianın hangi kaynaktan geldiğini ayırt edemiyor. Çözüm: subagent'ların çıktısını claim-source eşleştirmesi yapan yapılandırılmış formata dönüştürmek.
 
-**Why A is wrong:** Prompt'a talimat eklemek yardımcı olabilir ama kök neden bu değil. Synthesis agent'a "kaynak belirt" desen bile, eğer kendisine gelen veride kaynak bilgisi yapılandırılmış şekilde yoksa, atıf yapacak bir şeyi yok. Prompt talimatı, eksik veriyi yaratamaz.
+**Neden A yanlış:** Prompt'a talimat eklemek yardımcı olabilir ama kök neden bu değil. Synthesis agent'a "kaynak belirt" desen bile, eğer kendisine gelen veride kaynak bilgisi yapılandırılmış şekilde yoksa, atıf yapacak bir şeyi yok. Prompt talimatı, eksik veriyi yaratamaz.
 
-**Why C is wrong:** Soruda açıkça belirtiliyor — web search subagent mükemmel çalışıyor ve zengin veriler üretiyor. Sorun üretimde değil, koordinatörün aktarım mekanizmasında.
+**Neden C yanlış:** Soruda açıkça belirtiliyor — web search subagent mükemmel çalışıyor ve zengin veriler üretiyor. Sorun üretimde değil, koordinatörün aktarım mekanizmasında.
 
-**Why D is wrong:** Isolation principle tuzağı. Subagent'lara koordinatörün tam konuşma geçmişini vermek doğru mimari yaklaşım değil — bu izolasyon ilkesini ihlal eder. Çözüm, koordinatörün structured metadata ile context passing yapmasıdır.
+**Neden D yanlış:** Isolation principle tuzağı. Subagent'lara koordinatörün tam konuşma geçmişini vermek doğru mimari yaklaşım değil — bu izolasyon ilkesini ihlal eder. Çözüm, koordinatörün structured metadata ile context passing yapmasıdır.

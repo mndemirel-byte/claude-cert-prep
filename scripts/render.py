@@ -18,7 +18,7 @@ EN_DESC={1:"Agentic loops, multi-agent orchestration, subagent invocation and co
 3:"CLAUDE.md hierarchy, custom slash commands and skills, path-specific rules, plan mode vs direct execution, iterative refinement, CI/CD integration.",
 4:"Explicit criteria, few-shot prompting, structured output with tool_use, validation-retry loops, batch processing, multi-instance review.",
 5:"Context preservation, escalation and ambiguity resolution, error propagation, codebase exploration, human review and confidence calibration, information provenance."}
-EN_LTITLE={"3.1":"CLAUDE.md Hierarchy","3.2":"Custom Slash Commands & Skills","3.6":"CI/CD Integration","4.2":"Few-Shot Prompting","4.3":"Structured Output with Tool_use","4.4":"Validation-Retry Loops"}
+EN_LTITLE={"1.3":"Subagent Invocation and Context Passing","1.4":"Workflow Enforcement and Handoff","1.5":"Agent SDK Hooks","1.6":"Task Decomposition Strategies","1.7":"Session State and Resumption","3.1":"CLAUDE.md Hierarchy","3.2":"Custom Slash Commands & Skills","3.6":"CI/CD Integration","4.2":"Few-Shot Prompting","4.3":"Structured Output with Tool_use","4.4":"Validation-Retry Loops"}
 EN_LESSON_FILES={"1.1":"task_statement_1_1_agentic_loops.md","1.2":"task_statement_1_2_multi_agent_orchestration.md"}
 NOTE_EN='<p class="langnote">English version of this section is not available yet — showing the Turkish text.</p>'
 def en_title(tr_title):
