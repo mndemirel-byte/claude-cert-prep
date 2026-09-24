@@ -489,11 +489,13 @@ def scen_page():
     return "\n".join(p)
 pages.append(scen_page())
 css=open(os.path.join(ROOT,"src","style.css"),encoding="utf-8").read(); js=open(os.path.join(ROOT,"src","app.js"),encoding="utf-8").read()
+import base64
+LOGO_B64=base64.b64encode(open(os.path.join(ROOT,"src","logo.png"),"rb").read()).decode("ascii")
 narration_js=open(os.path.join(ROOT,"src","narration-player.js"),encoding="utf-8").read()
 mock_builder_js=open(os.path.join(ROOT,"src","mock-builder.js"),encoding="utf-8").read()
 nav=f'''<nav class="topnav" data-style="apple" data-palette="A">
 <div class="topnav-inner">
-<a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span>CCA Foundations</a>
+<a class="brand" href="#home"><img class="brand-mark" src="data:image/png;base64,{LOGO_B64}" alt="" aria-hidden="true">periskop<span class="brand-ai">ai</span></a>
 <div class="topnav-links" id="navlinks">
 <a href="#home" data-nav="home">{bi("Domainler","Domains")}</a>
 <a href="#scenarios" data-nav="scenarios">{bi("Senaryolar","Scenarios")}</a>
