@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveNarrationSrc, nextLessonInDomain } = require('./narration-player.js');
+const { resolveNarrationSrc, nextLessonInDomain, parseListeningPosition } = require('./narration-player.js');
 
 test('returns the narration url matching the active language', () => {
   const dataset = { narrationEn: 'audio/en/D2-1.mp3', narrationTr: 'audio/tr/D2-1.mp3' };
@@ -59,4 +59,24 @@ test('returns null when every remaining lesson lacks narration', () => {
   ];
 
   assert.equal(nextLessonInDomain('1.2', orderedLessons), null);
+});
+
+test('parses a valid stored Listening Position', () => {
+  const raw = JSON.stringify({ lessonId: '2.3', lang: 'tr', time: 128.5 });
+
+  assert.deepEqual(parseListeningPosition(raw), { lessonId: '2.3', lang: 'tr', time: 128.5 });
+});
+
+test('returns null when no Listening Position is stored', () => {
+  assert.equal(parseListeningPosition(null), null);
+});
+
+test('returns null for malformed stored JSON instead of throwing', () => {
+  assert.equal(parseListeningPosition('{not valid json'), null);
+});
+
+test('returns null when the stored JSON is missing required fields', () => {
+  const raw = JSON.stringify({ lessonId: '2.3' });
+
+  assert.equal(parseListeningPosition(raw), null);
 });

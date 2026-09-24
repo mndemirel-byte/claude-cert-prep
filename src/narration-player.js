@@ -12,6 +12,16 @@ function nextLessonInDomain(currentId, orderedLessons) {
   return null;
 }
 
+function parseListeningPosition(raw) {
+  if (!raw) return null;
+  var parsed;
+  try { parsed = JSON.parse(raw); } catch (e) { return null; }
+  if (typeof parsed.lessonId !== 'string' || typeof parsed.lang !== 'string' || typeof parsed.time !== 'number') {
+    return null;
+  }
+  return { lessonId: parsed.lessonId, lang: parsed.lang, time: parsed.time };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { resolveNarrationSrc, nextLessonInDomain };
+  module.exports = { resolveNarrationSrc, nextLessonInDomain, parseListeningPosition };
 }

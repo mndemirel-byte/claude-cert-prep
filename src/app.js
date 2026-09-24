@@ -27,13 +27,20 @@
   window.addEventListener('hashchange',route);
   route();
 
-  /* ---------- lesson narration + Domain Playlist ---------- */
+  /* ---------- lesson narration + Domain Playlist + Listening Position ---------- */
   (function(){
-    if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function')return;
+    if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function'||typeof parseListeningPosition!=='function')return;
     var audio=new Audio(); audio.preload='none';
     var registry={}; // lessonId -> {el, btn}
     var current=null; // {id, btn, el}
+    var POSITION_KEY='cca-position';
+    var lastPersistAt=0;
+    var pendingResume=null;
+    try{ pendingResume=parseListeningPosition(localStorage.getItem(POSITION_KEY)); }catch(e){}
 
+    function persistPosition(lessonId,lang,time){
+      try{ localStorage.setItem(POSITION_KEY,JSON.stringify({lessonId:lessonId,lang:lang,time:time})); }catch(e){}
+    }
     function setBtnState(btn,playing){
       btn.classList.toggle('playing',playing);
       btn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
@@ -51,10 +58,28 @@
       if(!src)return;
       var reg=registry[lessonEl.dataset.lessonId];
       if(current&&current.el!==lessonEl)setBtnState(current.btn,false);
-      audio.src=src; audio.play();
-      current={id:lessonEl.dataset.lessonId,btn:reg.btn,el:lessonEl};
+      audio.src=src;
+      var lessonId=lessonEl.dataset.lessonId, lang=root.dataset.lang, startTime=0;
+      if(pendingResume&&pendingResume.lessonId===lessonId&&pendingResume.lang===lang){
+        startTime=pendingResume.time; pendingResume=null;
+        audio.addEventListener('loadedmetadata',function once(){
+          audio.removeEventListener('loadedmetadata',once);
+          audio.currentTime=startTime;
+        });
+      }
+      audio.play();
+      current={id:lessonId,btn:reg.btn,el:lessonEl};
       setBtnState(reg.btn,true);
+      lastPersistAt=Date.now();
+      persistPosition(lessonId,lang,startTime);
     }
+    audio.addEventListener('timeupdate',function(){
+      if(!current)return;
+      var now=Date.now();
+      if(now-lastPersistAt<3000)return;
+      lastPersistAt=now;
+      persistPosition(current.id,root.dataset.lang,audio.currentTime);
+    });
     audio.addEventListener('ended',function(){
       if(!current)return;
       var lessonEl=current.el;
@@ -87,6 +112,12 @@
       updaters.push(refresh);
       refresh();
     });
+
+    if(pendingResume&&registry[pendingResume.lessonId]&&resolveNarrationSrc(registry[pendingResume.lessonId].el.dataset,pendingResume.lang)){
+      setLang(pendingResume.lang);
+    }else{
+      pendingResume=null;
+    }
   })();
 
   document.querySelectorAll('.quiz').forEach(function(quiz){
