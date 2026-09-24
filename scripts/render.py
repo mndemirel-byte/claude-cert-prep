@@ -52,7 +52,6 @@ def intro(d):
     return MD(s.strip())
 
 def esc(s): return html.escape(s)
-from extra_questions import EXTRA, EXTRA2, BASE_SC, EXTRA_SC
 from en_content import SCEN_EN, SCEN_PAGE_EN, Q_EN
 def en_q(key):
     e=Q_EN.get(key)
@@ -64,15 +63,17 @@ def bidiv(tr,en,cls=""):
 def biopt(tr,en):
     return f'<span class="l-tr">{tr}</span><span class="l-en">{en if en is not None else tr}</span>'
 
-POOL=[]
 for d in D:
     for q in d["questions"]:
-        e=en_q(("base",d["id"],q["n"])); q["en"]=e
-        POOL.append({"d":d["id"],"sc":BASE_SC[(d["id"],q["n"])],"ts":q["ts"],"body":q["body"],"opts":q["opts"],"ans":q["ans"],"expl":q["expl"],"en":e})
-    for i,(q,sc) in enumerate(zip(EXTRA[d["id"]],EXTRA_SC[d["id"]])):
-        POOL.append({"d":d["id"],"sc":sc,"ts":q["ts"],"body":MD(q["body"]),"opts":{k:MD(v)[3:-4] for k,v in q["opts"].items()},"ans":q["ans"],"expl":MD(q["expl"]),"en":en_q(("extra",d["id"],i))})
-for i,q in enumerate(EXTRA2):
-    POOL.append({"d":q["d"],"sc":q["sc"],"ts":q["ts"],"body":MD(q["body"]),"opts":{k:MD(v)[3:-4] for k,v in q["opts"].items()},"ans":q["ans"],"expl":MD(q["expl"]),"en":en_q(("extra2",i))})
+        q["en"]=en_q(("base",d["id"],q["n"]))
+
+QUESTION_POOL=json.load(open(os.path.join(ROOT,"content","question_pool.json"),encoding="utf-8"))
+def qp_en(q):
+    if not q["body_en"]: return None
+    return {"body":MD(q["body_en"]),"opts":{k:MD(v)[3:-4] for k,v in q["opts_en"].items()},"expl":MD(q["expl_en"])}
+POOL=[{"d":q["d"],"sc":q["sc"],"ts":q["ts"],"body":MD(q["body_tr"]),
+       "opts":{k:MD(v)[3:-4] for k,v in q["opts_tr"].items()},"ans":q["ans"],
+       "expl":MD(q["expl_tr"]),"en":qp_en(q)} for q in QUESTION_POOL]
 POOL_JSON=json.dumps(POOL,ensure_ascii=False).replace("</script>","<\\/script>")
 
 SCEN=[
