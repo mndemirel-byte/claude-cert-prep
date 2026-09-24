@@ -178,7 +178,7 @@ for d in D:
         idx=title.split(":")[0].strip(); f_tr=d["lessons"][i]
         tr_t=esc(title.split(":",1)[1].strip()) if ":" in title else esc(title)
         en_b=en_lesson_body(idx,f_tr,body)
-        p.append(f'<details class="lesson"{narration_attrs(idx)}><summary><span class="lidx">{idx}</span><span class="ltitle">{bi(tr_t,esc(en_title(title)))}</span></summary><div class="prose l-tr">{body}</div><div class="prose l-en">{en_b}</div></details>')
+        p.append(f'<details class="lesson" data-lesson-id="{idx}"{narration_attrs(idx)}><summary><span class="lidx">{idx}</span><span class="ltitle">{bi(tr_t,esc(en_title(title)))}</span></summary><div class="prose l-tr">{body}</div><div class="prose l-en">{en_b}</div></details>')
     p.append('</div>')
     p.append(f'<h2 class="secttl" id="domain-{d["id"]}-quiz">{bi("Yeterlilik testi","Practice quiz")}</h2>')
     allen=all(q.get("en") for q in d["questions"])

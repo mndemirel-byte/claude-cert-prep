@@ -27,40 +27,61 @@
   window.addEventListener('hashchange',route);
   route();
 
-  /* ---------- lesson narration ---------- */
+  /* ---------- lesson narration + Domain Playlist ---------- */
   (function(){
-    if(typeof resolveNarrationSrc!=='function')return;
+    if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function')return;
     var audio=new Audio(); audio.preload='none';
-    var activeBtn=null;
+    var registry={}; // lessonId -> {el, btn}
+    var current=null; // {id, btn, el}
+
     function setBtnState(btn,playing){
       btn.classList.toggle('playing',playing);
       btn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
       btn.textContent=playing?'⏸':'▶';
     }
-    function stopActive(){ if(activeBtn){setBtnState(activeBtn,false); activeBtn=null;} }
-    audio.addEventListener('pause',stopActive);
-    audio.addEventListener('ended',stopActive);
+    function stopCurrent(){ if(current){setBtnState(current.btn,false); current=null;} }
+    function domainLessons(lessonEl){
+      var page=lessonEl.closest('.page.domain');
+      return Array.prototype.slice.call(page.querySelectorAll('.lesson')).map(function(el){
+        return {id:el.dataset.lessonId, hasNarration:!!resolveNarrationSrc(el.dataset,root.dataset.lang)};
+      });
+    }
+    function playLesson(lessonEl){
+      var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
+      if(!src)return;
+      var reg=registry[lessonEl.dataset.lessonId];
+      if(current&&current.el!==lessonEl)setBtnState(current.btn,false);
+      audio.src=src; audio.play();
+      current={id:lessonEl.dataset.lessonId,btn:reg.btn,el:lessonEl};
+      setBtnState(reg.btn,true);
+    }
+    audio.addEventListener('ended',function(){
+      if(!current)return;
+      var lessonEl=current.el;
+      var nextId=nextLessonInDomain(current.id,domainLessons(lessonEl));
+      stopCurrent();
+      if(nextId&&registry[nextId])playLesson(registry[nextId].el);
+    });
 
     document.querySelectorAll('.lesson').forEach(function(lessonEl){
       var summary=lessonEl.querySelector('summary');
       var btn=document.createElement('button');
       btn.type='button'; btn.className='lesson-play'; setBtnState(btn,false);
       summary.appendChild(btn);
+      registry[lessonEl.dataset.lessonId]={el:lessonEl,btn:btn};
 
       function refresh(){
         var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
         btn.hidden=!src;
-        if(!src&&activeBtn===btn)audio.pause();
+        if(!src&&current&&current.el===lessonEl){audio.pause(); stopCurrent();}
       }
 
       btn.addEventListener('click',function(e){
         e.preventDefault();
-        var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
-        if(!src)return;
-        if(activeBtn===btn&&!audio.paused){audio.pause();return;}
-        if(activeBtn&&activeBtn!==btn)setBtnState(activeBtn,false);
-        audio.src=src; audio.play();
-        activeBtn=btn; setBtnState(btn,true);
+        if(current&&current.el===lessonEl&&!audio.paused){
+          audio.pause(); stopCurrent(); return;
+        }
+        playLesson(lessonEl);
       });
 
       updaters.push(refresh);
