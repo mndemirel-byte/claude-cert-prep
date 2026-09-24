@@ -402,37 +402,40 @@
     if(typeof FLASHCARDS==='undefined')return;
     var deck=null, idx=0;
     function shuffleFC(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+    function domainMeta(domainId){
+      var lang=root.dataset.lang;
+      return 'Domain '+domainId+' · '+(lang==='en'?MOCK_META.titles_en[domainId]:MOCK_META.titles_tr[domainId]);
+    }
     function renderCard(){
       var lang=root.dataset.lang, card=deck.cards[idx];
       $('fc-card').classList.remove('flipped');
-      $('fc-card').querySelector('.fc-front').innerHTML=lang==='en'?card.concept_en:card.concept_tr;
-      $('fc-card').querySelector('.fc-back').innerHTML=lang==='en'?card.remember_en:card.remember_tr;
-      $('fc-progress').textContent=(idx+1)+' / '+deck.cards.length;
+      $('fc-q').innerHTML=lang==='en'?card.concept_en:card.concept_tr;
+      $('fc-a').innerHTML=lang==='en'?card.remember_en:card.remember_tr;
+      var meta=domainMeta(deck.domain), prog=(idx+1)+' / '+deck.cards.length;
+      $('fc-meta-q').textContent=meta; $('fc-meta-a').textContent=meta;
+      $('fc-progress').textContent=prog; $('fc-progress2').textContent=prog;
       $('fc-prev').disabled=idx===0; $('fc-next').disabled=idx===deck.cards.length-1;
     }
     function openDeck(domainId){
       var cards=FLASHCARDS[domainId]||[];
       deck={domain:domainId,cards:shuffleFC(cards)};
       idx=0;
-      var lang=root.dataset.lang;
-      $('fc-domain-title').textContent='Domain '+domainId+' — '+(lang==='en'?MOCK_META.titles_en[domainId]:MOCK_META.titles_tr[domainId]);
-      $('fc-picker').hidden=true; $('fc-deck').hidden=false;
-      renderCard(); window.scrollTo({top:0});
+      $('fc-card').style.setProperty('--c',MOCK_META.hues[domainId]);
+      document.querySelectorAll('.fc-domain-card').forEach(function(btn){
+        btn.classList.toggle('selected',btn.dataset.domain===String(domainId));
+      });
+      renderCard();
     }
     document.querySelectorAll('.fc-domain-card').forEach(function(btn){
       btn.addEventListener('click',function(){openDeck(btn.dataset.domain);});
     });
-    $('fc-back').addEventListener('click',function(){$('fc-deck').hidden=true;$('fc-picker').hidden=false;});
     $('fc-card').addEventListener('click',function(){$('fc-card').classList.toggle('flipped');});
     $('fc-card').addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();$('fc-card').classList.toggle('flipped');}});
     $('fc-prev').addEventListener('click',function(){if(idx>0){idx--;renderCard();}});
     $('fc-next').addEventListener('click',function(){if(idx<deck.cards.length-1){idx++;renderCard();}});
-    updaters.push(function(){
-      if(deck&&!$('fc-deck').hidden){
-        var lang=root.dataset.lang;
-        $('fc-domain-title').textContent='Domain '+deck.domain+' — '+(lang==='en'?MOCK_META.titles_en[deck.domain]:MOCK_META.titles_tr[deck.domain]);
-        renderCard();
-      }
-    });
+    $('fc-shuffle').addEventListener('click',function(){if(!deck)return;deck.cards=shuffleFC(deck.cards);idx=0;renderCard();});
+    updaters.push(function(){if(deck)renderCard();});
+    var firstDomain=document.querySelector('.fc-domain-card');
+    if(firstDomain)openDeck(firstDomain.dataset.domain);
   })();
 })();

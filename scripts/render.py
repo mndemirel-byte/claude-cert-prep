@@ -269,34 +269,36 @@ pages.append(fullmock)
 fc_domain_cards=''
 for d in D:
     n=len(FLASHCARDS.get(d["id"],[]))
-    fc_domain_cards+=f'''<button type="button" class="practice-card fc-domain-card" data-domain="{d["id"]}" style="--c:{d["hue"]}">
-<h2>{bi(f'Domain {d["id"]}',f'Domain {d["id"]}')} — {bi(esc(d["title"]),EN_TITLE[d["id"]])}</h2>
-<p>{bi(f"{n} kart",f"{n} cards")}</p>
+    fc_domain_cards+=f'''<button type="button" class="fc-domain-card" data-domain="{d["id"]}" style="--c:{d["hue"]}">
+<span class="fcd-top"><span class="fcd-badge">{d["id"]}</span><span class="fcd-count">{bi(f"{n} kart",f"{n} cards")}</span></span>
+<span class="fcd-title">{bi(esc(d["title"]),EN_TITLE[d["id"]])}</span>
+<span class="fcd-bar"></span>
 </button>'''
 
-pages.append(f'''<section id="flashcards" class="page">
+pages.append(f'''<section id="flashcards" class="page fcpage">
 <a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
-<div id="fc-picker">
-<p class="kicker">{bi("Hızlı tekrar","Quick review")}</p>
+<p class="kicker">{bi("Practice · Flashcards","Practice · Flashcards")}</p>
 <h1>Flashcards</h1>
 <p class="lede">{bi("Bir domain seç; o domain'deki derslerin temel çıkarımlarını kart kart tekrar et.","Pick a Domain; review that Domain's Lessons' key takeaways one card at a time.")}</p>
-<div class="practice-cards" id="fc-domain-list">{fc_domain_cards}</div>
-</div>
-<div id="fc-deck" hidden>
-<button type="button" class="back" id="fc-back">{bi("← Flashcards","← Flashcards")}</button>
-<p class="kicker" id="fc-domain-title"></p>
+<div class="fc-domains" id="fc-domain-list">{fc_domain_cards}</div>
 <div class="flashcard" id="fc-card" tabindex="0" role="button">
 <div class="fc-inner">
-<div class="fc-face fc-front"></div>
-<div class="fc-face fc-back"></div>
+<div class="fc-face fc-front">
+<span class="fc-row fc-head"><span class="fc-meta" id="fc-meta-q"></span><span class="fc-tag">{bi("SORU","QUESTION")}</span></span>
+<span class="fc-body" id="fc-q"></span>
+<span class="fc-row fc-foot"><span id="fc-progress"></span><span class="fc-hint">{bi("Çevirmek için dokun","Tap to flip")}</span></span>
+</div>
+<div class="fc-face fc-back">
+<span class="fc-row fc-head"><span class="fc-meta" id="fc-meta-a"></span><span class="fc-tag">{bi("CEVAP","ANSWER")}</span></span>
+<span class="fc-body" id="fc-a"></span>
+<span class="fc-row fc-foot"><span id="fc-progress2"></span><span class="fc-hint">{bi("Çevirmek için dokun","Tap to flip")}</span></span>
 </div>
 </div>
-<p class="fc-hint">{bi("Çevirmek için karta dokun","Tap the card to flip it")}</p>
+</div>
 <div class="fc-nav">
-<button type="button" class="reset" id="fc-prev">←</button>
-<span id="fc-progress"></span>
-<button type="button" class="reset" id="fc-next">→</button>
-</div>
+<button type="button" class="fc-btn fc-prev" id="fc-prev">← {bi("Önceki","Previous")}</button>
+<button type="button" class="fc-btn fc-shuffle" id="fc-shuffle">{bi("Karıştır","Shuffle")}</button>
+<button type="button" class="fc-btn fc-next" id="fc-next">{bi("Sonraki","Next")} →</button>
 </div>
 </section>''')
 
