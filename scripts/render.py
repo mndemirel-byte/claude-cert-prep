@@ -4,7 +4,8 @@ MD=lambda s: markdown.markdown(s, extensions=['fenced_code','tables'])
 D=json.load(open(os.path.join(ROOT,"build","data.json"),encoding="utf-8"))
 import sys
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-from narration import narration_filename
+from narration import narration_filename, discover_lessons
+from flashcards import extract_flashcards
 def narration_attrs(idx):
     attrs=[]
     fname=narration_filename(idx)
@@ -75,6 +76,21 @@ POOL=[{"d":q["d"],"sc":q["sc"],"ts":q["ts"],"body":MD(q["body_tr"]),
        "opts":{k:MD(v)[3:-4] for k,v in q["opts_tr"].items()},"ans":q["ans"],
        "expl":MD(q["expl_tr"]),"en":qp_en(q)} for q in QUESTION_POOL]
 POOL_JSON=json.dumps(POOL,ensure_ascii=False).replace("</script>","<\\/script>")
+
+def _md1(s):
+    return MD(s)[3:-4] if s else None
+FLASHCARDS={}
+for lesson in discover_lessons(os.path.join(ROOT,"content","en_lessons"),os.path.join(ROOT,"content","tr")):
+    domain=int(lesson.id.split('.')[0])
+    en_cards=extract_flashcards(open(lesson.en_path,encoding="utf-8").read()) if lesson.en_path else []
+    tr_cards=extract_flashcards(open(lesson.tr_path,encoding="utf-8").read()) if lesson.tr_path else []
+    deck=FLASHCARDS.setdefault(domain,[])
+    for i in range(max(len(en_cards),len(tr_cards))):
+        e=en_cards[i] if i<len(en_cards) else {}
+        t=tr_cards[i] if i<len(tr_cards) else {}
+        deck.append({"concept_tr":_md1(t.get("concept")),"remember_tr":_md1(t.get("remember")),
+                     "concept_en":_md1(e.get("concept")),"remember_en":_md1(e.get("remember"))})
+FLASHCARDS_JSON=json.dumps(FLASHCARDS,ensure_ascii=False).replace("</script>","<\\/script>")
 
 SCEN=[
  {"id":1,"tr":"Customer Support Resolution Agent","en":"Customer Support Resolution Agent","doms":[1,2,5],
@@ -320,7 +336,7 @@ doc=f'''<!DOCTYPE html>
 {''.join(pages)}
 <footer class="foot">{bi(f"Claude Certified Architect (Foundations) çalışma notları · {len(D)} domain · {total_q} soru", f"Claude Certified Architect (Foundations) study notes · {len(D)} domains · {total_q} questions")}</footer>
 </div>
-<script>var MOCK_POOL={POOL_JSON};var MOCK_META={META_JSON};var MOCK_SCEN={SCEN_JSON};</script>\n<script>{narration_js}</script>\n<script>{js}</script>
+<script>var MOCK_POOL={POOL_JSON};var MOCK_META={META_JSON};var MOCK_SCEN={SCEN_JSON};var FLASHCARDS={FLASHCARDS_JSON};</script>\n<script>{narration_js}</script>\n<script>{js}</script>
 </body></html>'''
 OUT=os.path.join(ROOT,"dist","index.html")
 os.makedirs(os.path.dirname(OUT),exist_ok=True)
