@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { resolveNarrationSrc, nextLessonInDomain, previousLessonInDomain, parseListeningPosition } = require('./narration-player.js');
+const { resolveNarrationSrc, nextLessonInDomain, previousLessonInDomain, parseListeningPosition, nextPlaybackRate, formatTime } = require('./narration-player.js');
 
 test('returns the narration url matching the active language', () => {
   const dataset = { narrationEn: 'audio/en/D2-1.mp3', narrationTr: 'audio/tr/D2-1.mp3' };
@@ -118,4 +118,25 @@ test('returns null when the stored JSON is missing required fields', () => {
   const raw = JSON.stringify({ lessonId: '2.3' });
 
   assert.equal(parseListeningPosition(raw), null);
+});
+
+test('cycles playback rate from 1x to 1.25x', () => {
+  assert.equal(nextPlaybackRate(1), 1.25);
+});
+
+test('wraps playback rate from 1.5x back to 1x', () => {
+  assert.equal(nextPlaybackRate(1.5), 1);
+});
+
+test('formats zero seconds as 0:00', () => {
+  assert.equal(formatTime(0), '0:00');
+});
+
+test('formats minutes and zero-pads seconds under 10', () => {
+  assert.equal(formatTime(75), '1:15');
+  assert.equal(formatTime(65), '1:05');
+});
+
+test('formats an unknown duration (NaN) as 0:00 instead of throwing', () => {
+  assert.equal(formatTime(NaN), '0:00');
 });

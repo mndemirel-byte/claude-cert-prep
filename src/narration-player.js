@@ -30,6 +30,21 @@ function parseListeningPosition(raw) {
   return { lessonId: parsed.lessonId, lang: parsed.lang, time: parsed.time };
 }
 
+var PLAYBACK_RATES = [1, 1.25, 1.5];
+
+function nextPlaybackRate(current) {
+  var i = PLAYBACK_RATES.indexOf(current);
+  return PLAYBACK_RATES[(i + 1) % PLAYBACK_RATES.length];
+}
+
+function formatTime(seconds) {
+  if (!isFinite(seconds)) return '0:00';
+  var s = Math.floor(seconds);
+  var m = Math.floor(s / 60);
+  var r = s % 60;
+  return m + ':' + (r < 10 ? '0' : '') + r;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { resolveNarrationSrc, nextLessonInDomain, previousLessonInDomain, parseListeningPosition };
+  module.exports = { resolveNarrationSrc, nextLessonInDomain, previousLessonInDomain, parseListeningPosition, nextPlaybackRate, formatTime };
 }

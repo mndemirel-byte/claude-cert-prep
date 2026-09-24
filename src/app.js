@@ -29,14 +29,18 @@
 
   /* ---------- lesson narration + Domain Playlist + Listening Position + Media Session ---------- */
   (function(){
-    if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function'||typeof previousLessonInDomain!=='function'||typeof parseListeningPosition!=='function')return;
+    if(typeof resolveNarrationSrc!=='function'||typeof nextLessonInDomain!=='function'||typeof previousLessonInDomain!=='function'||typeof parseListeningPosition!=='function'||typeof nextPlaybackRate!=='function'||typeof formatTime!=='function')return;
     var audio=new Audio(); audio.preload='none';
-    var registry={}; // lessonId -> {el, btn}
+    var registry={}; // lessonId -> {el, btn, controls, seek, curTimeEl, durTimeEl, speedBtn}
     var current=null; // {id, btn, el} - lesson loaded into `audio`, whether playing or paused
     var POSITION_KEY='cca-position';
+    var SPEED_KEY='cca-speed';
     var lastPersistAt=0;
     var pendingResume=null;
     try{ pendingResume=parseListeningPosition(localStorage.getItem(POSITION_KEY)); }catch(e){}
+    var playbackRate=1;
+    try{ var savedRate=parseFloat(localStorage.getItem(SPEED_KEY)); if(savedRate)playbackRate=savedRate; }catch(e){}
+    audio.playbackRate=playbackRate;
 
     function persistPosition(lessonId,lang,time){
       try{ localStorage.setItem(POSITION_KEY,JSON.stringify({lessonId:lessonId,lang:lang,time:time})); }catch(e){}
@@ -46,7 +50,16 @@
       btn.setAttribute('aria-label',playing?'Pause narration':'Play narration');
       btn.textContent=playing?'⏸':'▶';
     }
-    function clearCurrent(){ if(current){setBtnState(current.btn,false); current=null;} }
+    function updateSpeedBtn(reg){ reg.speedBtn.textContent=playbackRate+'x'; }
+    function updateSeekUI(reg){
+      reg.seek.max=isFinite(audio.duration)?audio.duration:0;
+      reg.seek.value=audio.currentTime;
+      reg.curTimeEl.textContent=formatTime(audio.currentTime);
+      reg.durTimeEl.textContent=formatTime(audio.duration);
+    }
+    function clearCurrent(){
+      if(current){ setBtnState(current.btn,false); registry[current.id].controls.hidden=true; current=null; }
+    }
     function domainLessons(lessonEl){
       var page=lessonEl.closest('.page.domain');
       return Array.prototype.slice.call(page.querySelectorAll('.lesson')).map(function(el){
@@ -74,8 +87,9 @@
       var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
       if(!src)return;
       var reg=registry[lessonEl.dataset.lessonId];
-      if(current&&current.el!==lessonEl)setBtnState(current.btn,false);
+      if(current&&current.el!==lessonEl){setBtnState(current.btn,false); registry[current.id].controls.hidden=true;}
       audio.src=src;
+      audio.playbackRate=playbackRate;
       var lessonId=lessonEl.dataset.lessonId, lang=root.dataset.lang, startTime=0;
       if(pendingResume&&pendingResume.lessonId===lessonId&&pendingResume.lang===lang){
         startTime=pendingResume.time; pendingResume=null;
@@ -86,6 +100,10 @@
       }
       audio.play();
       current={id:lessonId,btn:reg.btn,el:lessonEl};
+      lessonEl.open=true;
+      reg.controls.hidden=false;
+      updateSpeedBtn(reg);
+      updateSeekUI(reg);
       updateMediaSessionMetadata(lessonEl);
       lastPersistAt=Date.now();
       persistPosition(lessonId,lang,startTime);
@@ -98,8 +116,12 @@
       if(current)setBtnState(current.btn,false);
       if('mediaSession' in navigator)navigator.mediaSession.playbackState='paused';
     });
+    audio.addEventListener('loadedmetadata',function(){
+      if(current)updateSeekUI(registry[current.id]);
+    });
     audio.addEventListener('timeupdate',function(){
       if(!current)return;
+      updateSeekUI(registry[current.id]);
       var now=Date.now();
       if(now-lastPersistAt<3000)return;
       lastPersistAt=now;
@@ -133,7 +155,15 @@
       var btn=document.createElement('button');
       btn.type='button'; btn.className='lesson-play'; setBtnState(btn,false);
       summary.appendChild(btn);
-      registry[lessonEl.dataset.lessonId]={el:lessonEl,btn:btn};
+      var controls=lessonEl.querySelector('.narration-controls');
+      var reg={
+        el:lessonEl, btn:btn, controls:controls,
+        seek:controls.querySelector('.nc-seek'),
+        curTimeEl:controls.querySelector('.nc-current'),
+        durTimeEl:controls.querySelector('.nc-duration'),
+        speedBtn:controls.querySelector('.nc-speed')
+      };
+      registry[lessonEl.dataset.lessonId]=reg;
 
       function refresh(){
         var src=resolveNarrationSrc(lessonEl.dataset,root.dataset.lang);
@@ -149,10 +179,27 @@
         }
         playLesson(lessonEl);
       });
+      controls.querySelector('.nc-restart').addEventListener('click',function(){
+        if(current&&current.el===lessonEl)audio.currentTime=0;
+      });
+      controls.querySelector('.nc-end').addEventListener('click',function(){
+        if(current&&current.el===lessonEl&&isFinite(audio.duration))audio.currentTime=Math.max(0,audio.duration-0.25);
+      });
+      reg.speedBtn.addEventListener('click',function(){
+        playbackRate=nextPlaybackRate(playbackRate);
+        try{ localStorage.setItem(SPEED_KEY,String(playbackRate)); }catch(e){}
+        audio.playbackRate=playbackRate;
+        Object.keys(registry).forEach(function(id){ updateSpeedBtn(registry[id]); });
+      });
+      reg.seek.addEventListener('input',function(){
+        if(current&&current.el===lessonEl)audio.currentTime=reg.seek.valueAsNumber;
+      });
 
       updaters.push(refresh);
       refresh();
     });
+
+    Object.keys(registry).forEach(function(id){ updateSpeedBtn(registry[id]); });
 
     if(pendingResume&&registry[pendingResume.lessonId]&&resolveNarrationSrc(registry[pendingResume.lessonId].el.dataset,pendingResume.lang)){
       setLang(pendingResume.lang);
