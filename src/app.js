@@ -407,12 +407,13 @@
       return 'Domain '+domainId+' · '+(lang==='en'?MOCK_META.titles_en[domainId]:MOCK_META.titles_tr[domainId]);
     }
     function renderCard(){
-      var lang=root.dataset.lang, card=deck.cards[idx];
+      var lang=root.dataset.lang, card=deck.cards[idx], en=lang==='en';
       $('fc-card').classList.remove('flipped');
-      $('fc-q').innerHTML=lang==='en'?card.concept_en:card.concept_tr;
-      $('fc-a').innerHTML=lang==='en'?card.remember_en:card.remember_tr;
-      var meta=domainMeta(deck.domain), prog=(idx+1)+' / '+deck.cards.length;
-      $('fc-meta-q').textContent=meta; $('fc-meta-a').textContent=meta;
+      $('fc-q').innerHTML=en?card.question_en:card.question_tr;
+      $('fc-a').innerHTML=en?card.answer_en:card.answer_tr;
+      var prog=(idx+1)+' / '+deck.cards.length;
+      $('fc-meta-q').textContent=domainMeta(deck.domain);
+      $('fc-meta-a').textContent=en?card.lesson_en:card.lesson_tr;
       $('fc-progress').textContent=prog; $('fc-progress2').textContent=prog;
       $('fc-prev').disabled=idx===0; $('fc-next').disabled=idx===deck.cards.length-1;
     }

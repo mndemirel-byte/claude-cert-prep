@@ -4,8 +4,7 @@ MD=lambda s: markdown.markdown(s, extensions=['fenced_code','tables'])
 D=json.load(open(os.path.join(ROOT,"build","data.json"),encoding="utf-8"))
 import sys
 sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
-from narration import narration_filename, discover_lessons
-from flashcards import extract_flashcards
+from narration import narration_filename
 def narration_attrs(idx):
     attrs=[]
     fname=narration_filename(idx)
@@ -79,17 +78,14 @@ POOL_JSON=json.dumps(POOL,ensure_ascii=False).replace("</script>","<\\/script>")
 
 def _md1(s):
     return MD(s)[3:-4] if s else None
+FC_EN=json.load(open(os.path.join(ROOT,"docs","flashcards_en.json"),encoding="utf-8"))["cards"]
+FC_TR=json.load(open(os.path.join(ROOT,"docs","flashcards_tr.json"),encoding="utf-8"))["cards"]
 FLASHCARDS={}
-for lesson in discover_lessons(os.path.join(ROOT,"content","en_lessons"),os.path.join(ROOT,"content","tr")):
-    domain=int(lesson.id.split('.')[0])
-    en_cards=extract_flashcards(open(lesson.en_path,encoding="utf-8").read()) if lesson.en_path else []
-    tr_cards=extract_flashcards(open(lesson.tr_path,encoding="utf-8").read()) if lesson.tr_path else []
-    deck=FLASHCARDS.setdefault(domain,[])
-    for i in range(max(len(en_cards),len(tr_cards))):
-        e=en_cards[i] if i<len(en_cards) else {}
-        t=tr_cards[i] if i<len(tr_cards) else {}
-        deck.append({"concept_tr":_md1(t.get("concept")),"remember_tr":_md1(t.get("remember")),
-                     "concept_en":_md1(e.get("concept")),"remember_en":_md1(e.get("remember"))})
+for e,t in zip(FC_EN,FC_TR):
+    deck=FLASHCARDS.setdefault(e["domain_id"],[])
+    deck.append({"lesson_tr":t["lesson"],"lesson_en":e["lesson"],
+                 "question_tr":_md1(t["question"]),"question_en":_md1(e["question"]),
+                 "answer_tr":_md1(t["answer"]),"answer_en":_md1(e["answer"])})
 FLASHCARDS_JSON=json.dumps(FLASHCARDS,ensure_ascii=False).replace("</script>","<\\/script>")
 
 SCEN=[
