@@ -3,23 +3,23 @@
     "d": 1,
     "sc": 1,
     "ts": "Task Statement 1.1",
-    "body_tr": "Bir müşteri destek agent'ı aşağıdaki loop mantığıyla çalışıyor:\nfor i in range(10):\n response = call_claude(messages)\n if \"final answer\" in response.content[0].text.lower():\n return response\n # execute tools and continue\n\nKullanıcılar iki farklı sorun bildiriyor:\n1. Agent bazen 10 döngüden sonra yanıt vermeden duruyor\n2. Agent bazen \"Here's my final answer so far, let me search for more details\" dediği halde duruyor\nBu iki sorunu da çözen doğru yaklaşım hangisidir?",
+    "body_tr": "Bir müşteri destek agent'ı aşağıdaki loop mantığıyla çalışıyor:\nfor i in range(10):\n response = call_claude(messages)\n if \"final answer\" in response.content[0].text.lower():\n return response\n # execute tools and continue\n\nKullanıcılar üç farklı sorun bildiriyor:\n1. Agent bazen 10 döngüden sonra yanıt vermeden duruyor\n2. Agent bazen \"Here's my final answer so far, let me search for more details\" dediği halde duruyor\n3. Bazı isteklerde loop `AttributeError: 'ToolUseBlock' object has no attribute 'text'` hatasıyla çöküyor\nBu üç sorunu da çözen doğru yaklaşım hangisidir?",
     "opts_tr": {
-      "A": "Iteration cap'i 10'dan 25'e çıkar ve \"final answer\" yerine \"task complete\" ifadesini kontrol et.",
-      "B": "`response.stop_reason` alanını kontrol et — `\"end_turn\"` ise çık, `\"tool_use\"` ise tool'u çalıştırıp devam et.",
+      "A": "Iteration cap'i 10'dan 25'e çıkar, \"final answer\" yerine \"task complete\" ifadesini kontrol et ve `.text` erişimini `try/except` ile sar.",
+      "B": "`response.stop_reason` alanını kontrol et — `\"end_turn\"` ise çık, `\"tool_use\"` ise `response.content` listesinin tamamındaki tool_use bloklarını çalıştırıp devam et.",
       "C": "Her döngüde Claude'a \"İşin bitti mi?\" diye sor ve cevabını parse et.",
       "D": "Iteration cap'i kaldır ve sadece `response.content[0].type == \"text\"` kontrolü yap."
     },
     "ans": "B",
-    "expl_tr": "Why B is correct: Kod iki anti-pattern'ı birden içeriyor — arbitrary iteration cap (10 döngü limiti) ve natural language parsing (\"final answer\" ifadesini arama). stop_reason alanı her iki sorunu da çözer: agent işi bitirdiğinde \"end_turn\" döner, devam etmesi gerektiğinde \"tool_use\" döner. Tahmin veya parsing gerekmez.\nWhy A is wrong: Cap'i yükseltmek ve farklı bir string aramak aynı iki anti-pattern'ı devam ettirir — arbitrary iteration cap + natural language parsing. Rakam ve string değişse de yapısal sorun aynı.\nWhy C is wrong: Natural language parsing anti-pattern'ının farklı bir versiyonu. Claude'un \"evet bittim\" demesi de belirsiz ve güvenilmez.\nWhy D is wrong: Content-type check anti-pattern'ı. Claude text ve tool_use bloklarını aynı yanıtta döndürebilir. Text görünce çıkmak erken sonlanmaya neden olur.",
-    "body_en": "A customer support agent runs with the following loop logic:\nfor i in range(10):\n response = call_claude(messages)\n if \"final answer\" in response.content[0].text.lower():\n return response\n # execute tools and continue\n\nUsers report two different problems:\n\nThe agent sometimes stops after 10 iterations without answering\nThe agent sometimes stops even though it said \"Here's my final answer so far, let me search for more details\"\n\nWhich approach fixes both problems?",
+    "expl_tr": "Why B is correct: Kod üç ayrı hata içeriyor: arbitrary iteration cap (10 döngü, sessizce duruyor), natural language parsing (\"final answer\" arama) ve content[0] varsayımı (ilk blok tool_use ise .text yok → çöküyor). stop_reason kontrolü ilk iki sorunu, content listesinin tamamını dolaşmak üçüncüsünü çözer.\nWhy A is wrong: Cap'i yükseltmek, farklı string aramak ve hatayı try/except ile yutmak üç anti-pattern'ı da sürdürür; try/except çökmeyi gizler ama loop'un yanlış karar vermesini engellemez.\nWhy C is wrong: Natural language parsing anti-pattern'ının başka bir versiyonu; belirsiz ve her döngüye fazladan API çağrısı ekler.\nWhy D is wrong: Content-type check anti-pattern'ı. Claude text ve tool_use bloklarını aynı yanıtta döndürebilir; content[0] varsayımı da yerinde duruyor.",
+    "body_en": "A customer support agent runs with the following loop logic:\nfor i in range(10):\n response = call_claude(messages)\n if \"final answer\" in response.content[0].text.lower():\n return response\n # execute tools and continue\n\nUsers report three different problems:\n1. The agent sometimes stops after 10 iterations without answering\n2. The agent sometimes stops even though it said \"Here's my final answer so far, let me search for more details\"\n3. On some requests the loop crashes with `AttributeError: 'ToolUseBlock' object has no attribute 'text'`\nWhich approach fixes all three problems?",
     "opts_en": {
-      "A": "Raise the iteration cap from 10 to 25 and check for \"task complete\" instead of \"final answer\".",
-      "B": "Check the response.stop_reason field — exit on \"end_turn\", execute the tool and continue on \"tool_use\".",
+      "A": "Raise the iteration cap from 10 to 25, check for \"task complete\" instead of \"final answer\", and wrap the `.text` access in `try/except`.",
+      "B": "Check the `response.stop_reason` field — exit on `\"end_turn\"`; on `\"tool_use\"` execute every tool_use block in the entire `response.content` list and continue.",
       "C": "Ask Claude \"Are you done?\" every iteration and parse the answer.",
-      "D": "Remove the iteration cap and check only response.content[0].type == \"text\"."
+      "D": "Remove the iteration cap and check only `response.content[0].type == \"text\"`."
     },
-    "expl_en": "Why B is correct: The code contains two anti-patterns at once — an arbitrary iteration cap (10 loops) and natural-language parsing (searching for \"final answer\"). The stop_reason field solves both: the agent returns \"end_turn\" when it is finished and \"tool_use\" when it needs to continue. No guessing or parsing.\nWhy A is wrong: Raising the cap and searching for a different string keeps both anti-patterns. The number and the string change; the structural problem is identical.\nWhy C is wrong: A different flavour of the natural-language parsing anti-pattern. Claude saying \"yes, I'm done\" is just as ambiguous and unreliable.\nWhy D is wrong: The content-type check anti-pattern. Claude can return text and tool_use blocks in the same response. Exiting on text causes premature termination."
+    "expl_en": "Why B is correct: The code has three separate bugs: an arbitrary iteration cap (10 loops, stopping silently), natural-language parsing (searching for \"final answer\") and the content[0] assumption (if the first block is a tool_use block there is no .text → crash). Checking stop_reason fixes the first two; iterating over the whole content list fixes the third.\nWhy A is wrong: Raising the cap, searching for a different string and swallowing the error with try/except keeps all three anti-patterns; try/except hides the crash but does not stop the loop deciding wrongly.\nWhy C is wrong: Another flavour of the natural-language parsing anti-pattern; ambiguous, and it adds an API call to every iteration.\nWhy D is wrong: The content-type check anti-pattern. Claude can return text and tool_use blocks in the same response — and the content[0] assumption is still there."
   },
   {
     "d": 1,
@@ -50,20 +50,20 @@
     "body_tr": "Bir agentic loop'ta Claude şu yanıtı döndürüyor:\n\nresponse.content[0] → type: \"text\", text: \"I found some relevant data. Let me query the sales database for Q3 numbers.\"\nresponse.content[1] → type: \"tool_use\", name: \"query_database\", input: {...}\nresponse.stop_reason → \"tool_use\"\n\nLoop ne yapmalı?",
     "opts_tr": {
       "A": "Text bloğunu kullanıcıya göster ve döngüyü sonlandır — Claude bir metin yanıtı verdi.",
-      "B": "`query_database` tool'unu çalıştır, sonucu conversation history'ye ekle, Claude'a geri gönder.",
-      "C": "Text bloğunu kullanıcıya göster, sonra tool'u çalıştır ve yeni bir döngü başlat.",
+      "B": "`query_database` tool'unu çalıştır, sonucu `tool_use_id` ile eşleşen bir `tool_result` bloğu olarak mevcut conversation history'ye ekle, Claude'a geri gönder. Text bloğu isteğe bağlı olarak kullanıcıya ara durum mesajı olarak gösterilebilir.",
+      "C": "Text bloğunu nihai yanıt olarak kullanıcıya sun, conversation history'yi sıfırla ve tool sonucuyla yeni bir konuşma başlat.",
       "D": "Claude'a \"Bu tool çağrısını onaylıyor musun?\" diye sor."
     },
     "ans": "B",
-    "expl_tr": "Why B is correct: stop_reason \"tool_use\" — bu tek önemli sinyal. Claude hem text hem tool_use bloğu döndürmüş ama stop_reason açıkça \"devam etmem gerekiyor\" diyor. Tool'u çalıştır, sonucu conversation history'ye ekle, Claude'a geri gönder. Text bloğu Claude'un \"yüksek sesle düşünmesi\" — karar mekanizması değil.\nWhy A is wrong: Content-type check anti-pattern'ı. Text bloğu var diye döngüyü sonlandırmak erken çıkış. stop_reason hâlâ \"tool_use\".\nWhy C is wrong: Text bloğunu kullanıcıya göstermek yanlış değil ama asıl mesele stop_reason'a göre hareket etmek. \"Yeni bir döngü başlat\" ifadesi belirsiz — doğru olan mevcut conversation history'ye tool sonucunu ekleyip devam etmek.\nWhy D is wrong: Agentic loop'ta Claude kendi kararlarını verir. Her tool çağrısı için onay istemek loop'un amacını ortadan kaldırır.",
+    "expl_tr": "Why B is correct: stop_reason \"tool_use\" — tek önemli sinyal. Claude hem text hem tool_use bloğu döndürmüş ama stop_reason açıkça \"devam etmem gerekiyor\" diyor. Tool'u çalıştır, sonucu tool_use_id ile eşleşen tool_result bloğu olarak mevcut history'ye ekle, geri gönder. Text bloğu Claude'un \"yüksek sesle düşünmesi\" — ilerleme mesajı olarak göstermek zararsızdır, ama döngü kararı stop_reason'a göre verilir.\nWhy A is wrong: Content-type check anti-pattern'ı. Text bloğu var diye döngüyü sonlandırmak erken çıkış; stop_reason hâlâ \"tool_use\".\nWhy C is wrong: İki hata birden: text'i nihai yanıt saymak (erken sonlanma) ve history'yi sıfırlamak. tool_result, Claude'un kendi tool_use bloğunu içeren mevcut history'nin devamı olmalı; history sıfırlanırsa eşleşecek tool_use bloğu kalmaz ve API isteği reddeder.\nWhy D is wrong: Agentic loop'ta Claude kendi kararlarını verir. İnsan onayı gerekiyorsa bu PreToolUse hook'unda \"ask\" kararıyla yapılır, loop'ta ek bir Claude çağrısıyla değil.",
     "body_en": "In an agentic loop Claude returns the following response:\n\nresponse.content[0] → type: \"text\", text: \"I found some relevant data. Let me query the sales database for Q3 numbers.\"\nresponse.content[1] → type: \"tool_use\", name: \"query_database\", input: {...}\nresponse.stop_reason → \"tool_use\"\n\nWhat should the loop do?",
     "opts_en": {
       "A": "Show the text block to the user and end the loop — Claude gave a text answer.",
-      "B": "Execute the query_database tool, append the result to the conversation history, send it back to Claude.",
-      "C": "Show the text block to the user, then execute the tool and start a new loop.",
+      "B": "Execute the query_database tool, append the result to the existing conversation history as a `tool_result` block matched by `tool_use_id`, and send it back to Claude. The text block may optionally be shown to the user as an interim progress message.",
+      "C": "Present the text block to the user as the final answer, reset the conversation history and start a new conversation with the tool result.",
       "D": "Ask Claude \"Do you confirm this tool call?\"."
     },
-    "expl_en": "Why B is correct: stop_reason is \"tool_use\" — the only signal that matters. Claude returned both a text and a tool_use block, but stop_reason clearly says \"I need to continue\". Execute the tool, append the result to the history, send it back. The text block is Claude thinking out loud — not the decision mechanism.\nWhy A is wrong: The content-type check anti-pattern. Ending the loop because a text block exists is a premature exit. stop_reason is still \"tool_use\".\nWhy C is wrong: Showing the text to the user is not wrong in itself, but the point is acting on stop_reason. \"Start a new loop\" is vague — the right move is appending the tool result to the existing history and continuing.\nWhy D is wrong: In an agentic loop Claude makes its own decisions. Asking for confirmation on every tool call defeats the purpose of the loop."
+    "expl_en": "Why B is correct: stop_reason is \"tool_use\" — the only signal that matters. Claude returned both a text and a tool_use block, but stop_reason clearly says \"I need to continue\". Execute the tool, append the result to the existing history as a tool_result block matched by tool_use_id, send it back. The text block is Claude thinking out loud — showing it as a progress message is harmless, but the loop decision comes from stop_reason.\nWhy A is wrong: The content-type check anti-pattern. Ending the loop because a text block exists is a premature exit; stop_reason is still \"tool_use\".\nWhy C is wrong: Two mistakes: treating the text as the final answer (premature termination) and resetting the history. The tool_result must continue the existing history that contains Claude's own tool_use block; with the history reset there is no tool_use for it to match and the API rejects the request.\nWhy D is wrong: In an agentic loop Claude makes its own decisions. If human approval is required it is done with an \"ask\" decision in a PreToolUse hook, not with an extra Claude call in the loop."
   },
   {
     "d": 1,
@@ -94,48 +94,48 @@
     "body_tr": "Bir e-ticaret agent'ı bazen müşterinin sipariş geçmişini doğrulamadan iade işliyor. Bu vakaların %5'inde yanlış siparişe iade yapılıyor ve şirket para kaybediyor.\nMevcut system prompt'ta şu talimat var: \"İade işlemeden önce mutlaka müşterinin sipariş geçmişini doğrula.\"\nDoğru çözüm hangisidir?",
     "opts_tr": {
       "A": "System prompt'a bu talimatı 3 kez tekrarla ve kalın yazıyla vurgula.",
-      "B": "`process_refund` tool'unun çalışabilmesi için `verify_order_history` tool'unun başarıyla tamamlanmış olmasını şart koşan bir tool call interception hook ekle.",
+      "B": "`process_refund` tool'unun çalışabilmesi için `verify_order_history` tool'unun başarıyla tamamlanmış olmasını şart koşan bir `PreToolUse` hook ekle; reddedildiğinde `permissionDecisionReason` ile \"önce verify_order_history çağır\" bilgisini Claude'a ilet.",
       "C": "Few-shot örneklerle doğru sıralamayı göster — 5 farklı senaryo ekle.",
       "D": "İade tutarını $100 ile sınırla."
     },
     "ans": "B",
-    "expl_tr": "Why B is correct: Finansal sonuçları olan bir işlem — yanlış siparişe iade. Tool call interception hook, verify_order_history başarıyla tamamlanmadan process_refund tool'unun çalışmasını fiziksel olarak engeller. %100 garanti, sıfır hata.\nWhy A is wrong: Prompt tekrarı olasılıksal. Kalın yazı ve tekrarlama başarı oranını artırabilir ama %100 garanti edemez. Zaten mevcut prompt'ta talimat var ve %5 hata veriyor.\nWhy C is wrong: Few-shot örnekler de prompt-based guidance. Modelin davranışını yönlendirir ama zorlamaz. Deterministik değil.\nWhy D is wrong: Tutarı sınırlamak sorunu çözmez — $100 altı iadelerde de yanlış siparişe iade yapılabilir. Ve asıl sorun doğrulama eksikliği, tutar değil.",
+    "expl_tr": "Why B is correct: Finansal sonuçları olan bir işlem — yanlış siparişe iade. PreToolUse hook, verify_order_history başarıyla tamamlanmadan process_refund'un çalışmasını fiziksel olarak engeller; kural ihlali sıfıra iner. Red nedeni Claude'a iletildiği için agent doğrulamayı çağırıp iadeyi doğru sırayla tamamlar.\nWhy A is wrong: Prompt tekrarı olasılıksal. Kalın yazı ve tekrar başarı oranını artırabilir ama garanti veremez; talimat zaten prompt'ta ve %5 hata veriyor.\nWhy C is wrong: Few-shot örnekler de prompt-based guidance. Yönlendirir ama zorlamaz; deterministik değil.\nWhy D is wrong: Tutarı sınırlamak sorunu çözmez — $100 altı iadelerde de yanlış siparişe iade yapılabilir. Asıl sorun doğrulama eksikliği, tutar değil.",
     "body_en": "An e-commerce agent sometimes processes refunds without verifying the customer's order history. In 5% of these cases the refund goes to the wrong order and the company loses money.\nThe current system prompt says: \"Always verify the customer's order history before processing a refund.\"\nWhat is the correct fix?",
     "opts_en": {
       "A": "Repeat the instruction three times in the system prompt and emphasise it in bold.",
-      "B": "Add a tool-call interception hook that requires verify_order_history to have completed successfully before process_refund can run.",
+      "B": "Add a `PreToolUse` hook that requires verify_order_history to have completed successfully before process_refund can run; on rejection pass \"call verify_order_history first\" to Claude via `permissionDecisionReason`.",
       "C": "Show the correct sequence with few-shot examples — add 5 scenarios.",
       "D": "Cap refunds at $100."
     },
-    "expl_en": "Why B is correct: An operation with financial consequences — refunds to the wrong order. A tool-call interception hook physically prevents process_refund from running until verify_order_history has succeeded. 100% guarantee, zero errors.\nWhy A is wrong: Prompt repetition is probabilistic. Bold text and repetition may raise the success rate but cannot guarantee 100%. The instruction is already in the prompt and it still fails 5% of the time.\nWhy C is wrong: Few-shot examples are also prompt-based guidance. They steer behaviour but do not enforce it. Not deterministic.\nWhy D is wrong: Capping the amount does not solve the problem — refunds under $100 can still go to the wrong order. The real issue is the missing verification, not the amount."
+    "expl_en": "Why B is correct: An operation with financial consequences — refunds to the wrong order. The PreToolUse hook physically prevents process_refund from running until verify_order_history has succeeded; rule violations drop to zero. Because the rejection reason is passed to Claude, the agent calls verification and then completes the refund in the right order.\nWhy A is wrong: Prompt repetition is probabilistic. Bold text and repetition may raise the success rate but cannot guarantee it; the instruction is already in the prompt and still fails 5% of the time.\nWhy C is wrong: Few-shot examples are also prompt-based guidance. They steer behaviour but do not enforce it. Not deterministic.\nWhy D is wrong: Capping the amount does not solve the problem — refunds under $100 can still go to the wrong order. The real issue is the missing verification, not the amount."
   },
   {
     "d": 1,
     "sc": 1,
     "ts": "Task Statement 1.5",
-    "body_tr": "Farklı MCP tool'ları tarih bilgisini farklı formatlarda döndürüyor:\n- CRM tool → Unix timestamp (1719849600)\n- Shipping tool → \"June 15, 2024\"\n- Payment tool → \"2024-06-15T00:00:00Z\"\nClaude bazen tarih karşılaştırmalarında hata yapıyor çünkü formatlar tutarsız.\nDoğru çözüm hangisidir?",
+    "body_tr": "Bir agent, üç farklı üçüncü parti MCP server'ından (kaynak kodlarına erişimin yok) tarih bilgisi alıyor:\n- CRM tool → Unix timestamp (1719849600)\n- Shipping tool → \"June 15, 2024\"\n- Payment tool → \"2024-06-15T00:00:00Z\"\nClaude bazen tarih karşılaştırmalarında hata yapıyor çünkü formatlar tutarsız.\nDoğru çözüm hangisidir?",
     "opts_tr": {
       "A": "Claude'un system prompt'una \"tüm tarihleri ISO 8601 formatına çevir\" talimatı ekle.",
-      "B": "Her tool'un API'sini ISO 8601 döndürecek şekilde değiştir.",
-      "C": "PostToolUse hook ile tüm tool sonuçlarındaki tarihleri standart bir formata dönüştür, Claude'a göndermeden önce.",
+      "B": "Üç MCP server'ının sağlayıcılarından API'lerini ISO 8601 döndürecek şekilde değiştirmelerini iste.",
+      "C": "`PostToolUse` hook ile tüm tool sonuçlarındaki tarihleri `updatedToolOutput` üzerinden standart bir formata dönüştür, Claude'a göndermeden önce.",
       "D": "Claude'a tarih formatlarını açıklayan bir referans tablosu ekle."
     },
     "ans": "C",
-    "expl_tr": "Why C is correct: PostToolUse hook'un tam kullanım amacı bu — farklı tool'lardan gelen heterojen veriyi, Claude'a göndermeden önce standart formata dönüştürmek. Hook deterministik çalışır, her tool sonucu Claude'a ulaşmadan önce normalize edilir. Claude her zaman temiz, tutarlı tarih formatı görür.\nWhy A is wrong: Prompt talimatı olasılıksal. Claude Unix timestamp'i doğru çeviremeyebilir veya farklı formatlarda tutarsız davranabilir. Format dönüşümü kod işi, model işi değil.\nWhy B is wrong: Üçüncü parti API'leri değiştirmek çoğu zaman mümkün değil — MCP tool'ları dış servisler. Ve kontrol senin elinde olmalı, dış bağımlılıklarda değil.\nWhy D is wrong: Referans tablosu da prompt-based guidance. Claude'un tabloyu doğru uygulaması garantili değil. Yapısal çözüm gereken yerde bilgi ekleme yaklaşımı.",
-    "body_en": "Different MCP tools return dates in different formats:\n- CRM tool → Unix timestamp (1719849600)\n- Shipping tool → \"June 15, 2024\"\n- Payment tool → \"2024-06-15T00:00:00Z\"\nClaude sometimes makes mistakes in date comparisons because the formats are inconsistent.\nWhat is the correct fix?",
+    "expl_tr": "Why C is correct: PostToolUse hook'un tam kullanım amacı bu — farklı tool'lardan gelen heterojen veriyi Claude'a ulaşmadan önce kodla standart formata dönüştürmek. updatedToolOutput tool sonucunun kendisini değiştirir; hook deterministik çalışır, Claude her zaman tutarlı format görür.\nWhy A is wrong: Prompt talimatı olasılıksal. Format dönüşümü kod işi, model işi değil.\nWhy B is wrong: Üçüncü parti sağlayıcıların API'lerini değiştirmesini beklemek kontrolü dış bağımlılığa bırakır. Normalizasyon senin sınırında yapılmalı. (Tool'lar senin kendi MCP server'ın olsaydı kaynakta düzeltmek meşru olurdu — soru bu yüzden \"üçüncü parti\" diyor.)\nWhy D is wrong: Referans tablosu da prompt-based guidance; Claude'un tabloyu doğru uygulaması garantili değil.",
+    "body_en": "An agent receives date information from three different third-party MCP servers (you have no access to their source code):\n- CRM tool → Unix timestamp (1719849600)\n- Shipping tool → \"June 15, 2024\"\n- Payment tool → \"2024-06-15T00:00:00Z\"\nClaude sometimes makes mistakes in date comparisons because the formats are inconsistent.\nWhat is the correct fix?",
     "opts_en": {
       "A": "Add \"convert all dates to ISO 8601\" to Claude's system prompt.",
-      "B": "Change every tool's API to return ISO 8601.",
-      "C": "Use a PostToolUse hook to convert dates in all tool results to a standard format before they reach Claude.",
+      "B": "Ask the three MCP server vendors to change their APIs to return ISO 8601.",
+      "C": "Use a `PostToolUse` hook to convert the dates in every tool result to a standard format via `updatedToolOutput`, before they reach Claude.",
       "D": "Give Claude a reference table explaining the date formats."
     },
-    "expl_en": "Why C is correct: This is exactly what PostToolUse hooks are for — normalising heterogeneous data from different tools into a standard format before it reaches Claude. The hook runs deterministically; every tool result is normalised before Claude sees it. Claude always sees a clean, consistent date format.\nWhy A is wrong: A prompt instruction is probabilistic. Claude may convert a Unix timestamp incorrectly or behave inconsistently across formats. Format conversion is a job for code, not the model.\nWhy B is wrong: Changing third-party APIs is usually impossible — MCP tools are external services. Control should be in your hands, not in external dependencies.\nWhy D is wrong: A reference table is also prompt-based guidance. There is no guarantee Claude applies it correctly. Adding information where a structural fix is needed."
+    "expl_en": "Why C is correct: This is exactly what PostToolUse hooks are for — normalising heterogeneous data from different tools in code before it reaches Claude. updatedToolOutput replaces the tool result itself; the hook runs deterministically and Claude always sees one consistent format.\nWhy A is wrong: A prompt instruction is probabilistic. Format conversion is a job for code, not the model.\nWhy B is wrong: Waiting for third-party vendors to change their APIs leaves control with an external dependency. Normalise at your own boundary. (If the tools were your own MCP servers, fixing them at the source would be legitimate — which is why the question says \"third-party\".)\nWhy D is wrong: A reference table is also prompt-based guidance; there is no guarantee Claude applies it correctly."
   },
   {
     "d": 1,
     "sc": 3,
     "ts": "Task Statement 1.3",
-    "body_tr": "Bir coordinator aynı anda 3 subagent başlatması gerekiyor: web search, document analysis ve data visualization. Mevcut implementasyon her birini sırayla başlatıyor — önce web search tamamlanıyor, sonra document analysis, sonra data visualization.\nToplam süre: 45 saniye. Her subagent yaklaşık 15 saniye sürüyor.\nGecikmeyi azaltmanın doğru yolu hangisidir?",
+    "body_tr": "Bir coordinator aynı anda 3 subagent başlatması gerekiyor: web search, document analysis ve data visualization. Üç subagent birbirinden bağımsız — hiçbiri diğerinin çıktısına ihtiyaç duymuyor. Mevcut implementasyon her birini sırayla başlatıyor — önce web search tamamlanıyor, sonra document analysis, sonra data visualization.\nToplam süre: 45 saniye. Her subagent yaklaşık 15 saniye sürüyor.\nGecikmeyi azaltmanın doğru yolu hangisidir?",
     "opts_tr": {
       "A": "Her subagent için daha hızlı bir model kullan.",
       "B": "Coordinator'ın tek bir yanıtında birden fazla Task tool çağrısı yaparak subagent'ları paralel başlat.",
@@ -144,7 +144,7 @@
     },
     "ans": "B",
     "expl_tr": "Why B is correct: Parallel spawning. Coordinator tek bir yanıtta birden fazla Task tool çağrısı yaparsa, subagent'lar paralel başlar. 3 subagent × 15 saniye sırayla = 45 saniye. Paralel başlatmayla ≈ 15 saniye. 3 kat hız artışı, hiçbir özellikten feragat etmeden.\nWhy A is wrong: Daha hızlı model her subagent'ı kısaltabilir ama sıralı yapı devam eder. 3 × 10 saniye = 30 saniye hâlâ paralel 15 saniyeden yavaş. Ve model değişikliği başka sorunlar yaratabilir.\nWhy C is wrong: Hub-and-spoke mimarisinin temel kuralını ihlal eder — tüm iletişim coordinator üzerinden akar. Doğrudan iletişim observability, error handling ve kontrol kayıplarına yol açar.\nWhy D is wrong: Fonksiyonalite kaybı. Sorunu çözmek yerine özellik kaldırmak doğru yaklaşım değil.",
-    "body_en": "A coordinator needs to start 3 subagents at once: web search, document analysis and data visualisation. The current implementation starts them sequentially — web search completes first, then document analysis, then data visualisation.\nTotal time: 45 seconds. Each subagent takes roughly 15 seconds.\nWhat is the correct way to reduce latency?",
+    "body_en": "A coordinator needs to start 3 subagents at once: web search, document analysis and data visualisation. The three subagents are independent — none needs another's output. The current implementation starts them sequentially — web search completes first, then document analysis, then data visualisation.\nTotal time: 45 seconds. Each subagent takes roughly 15 seconds.\nWhat is the correct way to reduce latency?",
     "opts_en": {
       "A": "Use a faster model for every subagent.",
       "B": "Start the subagents in parallel by emitting multiple Task tool calls in a single coordinator response.",
@@ -182,7 +182,7 @@
     "body_tr": "Bir agent \"legacy kod tabanına test ekleme\" görevi alıyor. Kod tabanı büyük ve karmaşık — bağımlılıklar önceden bilinmiyor, test edilebilirlik dosyadan dosyaya değişiyor.\nHangi decomposition stratejisi daha uygun?",
     "opts_tr": {
       "A": "Fixed sequential pipeline — önce tüm dosyaları listele, sonra her birine test yaz, sonra çalıştır.",
-      "B": "Dynamic adaptive decomposition — önce yapıyı haritala, yüksek etkili alanları belirle, bağımlılıklar ortaya çıktıkça planı güncelle.",
+      "B": "Dynamic adaptive decomposition — önce yapıyı haritala, yüksek etkili alanları belirle, bağımlılıklar ortaya çıktıkça planı güncelle; keşif fazına açık bir durma kriteri ve bütçe koy.",
       "C": "Tüm dosyaları tek geçişte analiz et ve en önemli 5 dosyaya test yaz.",
       "D": "Rastgele 10 dosya seç ve onlara test yaz."
     },
@@ -191,7 +191,7 @@
     "body_en": "An agent receives the task \"add tests to a legacy codebase\". The codebase is large and complex — dependencies are unknown up front and testability varies from file to file.\nWhich decomposition strategy is more appropriate?",
     "opts_en": {
       "A": "Fixed sequential pipeline — list all files first, then write tests for each, then run them.",
-      "B": "Dynamic adaptive decomposition — map the structure first, identify high-impact areas, update the plan as dependencies surface.",
+      "B": "Dynamic adaptive decomposition — map the structure first, identify high-impact areas, update the plan as dependencies surface; put an explicit stopping criterion and budget on the exploration phase.",
       "C": "Analyse all files in one pass and write tests for the 5 most important ones.",
       "D": "Pick 10 files at random and write tests for them."
     },
@@ -2103,7 +2103,7 @@
       "D": "Geçici hatalar çalışmayı sonlandıramasın diye her subagent'ı otomatik retry'larla sar"
     },
     "ans": "A",
-    "expl_tr": "Why A is correct: Uzun süren çok ajanlı işler ilerlemeyi konuşma bağlamında değil kalıcı dış durumda tutmalıdır. Her subagent yapısal bulgularını ve ilerleme işaretini periyodik olarak diskteki bir manifest'e yazarsa, koordinatör devam ederken bu dosyaları okuyup yalnızca kalan işi dağıtabilir; böylece çökmelerden, yeniden başlatmalardan ve bağlam sıfırlamalarından kurtulur.\nWhy B is wrong: Koordinatörün oturumunu resume etmek subagent'ların ara sonuçlarını değil kendi transkriptini geri getirir ve bir oturum dosyası, sert bir makine yeniden başlatmasından sonra devam eden işin güvenilir bir checkpoint'i değildir.\nWhy C is wrong: Tek oturumda sırayla çalıştırmak paralelliği kaybettirir, tek bir bağlamı şişirir ve konuşma dışında hiçbir şey kalıcı olmadığı için çökmede yine her şeyi kaybeder.\nWhy D is wrong: Retry'lar çalışan bir süreç içindeki geçici hatalara yöneliktir; tüm makine kapandığında kaybedilen işi geri getiremezler.",
+    "expl_tr": "Why A is correct: Uzun süren multi-agent iş ilerlemeyi konuşma context'inde değil dayanıklı dış durumda tutmalı. Her subagent yapılandırılmış bulgularını ve ilerleme işaretini diske (manifest) yazarsa, coordinator resume'da bu dosyaları okuyup yalnızca kalan işi dağıtır; çökme, yeniden başlatma ve context sıfırlanmasını atlatır.\nWhy B is wrong: Oturumlar diske yazılır ve coordinator'ın oturumu --resume ile geri gelir — ama bu yalnızca coordinator'ın kendi transcript'ini geri getirir; çökme anında çalışan subagent'ların ara sonuçları ve tamamlanmamış işleri transcript'te yoktur. Devam etmek için transcript değil, dış durum gerekir.\nWhy C is wrong: Sıralı çalıştırmak paralelliği feda eder, tek context'i şişirir ve çökmede yine her şey kaybolur çünkü konuşma dışında hiçbir şey kalıcı değildir.\nWhy D is wrong: Retry, çalışan bir süreç içindeki geçici hatalar içindir; makine tümüyle yeniden başladığında kaybolan işi geri getiremez.",
     "body_en": "A coordinator spawns four Claude Code subagents to explore a large codebase overnight: one maps the data layer, one traces API routes, one audits tests, one catalogues dependencies. Three hours in, the machine restarts. On rerun, the coordinator starts every exploration again from zero. What design change lets a restarted run continue from where the crash left off?",
     "opts_en": {
       "A": "Have each agent export structured state to a manifest the coordinator loads on resume",
@@ -2111,7 +2111,7 @@
       "C": "Run the four explorations sequentially in one session so all findings stay in a single context",
       "D": "Wrap each subagent in automatic retries so transient failures cannot end the run"
     },
-    "expl_en": "Why A is correct: Long-running multi-agent work must keep progress in durable external state, not in conversation context. If each subagent periodically writes structured findings and a progress marker to a manifest on disk, the coordinator can read those files on resume and dispatch only the remaining work, surviving crashes, restarts and context resets.\nWhy B is wrong: Resuming the coordinator's session restores its own transcript, not the subagents' intermediate results, and a session file is not a reliable checkpoint of work in progress after a hard machine restart.\nWhy C is wrong: Running sequentially in one session forfeits parallelism, bloats a single context and still loses everything on a crash because nothing is persisted outside the conversation.\nWhy D is wrong: Retries address transient failures within a running process; they cannot recover work lost when the whole machine goes down."
+    "expl_en": "Why A is correct: Long-running multi-agent work must keep progress in durable external state, not in conversation context. If each subagent periodically writes structured findings and a progress marker to a manifest on disk, the coordinator can read those files on resume and dispatch only the remaining work, surviving crashes, restarts and context resets.\nWhy B is wrong: Sessions are persisted to disk and the coordinator's session can be brought back with --resume — but that restores only the coordinator's own transcript; the intermediate results and unfinished work of the subagents that were running at the crash are not in it. Continuing requires external state, not the transcript.\nWhy C is wrong: Running sequentially in one session forfeits parallelism, bloats a single context and still loses everything on a crash because nothing is persisted outside the conversation.\nWhy D is wrong: Retries address transient failures within a running process; they cannot recover work lost when the whole machine restarts."
   },
   {
     "d": 4,
@@ -2315,23 +2315,23 @@
     "d": 1,
     "sc": 4,
     "ts": "Task Statement 1.7",
-    "body_tr": "Bir geliştirici 50 dosyalık bir kod tabanında 3 dosyayı değiştirdikten sonra bir Claude Code oturumunu resume ediyor. Agent, bayat tool sonuçlarından muhakeme ettiği için değiştirilen dosyalar hakkında çelişkili tavsiyeler veriyor. Doğru yaklaşım hangisidir?",
+    "body_tr": "Bir developer, 50 dosyalık bir kod tabanında 3 dosyayı değiştirdikten sonra Claude Code oturumunu resume ediyor. Agent, bayat tool sonuçlarına dayanarak akıl yürüttüğü için değiştirilen dosyalar hakkında çelişkili tavsiyeler veriyor. Diğer 47 dosya değişmedi.\nDoğru yaklaşım hangisidir?",
     "opts_tr": {
-      "A": "Oturumu resume et ve agent'a yalnızca değiştirilen 3 dosyayı yeniden okumasını söyle; context window'daki bayat sonuçların üzerine yazılsın.",
-      "B": "Tamamen yeni bir oturum başlat ve yeni bağlama hiçbir bayat şey taşınmasın diye agent'a 50 dosyanın tümünü sıfırdan yeniden analiz ettir.",
-      "C": "Önceki bulguların enjekte edilmiş bir özetiyle taze bir oturum başlat; hedefli yeniden analiz için değişen 3 dosyayı belirt.",
-      "D": "Oturumu dallandırmak için fork_session kullan; yeni dal değişen 3 dosyayı alsın, orijinal ise önceki durumu korusun."
+      "A": "Oturumu resume et ve agent'a hangi 3 dosyanın değiştiğini açıkça bildir — bu dosyalara ait önceki bulguları geçersiz saymasını ve yalnızca bu 3 dosyayı yeniden okumasını iste.",
+      "B": "Tamamen yeni bir oturum başlat ve agent'a 50 dosyanın tamamını sıfırdan analiz ettir ki bayat hiçbir şey yeni context'e taşınmasın.",
+      "C": "Önceki bulguların özetini enjekte ederek yeni bir oturum başlat ve 3 değişen dosyayı hedefli yeniden analiz için not düş.",
+      "D": "fork_session ile oturumu dallandır; yeni dal 3 değişen dosyayı alsın, orijinal dal önceki durumu korusun."
     },
-    "ans": "C",
-    "expl_tr": "Why C is correct: Context window'daki tool sonuçları silinemez ya da üzerine yazılamaz; bayat dosya içerikleri taze olanlarla rekabet etmeyi sürdürür. Temiz çözüm, önceki bulguların kısa bir özetiyle ve yeniden analiz edilecek üç değişen dosyanın açık notuyla başlatılan taze bir oturumdur; bu, kazanılmış anlayışı korurken bayat kanıtı ortadan kaldırır.\nWhy A is wrong: Dosyaları yeniden okumak yeni içerik ekler ancak eski sürümler transkriptte kalır; model artık iki çelişkili sürüm görür ve yine yanlış olandan muhakeme edebilir.\nWhy B is wrong: 50 dosyanın tümünü yeniden analiz etmek değişmemiş 47 dosya için geçerli bulguları atar ve gereğinden çok daha fazla token harcar.\nWhy D is wrong: fork_session mevcut bağlamı, bayat tool sonuçları dâhil, yeni dala kopyalar; çelişki sorunu çözülmek yerine taşınır.",
-    "body_en": "A developer resumes a Claude Code session after modifying 3 files in a 50-file codebase. The agent gives contradictory advice about the modified files because it is reasoning from stale tool results. What is the correct approach?",
+    "ans": "A",
+    "expl_tr": "Why A is correct: Değişiklikler sınırlı ve sayılabilir (50 dosyada 3). Exam guide'ın \"resume edilen oturuma dosya değişikliklerini bildirerek hedefli yeniden analiz\" becerisi tam olarak bu durum için: agent bayatlığı kendiliğinden fark edemez, sen bildirirsin; agent yalnızca 3 dosyayı yeniden okur, 47 dosyanın geçerli detaylı bağlamı korunur. En düşük maliyetli ve yeterli çözüm.\nWhy B is wrong: 47 dosyanın geçerli bulgularını atar ve gereksiz token harcar.\nWhy C is wrong: Çalışır ama orantısız: fresh start with summary injection, değişiklikler kapsamlı veya yapısal olduğunda (modüller silinmiş, API yeniden tasarlanmış) tercih edilir. Burada 3 dosya için 47 dosyanın ayrıntılı bağlamını özete indirgemek ve yeni oturum açmak gereksiz kayıp ve maliyettir.\nWhy D is wrong: fork_session mevcut context'i — bayat tool sonuçları dahil — yeni dala kopyalar; çelişki sorunu çözülmez, sadece taşınır. Fork, farklı yaklaşımları karşılaştırmak içindir.",
+    "body_en": "A developer resumes a Claude Code session after modifying 3 files in a 50-file codebase. The agent gives contradictory advice about the modified files because it is reasoning from stale tool results. The other 47 files are unchanged.\nWhat is the correct approach?",
     "opts_en": {
-      "A": "Resume the session and ask the agent to re-read only the 3 modified files, overwriting the stale results already in the context window.",
+      "A": "Resume the session and tell the agent explicitly which 3 files changed — ask it to treat its earlier findings about those files as invalid and re-read only those 3 files.",
       "B": "Start a completely new session and have the agent re-analyse all 50 files from scratch so nothing stale survives into the new context.",
       "C": "Start a fresh session with an injected summary of prior findings, noting the 3 changed files for targeted re-analysis.",
       "D": "Use fork_session to branch the session so the new branch picks up the 3 changed files while the original keeps the earlier state."
     },
-    "expl_en": "Why C is correct: Tool results already in a context window cannot be deleted or overwritten, so stale file contents will keep competing with fresh ones. The clean fix is a fresh session seeded with a concise summary of prior findings plus an explicit note of the three changed files to re-analyse, preserving the earned understanding while eliminating the stale evidence.\nWhy A is wrong: Re-reading the files appends new content but the old versions remain in the transcript; the model now sees two conflicting versions and can still reason from the wrong one.\nWhy B is wrong: Re-analysing all 50 files discards valid findings for the 47 unchanged files and spends far more tokens than necessary.\nWhy D is wrong: fork_session copies the existing context, stale tool results included, into the new branch, so the contradiction problem is carried over rather than solved."
+    "expl_en": "Why A is correct: The changes are limited and enumerable (3 of 50 files). The exam guide's skill \"informing resumed sessions about file changes for targeted re-analysis\" is exactly for this case: the agent cannot notice staleness on its own, so you report it; it re-reads only the 3 files and the valid detailed context for the other 47 is preserved. The cheapest sufficient fix.\nWhy B is wrong: Discards valid findings for 47 files and spends far more tokens than necessary.\nWhy C is wrong: Workable but disproportionate: fresh start with summary injection is the choice when changes are extensive or structural (modules deleted, API redesigned). Reducing 47 files' detailed context to a summary and opening a new session for 3 changed files is unnecessary loss and cost.\nWhy D is wrong: fork_session copies the existing context — stale tool results included — into the new branch; the contradiction is carried over, not solved. Forking is for comparing different approaches."
   },
   {
     "d": 3,
@@ -2779,23 +2779,23 @@
     "d": 1,
     "sc": 4,
     "ts": "Task Statement 1.7",
-    "body_tr": "Bir Claude Code agent'ı 45 dakikadır bir feature branch üzerinde çalışıyor ve kod tabanı hakkında geniş bir context biriktirmiş. Geliştirici, oturumun başındaki bazı tool sonuçlarının (40 dakika önceki dosya okumaları) bir iş arkadaşı o dosyalara değişiklik push ettiği için artık bayat olduğunu fark ediyor. Agent güncel olmayan dosya içeriklerine dayanarak öneriler yapıyor. En iyi kurtarma stratejisi hangisidir?",
+    "body_tr": "Bir Claude Code agent'ı 45 dakikadır bir feature branch üzerinde çalışıyor ve kod tabanı hakkında kapsamlı bağlam biriktirmiş. Developer, bu sırada bir meslektaşının büyük bir refactor'ı main'e merge ettiğini fark ediyor: agent'ın okuduğu modüllerin çoğu yeniden adlandırılmış, iki modül silinmiş ve ortak API'ler değişmiş — hangi dosyaların etkilendiğini tek tek saymak pratik değil. Agent, artık var olmayan modüllere göre öneriler üretiyor.\nEn iyi kurtarma stratejisi hangisidir?",
     "opts_tr": {
-      "A": "Mevcut oturumda devam edin ve agent'a iş arkadaşının değiştirdiği dosyaları yeniden okumasını isteyin; böylece güncel içerikleri alır.",
-      "B": "Önceki 45 dakikadan hiçbir şeyin yeni akıl yürütmeyi kirletmemesi için hiç context taşımadan tamamen yeni bir oturum başlatın.",
-      "C": "Önemli bulgu ve kararların özetiyle yeni bir oturum başlatın, ardından güncel durum için değişen dosyaları okuyun.",
-      "D": "Bayat tool sonuçlarını dışarıda bırakıp birikmiş context'in geri kalanını koruyan yeni bir dal oluşturmak için fork_session kullanın."
+      "A": "Mevcut oturumda devam et ve agent'tan meslektaşın değiştirdiği dosyaları yeniden okumasını iste ki güncel içerikleri alsın.",
+      "B": "Hiçbir bağlam taşımadan tamamen yeni bir oturum başlat ki önceki 45 dakikadan hiçbir şey yeni akıl yürütmeyi kirletmesin.",
+      "C": "Önemli bulguların ve kararların yapılandırılmış bir özetiyle (ve \"modül yapısı değişti, önceki dosya bulgularını geçersiz say\" notuyla) yeni bir oturum başlat, sonra güncel durum için dosyaları oku.",
+      "D": "fork_session ile bayat tool sonuçlarını dışarıda bırakan, kalan bağlamı koruyan yeni bir dal oluştur."
     },
     "ans": "C",
-    "expl_tr": "Why C is correct: Bayat tool sonuçları çalışan bir context'ten çıkarılamaz; taze okumalar eklense bile modelin akıl yürütmesini etkilemeye devam eder. Güvenilir kurtarma, değerli olanı (bulgu ve kararların kısa özeti) yeni bir oturuma taşımak, ardından değişen dosyaları okumaktır; böylece context'teki tek dosya içeriği güncel olur.\nWhy A is wrong: Dosyaları yeniden okumak güncel içeriği ekler ama eski içeriği aynı context'te bırakır. Model artık iki çelişen sürümü taşır ve bayat olandan yararlanmaya devam edebilir.\nWhy B is wrong: Tamamen boş bir yeniden başlatma, hâlâ geçerli olan 45 dakikalık mimari anlayış ve kararları çöpe atar. Sorun bayat dosya okumalarıdır, birikmiş akıl yürütme değil.\nWhy D is wrong: fork_session mevcut konuşma geçmişini yeni bir dala kopyalar; belirli tool sonuçlarını seçerek dışarıda bırakmanıza izin vermez. Bayat okumalar diğer her şeyle birlikte fork edilir.",
-    "body_en": "A Claude Code agent has been working on a feature branch for 45 minutes and has accumulated extensive context about the codebase. The developer notices that several tool results from early in the session (file reads from 40 minutes ago) are now stale because a colleague pushed changes to those files. The agent is making recommendations based on the outdated file contents. What is the best recovery strategy?",
+    "expl_tr": "Why C is correct: Değişiklikler kapsamlı ve yapısal — modüller yeniden adlandırılmış/silinmiş, API'ler değişmiş, etkilenen dosyalar sayılamıyor. Bu, \"resume + spesifik dosya bildirimi\" seviyesini aşar; agent'ın context'indeki yapısal varsayımlar geçersiz. Fresh start with summary injection değerli olanı (mimari anlayış, kararlar) taşır, neyin artık geçerli olmadığını açıkça işaretler ve dosyalar temiz context'te yeniden okunur.\nWhy A is wrong: Resume + hedefli yeniden okuma, değişen dosyalar sayılabildiğinde doğru yaklaşımdır; burada değişiklik yapısal ve kapsamlı olduğu için hangi dosyaların yeniden okunacağı bile belli değil ve context'teki eski modül yapısı akıl yürütmeyi etkilemeye devam eder.\nWhy B is wrong: 45 dakikalık hâlâ geçerli mimari anlayışı ve kararları da çöpe atar. Sorun biriken akıl yürütme değil, bayat dosya içerikleri.\nWhy D is wrong: fork_session mevcut geçmişi olduğu gibi kopyalar; belirli tool sonuçlarını seçerek dışarıda bırakma imkânı yoktur. Bayat veri yeni dala da taşınır.",
+    "body_en": "A Claude Code agent has been working on a feature branch for 45 minutes and has accumulated extensive context about the codebase. The developer notices that in the meantime a colleague merged a large refactor into main: most of the modules the agent read have been renamed, two modules were deleted and shared APIs changed — enumerating the affected files one by one is not practical. The agent is making recommendations against modules that no longer exist.\nWhat is the best recovery strategy?",
     "opts_en": {
-      "A": "Continue in the current session and simply ask the agent to re-read the files a colleague changed, so it picks up the latest contents.",
+      "A": "Continue in the current session and ask the agent to re-read the files the colleague changed, so it picks up the latest contents.",
       "B": "Start a completely new session with no context carried over, so nothing from the previous 45 minutes can contaminate the new reasoning.",
-      "C": "Start a fresh session with a summary of the key findings and decisions, then read the changed files for current state.",
+      "C": "Start a fresh session with a structured summary of the key findings and decisions (plus a note \"module structure changed, treat earlier file findings as invalid\"), then read the files for current state.",
       "D": "Use fork_session to create a new branch that excludes the stale tool results while keeping the rest of the accumulated context."
     },
-    "expl_en": "Why C is correct: Stale tool results cannot be removed from a running context; they keep influencing the model's reasoning even after fresh reads are added. The reliable recovery is to carry forward what is valuable (a concise summary of findings and decisions) into a fresh session and then read the changed files so the only file contents in context are current.\nWhy A is wrong: Re-reading the files adds current content but leaves the outdated content in the same context. The model now holds two conflicting versions and may continue to draw on the stale one.\nWhy B is wrong: A completely empty restart throws away 45 minutes of architectural understanding and decisions that are still valid. The stale file reads are the problem, not the accumulated reasoning.\nWhy D is wrong: fork_session copies the existing conversation history into a new branch; it does not let you selectively exclude particular tool results. The stale reads would be forked along with everything else."
+    "expl_en": "Why C is correct: The changes are extensive and structural — modules renamed/deleted, APIs changed, affected files not enumerable. That exceeds the \"resume + report specific files\" level; the structural assumptions in the agent's context are invalid. Fresh start with summary injection carries forward what is valuable (architectural understanding, decisions), explicitly flags what is no longer valid, and re-reads files in a clean context.\nWhy A is wrong: Resume + targeted re-read is the right approach when the changed files are enumerable; here the change is structural and broad, so it is not even clear which files to re-read, and the old module structure in context keeps influencing reasoning.\nWhy B is wrong: Throws away 45 minutes of still-valid architectural understanding and decisions. The stale file contents are the problem, not the accumulated reasoning.\nWhy D is wrong: fork_session copies the existing history as-is; there is no way to selectively exclude particular tool results. The stale data is carried into the new branch."
   },
   {
     "d": 4,
@@ -3707,21 +3707,21 @@
     "ts": "Task Statement 1.5",
     "body_tr": "Monolitten mikroservislere refactoring sırasında, çıkarılan her servisin tutarlı bir Java paket adlandırma kuralına (com.company.service.<service-name>) uyması gerekiyor. Ekip, subagent'ların bazen com.company.app.<service-name> veya com.company.<service-name> gibi tutarsız paket adları kullandığını fark ediyor. Bir ekip üyesi system prompt'a daha güçlü talimatlar eklemeyi öneriyor. Doğru yaklaşım nedir?",
     "opts_tr": {
-      "A": "Adlandırma kuralını, doğru deseni gösteren üç somut örnekle system prompt'a ekle",
-      "B": "Her refactoring batch'inden sonra yazılan tüm dosyaları adlandırma uyumu açısından inceleyen ayrı bir doğrulama subagent'ı oluştur",
-      "C": "Yazılan dosyaları inceleyen ve tüm paket bildirimlerini doğru com.company.service.<service-name> formatına normalize eden bir PostToolUse hook uygula",
-      "D": "Agent'ı, adlandırma kuralını uygulamasında zorunlu kılan özel bir write_java_file tool'uyla kısıtlamak için tool_choice kullan"
+      "A": "Naming convention'ı system prompt'a üç somut örnekle ekle.",
+      "B": "Her refactoring batch'inden sonra yazılan tüm dosyaları naming uyumu için gözden geçiren ayrı bir validation subagent oluştur.",
+      "C": "Write/Edit tool'larına `PreToolUse` hook ekle: yazılacak içerikteki package bildirimini incelesin ve `updatedInput` ile `com.company.service.<service-name>` formatına düzeltip öyle yazdırsın.",
+      "D": "`tool_choice` ile agent'ı naming convention'ı implementasyonunda zorlayan özel bir `write_java_file` tool'una kısıtla."
     },
     "ans": "C",
-    "expl_tr": "Why C is correct: Claude Code hook'ları kod olarak deterministik çalışır; prompt talimatları ise olasılıksaldır. Write/Edit üzerindeki bir PostToolUse hook, agent'ın ürettiği her dosyayı inceleyip paket bildirimini normalize edebilir ve herhangi bir subagent ne karar vermiş olsa da kuralı dosyaların %100'ünde garanti eder.\nWhy A is wrong: Örnekli daha güçlü talimatlar hata oranını azaltır ama sıfıra inmesini garanti edemez; her dosyada geçerli olması gereken katı bir kural ikna ile değil kodla zorunlu kılınmalıdır.\nWhy B is wrong: Bir doğrulama subagent'ı her batch için maliyet ve gecikme ekler ve kendisi de olasılıksaldır; vakaları kaçırabilir ve sorunları yazım anında önlemek yerine sonradan düzeltir.\nWhy D is wrong: tool_choice, tek bir tool çağrısını zorlayan istek bazlı bir Messages API parametresidir; çok adımlı bir Claude Code refactoring agent'ını kısıtlamak için bir mekanizma değildir ve özel bir write tool'u yapmak, hook'un daha basit yaptığı şeyi tekrarlar.",
+    "expl_tr": "Why C is correct: Claude Code hook'ları kod olarak deterministik çalışır; prompt talimatları olasılıksaldır. PreToolUse hook, dosya diske yazılmadan önce Write/Edit girdisini görür ve updatedInput ile package bildirimini düzeltir — hangi subagent ne karar verirse versin, diske yalnızca uyumlu içerik yazılır, sonradan düzeltme gerekmez.\nWhy A is wrong: Örnekli güçlü talimat hata oranını düşürür ama sıfıra indiremez; her dosya için geçerli olması gereken sert bir kural kodla uygulanmalı.\nWhy B is wrong: Validation subagent her batch'e maliyet ve gecikme ekler, kendisi de olasılıksaldır ve sorunu yazım anında önlemek yerine sonradan yakalar.\nWhy D is wrong: tool_choice tek bir Messages API isteğinde tool seçimini zorlayan bir parametredir; çok adımlı bir Claude Code refactoring agent'ını kısıtlama mekanizması değildir.",
     "body_en": "During the monolith-to-microservices refactoring, each extracted service must follow a consistent Java package naming convention (com.company.service.<service-name>). The team notices that subagents sometimes use inconsistent package names like com.company.app.<service-name> or com.company.<service-name>. A team member proposes adding stronger instructions to the system prompt. What is the correct approach?",
     "opts_en": {
-      "A": "Add the naming convention to the system prompt with three concrete examples showing the correct pattern",
-      "B": "Create a separate validation subagent that reviews all written files for naming compliance after each refactoring batch",
-      "C": "Implement a PostToolUse hook that inspects written files and normalises any package declarations to the correct com.company.service.<service-name> format",
-      "D": "Use tool_choice to restrict the agent to a custom write_java_file tool that enforces the naming convention in its implementation"
+      "A": "Add the naming convention to the system prompt with three concrete examples showing the correct pattern.",
+      "B": "Create a separate validation subagent that reviews all written files for naming compliance after each refactoring batch.",
+      "C": "Add a `PreToolUse` hook on Write/Edit that inspects the package declaration in the content about to be written and corrects it to `com.company.service.<service-name>` via `updatedInput` before the file is written.",
+      "D": "Use `tool_choice` to restrict the agent to a custom `write_java_file` tool that enforces the naming convention in its implementation."
     },
-    "expl_en": "Why C is correct: Claude Code hooks run deterministically as code, whereas prompt instructions are probabilistic. A PostToolUse hook on Write/Edit can inspect every file the agent produces and normalise the package declaration, guaranteeing the convention for 100% of files regardless of what any subagent decided.\nWhy A is wrong: Stronger instructions with examples reduce the error rate but cannot guarantee it reaches zero; a hard convention that must hold for every file should be enforced by code, not persuasion.\nWhy B is wrong: A validation subagent adds cost and latency for every batch and is itself probabilistic; it may miss cases, and it fixes problems after the fact instead of preventing them at write time.\nWhy D is wrong: tool_choice is a per-request Messages API parameter that forces a single tool call; it is not a mechanism for constraining a multi-step Claude Code refactoring agent, and building a bespoke write tool duplicates what a hook does more simply."
+    "expl_en": "Why C is correct: Claude Code hooks run deterministically as code, whereas prompt instructions are probabilistic. A PreToolUse hook sees the Write/Edit input before the file hits disk and corrects the package declaration via updatedInput — whatever any subagent decided, only conforming content is ever written, and no after-the-fact repair is needed.\nWhy A is wrong: Stronger instructions with examples reduce the error rate but cannot drive it to zero; a hard convention that must hold for every file should be enforced by code.\nWhy B is wrong: A validation subagent adds cost and latency per batch, is itself probabilistic, and catches problems after the fact instead of preventing them at write time.\nWhy D is wrong: tool_choice is a per-request Messages API parameter that forces tool selection in a single call; it is not a mechanism for constraining a multi-step Claude Code refactoring agent."
   },
   {
     "d": 5,
@@ -4457,19 +4457,19 @@
     "ts": "Task Statement 1.5",
     "body_tr": "Bir müşteri destek agent'ı, yanıtları müşteriye ulaşmadan önce kredi kartı numaralarını redakte etmek zorunda. Mevcut system prompt agent'a kart numaralarını yıldız işaretleriyle değiştirmesini söylüyor, ancak QA testleri yanıtların %6'sının hâlâ redakte edilmemiş kart numarası içerdiğini gösteriyor. Mimar hangi guardrail yaklaşımını kullanmalı?",
     "opts_tr": {
-      "A": "Model görmeden önce tool sonuçlarındaki kredi kartı numaralarını regex ile redakte eden bir PostToolUse hook ekle.",
-      "B": "Parametrelerinde kredi kartı numarası içeren her tool çağrısını bloklayan bir PreToolUse hook uygula",
-      "C": "Kredi kartı numarası döndürebilecek tüm tool'ları agent'ın allowedTools listesinden kaldır",
-      "D": "System prompt'u daha açık redaksiyon talimatlarıyla yeniden yaz ve doğru redaksiyon için few-shot örnekler ekle"
+      "A": "Kredi kartı numaralarını tool sonuçlarından regex ile maskeleyen bir `PostToolUse` hook ekle (`updatedToolOutput`) — model ham numarayı hiç görmesin.",
+      "B": "Parametrelerinde kredi kartı numarası içeren her tool çağrısını engelleyen bir `PreToolUse` hook uygula.",
+      "C": "Kredi kartı numarası döndürebilecek tüm tool'ları agent'ın allowedTools listesinden kaldır.",
+      "D": "System prompt'u daha açık maskeleme talimatlarıyla yeniden yaz ve doğru maskeleme için few-shot örnekler ekle."
     },
     "ans": "A",
     "expl_tr": "Why A is correct: %6 sızıntı oranı prompt tabanlı redaksiyonun olasılıksal olduğunun kanıtıdır. PII gereksinimleri deterministik bir kontrol ister; tool sonuçlarındaki kart numaralarını modelin context'ine girmeden önce regex ile redakte eden bir PostToolUse hook, modelin ham numaraya hiç sahip olmamasını, dolayısıyla sızdıramamasını garanti eder.\nWhy B is wrong: PreToolUse tool çağrısının girdi parametrelerini inceler; kart numaraları tool'un çıktısında gelir, bu yüzden PreToolUse bloğu onları hiç görmez ve yalnızca meşru aramaları bozar.\nWhy C is wrong: Tool'ları kaldırmak agent'ın işini yapma yetisini (hesap, sipariş, ödeme sorgulama) ortadan kaldırır; bir veri işleme sorununa orantısız bir yanıttır.\nWhy D is wrong: Daha iyi prompt ve few-shot örnekler sızıntı oranını düşürebilir ama olasılıksal kalır; kart verisi işlemenin gerektirdiği %100 garantiyi sağlayamaz.",
     "body_en": "A customer support agent must redact credit card numbers from its responses before they reach the customer. The current system prompt instructs the agent to replace card numbers with asterisks, but QA testing reveals that 6% of responses still contain unredacted card numbers. What guardrail approach should the architect use?",
     "opts_en": {
-      "A": "Add a PostToolUse hook that regex-redacts credit card numbers from tool results before the model sees them.",
-      "B": "Implement a PreToolUse hook that blocks any tool call containing a credit card number in its parameters",
-      "C": "Remove all tools that might return credit card numbers from the agent's allowedTools",
-      "D": "Rewrite the system prompt with more explicit redaction instructions and add few-shot examples of correct redaction"
+      "A": "Add a `PostToolUse` hook that regex-redacts credit card numbers from tool results (`updatedToolOutput`) so the model never sees the raw number.",
+      "B": "Implement a `PreToolUse` hook that blocks any tool call containing a credit card number in its parameters.",
+      "C": "Remove all tools that might return credit card numbers from the agent's allowedTools.",
+      "D": "Rewrite the system prompt with more explicit redaction instructions and add few-shot examples of correct redaction."
     },
     "expl_en": "Why A is correct: A 6% leak rate proves that prompt-based redaction is probabilistic. PII requirements demand a deterministic control, and a PostToolUse hook that regex-redacts card numbers from tool results before they enter the model's context guarantees the model never possesses the raw number, so it cannot leak it.\nWhy B is wrong: PreToolUse inspects the tool call's input parameters; the card numbers arrive in the tool's output, so a PreToolUse block never sees them and would only break legitimate lookups.\nWhy C is wrong: Removing the tools removes the agent's ability to do its job (looking up accounts, orders, payments); it is a disproportionate response to a data-handling problem.\nWhy D is wrong: Better prompts and few-shot examples may lower the leak rate but remain probabilistic; they cannot deliver the 100% guarantee that card-data handling requires."
   },
@@ -4523,19 +4523,19 @@
     "ts": "Task Statement 1.7",
     "body_tr": "Bir Claude Code agent'ı, refactor ortasında başarısız olan bir test suite'ini 30 dakika boyunca debug etti ve her biri yapılandırma dosyalarını değiştiren üç farklı yaklaşım denedi. Hiçbiri işe yaramadı ve context'i artık üç set çelişkili değişiklik ve başarısız çıktı içeriyor. Geliştirici tamamen farklı bir strateji denemek istiyor. Hangi session yönetimi yaklaşımını kullanmalı?",
     "opts_tr": {
-      "A": "Mevcut session'da devam et ve agent'a önceki tüm denemeleri yok sayıp sıfırdan başlamasını söyle",
-      "B": "Hiç önceki bağlam olmadan tamamen yeni bir session başlat, başarısız testleri sıfırdan tekrar oku ve yeni stratejiyi temiz uygula.",
-      "C": "Üç başarısız yaklaşımı ve neden başarısız olduklarını özetleyen yeni bir session başlat, ardından temiz bağlamla yeni stratejiyi izle.",
-      "D": "İlk debugging denemesinden önceki noktadan fork_session kullanarak yeni stratejiyi keşfet"
+      "A": "Mevcut oturumda devam et ve agent'tan önceki tüm denemeleri yok sayıp yeni başlamasını iste.",
+      "B": "Hiçbir bağlam olmadan tamamen yeni bir oturum başlat, başarısız testleri sıfırdan oku ve yeni stratejiyi uygula.",
+      "C": "Üç başarısız yaklaşımı ve neden başarısız olduklarını özetleyen yeni bir oturum başlat, ardından yeni stratejiyi temiz context'te sürdür.",
+      "D": "İlk debugging denemesinden önceki noktadan `fork_session` ile dallan (`resume` + `resume_session_at` ile o mesaja kadar) ve yeni stratejiyi orada dene."
     },
     "ans": "D",
     "expl_tr": "Why D is correct: fork_session konuşmayı daha önceki bir noktadan dallandırır; böylece geliştirici debugging başlamadan önce biriken tüm faydalı refactoring bağlamını korur, üç set çelişkili değişikliği ve hata çıktısını ise yeni dalın dışında bırakır. 'Buradan farklı bir yol dene' için tasarlanmış session yönetimi ilkelidir.\nWhy A is wrong: Modele önceki denemeleri yok saymasını söylemek onları context window'dan kaldırmaz; çelişkili değişiklikler ve hata dökümleri hâlâ dikkat tüketir ve yeni denemeyi yanlı hale getirir.\nWhy B is wrong: Tamamen yeni bir session gürültüyle birlikte değerli refactor bağlamını da atar; agent zaten sahip olduğu anlayışı yeniden inşa etmek zorunda kalır.\nWhy C is wrong: Uygulanabilir ama ikinci en iyi seçenektir: geliştirici özeti elle yazmak zorundadır ve bu, temiz bir debugging öncesi durumdan başlamak yerine başarısız yaklaşımların açıklamasını yeni context'e yeniden enjekte eder.",
     "body_en": "A Claude Code agent has spent 30 minutes debugging a failing test suite mid-refactor, trying three different approaches that each modified configuration files. None worked, and its context now holds three sets of conflicting modifications and failed outputs. The developer wants to try a completely different strategy. What session management approach should they use?",
     "opts_en": {
-      "A": "Continue in the current session and ask the agent to ignore all previous attempts and start fresh",
+      "A": "Continue in the current session and ask the agent to ignore all previous attempts and start fresh.",
       "B": "Start a completely new session with no prior context at all, re-read the failing tests from scratch, and apply the new strategy fresh.",
       "C": "Start a fresh session summarising the three failed approaches and why each failed, then pursue the new strategy with clean context.",
-      "D": "Use fork_session from the point before the first debugging attempt to explore the new strategy"
+      "D": "Branch with `fork_session` from the point before the first debugging attempt (`resume` + `resume_session_at` up to that message) and explore the new strategy there."
     },
     "expl_en": "Why D is correct: fork_session branches the conversation from an earlier point, so the developer keeps all the useful refactoring context accumulated before debugging began while leaving the three sets of conflicting edits and failure output out of the new branch. It is the session-management primitive designed exactly for 'try a different path from here'.\nWhy A is wrong: Telling the model to ignore earlier attempts does not remove them from the context window; the contradictory modifications and error dumps still consume attention and bias the new attempt.\nWhy B is wrong: A completely fresh session discards the valuable refactor context as well as the noise, forcing the agent to rebuild understanding it already had.\nWhy C is wrong: This is workable but second-best: the developer has to write the summary manually, and it re-injects a description of the failed approaches into the new context instead of starting from a clean pre-debugging state."
   },
@@ -6872,5 +6872,577 @@
       "D": "Remove --dangerously-skip-permissions and narrow the tool set with --allowedTools \"Read\" \"Bash(python eval/run.py *)\"; because Write/Edit and git commands are not on the list the job cannot change files and completes without a permission prompt."
     },
     "expl_en": "Why D is correct: in headless CI the permission problem is solved by pre-approving the tools the job needs, not by switching all permissions off. --allowedTools opens only Read and the Bash pattern that runs the eval script; since Write, Edit and Bash for git are not on the list, Claude cannot run them. The job does not hang and the production schema stays safe — deterministically.\nWhy A is wrong: a prompt instruction is probabilistic; --dangerously-skip-permissions leaves every tool available, so Claude can still write files. The risk of touching a production schema is not managed with prompts.\nWhy B is wrong: plan mode restricts tool execution, but that also stops the eval script from running via Bash; the job cannot do its work.\nWhy C is wrong: CI steps should be independent, reproducible sessions; attaching to a developer's interactive session brings in stale context and is not a reliable permission model either."
+  },
+  {
+    "d": 1,
+    "sc": 2,
+    "ts": "Task Statement 1.1",
+    "body_tr": "Bir kod üretim agent'ı büyük bir modülü tek seferde yazıyor. Loop yalnızca `end_turn` ve `tool_use` kontrol ediyor; başka her durumda yanıtı nihai kabul ediyor. Kullanıcılar, üretilen dosyaların bazen fonksiyonun ortasında kesildiğini ve derlenmediğini bildiriyor. Loglarda bu isteklerde `stop_reason` değeri `\"max_tokens\"`.\nKök neden ve doğru düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "Claude'a system prompt'ta \"kodu her zaman tamamla\" talimatı ver.",
+      "B": "Loop `max_tokens` değerini ele almıyor. Bu değer yanıtın kesildiğini gösterir: bitmiş sayma; `max_tokens`'ı artırıp yeniden dene ya da yanıtı history'ye ekleyip \"kaldığın yerden devam et\" diyerek devam ettir; safety-net iteration cap'i koru.",
+      "C": "Loop'a \"yanıt kapanış parantezi ile bitmiyorsa devam et\" kontrolü ekle.",
+      "D": "`stop_reason` `\"max_tokens\"` olduğunda tool_use gibi davran ve boş bir tool_result gönder."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: max_tokens, çıktının token sınırına takıldığını ve kesik olduğunu söyleyen yapısal sinyaldir. Sağlam bir loop tüm stop_reason değerlerini ele alır; max_tokens'ta doğru davranış sınırı artırmak ya da devam ettirmektir — yanıtı nihai saymak değil.\nWhy A is wrong: Prompt talimatı token sınırını değiştirmez; model sınır dolunca yine kesilir.\nWhy C is wrong: Metin/sözdizimi çıkarımı natural language parsing anti-pattern'ının bir çeşididir ve güvenilmez; stop_reason zaten bunu söylüyor.\nWhy D is wrong: max_tokens bir tool çağrısı değildir; eşleşecek tool_use bloğu olmadan tool_result göndermek API hatası üretir.",
+    "body_en": "A code generation agent writes a large module in one go. The loop checks only `end_turn` and `tool_use`; in every other case it treats the response as final. Users report that generated files are sometimes cut off in the middle of a function and don't compile. Logs show `stop_reason` is `\"max_tokens\"` on those requests.\nWhat is the root cause and the correct fix?",
+    "opts_en": {
+      "A": "Instruct Claude in the system prompt to \"always complete the code\".",
+      "B": "The loop doesn't handle `max_tokens`. That value means the response was truncated: don't treat it as finished; raise `max_tokens` and retry, or append the response to history and continue with \"pick up where you left off\"; keep the safety-net iteration cap.",
+      "C": "Add a check to the loop: \"if the response doesn't end with a closing brace, continue\".",
+      "D": "When `stop_reason` is `\"max_tokens\"`, treat it like tool_use and send an empty tool_result."
+    },
+    "expl_en": "Why B is correct: max_tokens is the structured signal that the output hit the token limit and is truncated. A robust loop handles every stop_reason value; on max_tokens the right behaviour is to raise the limit or continue the response — not to treat it as final.\nWhy A is wrong: A prompt instruction doesn't change the token limit; the model is still cut off when the limit is reached.\nWhy C is wrong: Inferring completion from text/syntax is a variant of the natural-language parsing anti-pattern and unreliable; stop_reason already tells you.\nWhy D is wrong: max_tokens is not a tool call; sending a tool_result without a matching tool_use block produces an API error."
+  },
+  {
+    "d": 1,
+    "sc": 3,
+    "ts": "Task Statement 1.1",
+    "body_tr": "Bir araştırma agent'ı Anthropic'in sunucu taraflı web search tool'unu kullanıyor. Karmaşık sorgularda agent birkaç aramadan sonra yarım bir yanıtla duruyor. Loglar bu durumlarda `stop_reason` değerinin `\"pause_turn\"` olduğunu, loop'un ise bu değeri tanımadığı için yanıtı kullanıcıya nihai olarak sunduğunu gösteriyor.\nDoğru düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "Web search tool'unu kaldır ve aramaları kendi loop'unda istemci tarafında yap.",
+      "B": "System prompt'a \"en fazla 3 arama yap\" talimatı ekle.",
+      "C": "Loop `pause_turn` değerini ele almalı: sunucu taraflı tool döngüsü iterasyon limitine geldiğinde API bu değeri döndürür; yanıtı olduğu gibi history'ye ekleyip aynı history ile yeniden istek gönder — Claude kaldığı yerden devam eder.",
+      "D": "`pause_turn` görüldüğünde `max_tokens` değerini iki katına çıkarıp isteği tekrarla."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: pause_turn, sunucu taraflı tool kullanan uzun turlarda API'nin turu duraklattığını gösterir. Doğru davranış yanıtı history'ye ekleyip aynı history ile tekrar göndermektir; model araştırmayı kaldığı yerden sürdürür. Bunu nihai yanıt saymak yarım sonuç üretir.\nWhy A is wrong: Sunucu taraflı arama, çoklu arama döngüsünü ve alıntıları Anthropic tarafında yönetir; kaldırmak sorunu çözmek yerine loop'a iş yükler.\nWhy B is wrong: Aramayı sınırlamak kapsamı daraltır; pause_turn'ün doğru işlenmesinin yerini tutmaz.\nWhy D is wrong: pause_turn'ün max_tokens ile ilgisi yok; sınırı artırmak duraklatılmış turu devam ettirmez.",
+    "body_en": "A research agent uses Anthropic's server-side web search tool. On complex queries the agent stops with a half-finished answer after a few searches. Logs show `stop_reason` is `\"pause_turn\"` in those cases, and the loop — not recognising the value — presents the response to the user as final.\nWhat is the correct fix?",
+    "opts_en": {
+      "A": "Remove the web search tool and run searches client-side in your own loop.",
+      "B": "Add the instruction \"do at most 3 searches\" to the system prompt.",
+      "C": "The loop must handle `pause_turn`: the API returns it when the server-side tool loop reaches its iteration limit; append the response to history as-is and send another request with the same history — Claude continues where it left off.",
+      "D": "On `pause_turn`, double `max_tokens` and repeat the request."
+    },
+    "expl_en": "Why C is correct: pause_turn indicates the API paused a long turn that uses server-side tools. The correct behaviour is to append the response to history and resend with the same history; the model continues the research. Treating it as final yields a half-finished result.\nWhy A is wrong: Server-side search handles the multi-search loop and citations on Anthropic's side; removing it shifts work onto the loop instead of fixing it.\nWhy B is wrong: Limiting searches narrows the scope; it is no substitute for handling pause_turn correctly.\nWhy D is wrong: pause_turn has nothing to do with max_tokens; raising the limit doesn't resume a paused turn."
+  },
+  {
+    "d": 1,
+    "sc": 5,
+    "ts": "Task Statement 1.1",
+    "body_tr": "Bir CI agent'ı, bir PR için dört test raporunu `fetch_report` tool'uyla çekiyor. Claude tek yanıtta dört `tool_use` bloğu döndürüyor. Geliştiricinin kodu her raporu çekip sonucunu ayrı bir `{\"role\": \"user\", \"content\": [tool_result]}` mesajı olarak history'ye ekliyor. Bir sonraki API çağrısı 400 hatası veriyor.\nSorun nedir?",
+    "opts_tr": {
+      "A": "Claude tek yanıtta birden fazla tool çağıramaz; kod ilk tool_use bloğu dışındakileri yok saymalı.",
+      "B": "Bir assistant yanıtındaki tüm `tool_use` bloklarının `tool_result`'ları, hemen sonraki tek bir user mesajının `content` listesinde toplanmalı; ayrı user mesajlarına bölmek ilk mesajda üç tool_use bloğunu karşılıksız bırakır.",
+      "C": "`tool_result` blokları `assistant` rolüyle gönderilmeli.",
+      "D": "`fetch_report` tool'u sıralı çalışacak şekilde `tool_choice: {\"type\": \"tool\"}` ile zorlanmalı."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Kural: assistant turundaki her tool_use bloğu, hemen sonraki user mesajında karşılık gelen bir tool_result bulmalı. İlk user mesajı yalnızca bir sonucu içerdiğinden diğer üç tool_use karşılıksız kalır ve API reddeder. Dört tool_result bloğunu tek user mesajında topla.\nWhy A is wrong: Paralel tool çağrısı Messages API'nin standart özelliğidir; blokları yok saymak hem yanlış hem de yine karşılıksız tool_use bırakır.\nWhy C is wrong: tool_result her zaman user rolüyle gönderilir; rol doğru, yapı yanlış.\nWhy D is wrong: tool_choice tool seçimini zorlar, sonuçların nasıl gönderileceğini değiştirmez; paralel çağrıyı kapatmak isteseydin disable_parallel_tool_use kullanılırdı, ama sorun loop'un yapısı.",
+    "body_en": "A CI agent fetches four test reports for a PR with a `fetch_report` tool. Claude returns four `tool_use` blocks in a single response. The developer's code fetches each report and appends its result to history as a separate `{\"role\": \"user\", \"content\": [tool_result]}` message. The next API call returns a 400 error.\nWhat is the problem?",
+    "opts_en": {
+      "A": "Claude cannot call multiple tools in one response; the code should ignore all but the first tool_use block.",
+      "B": "The `tool_result`s for all `tool_use` blocks in an assistant response must be collected in the `content` list of the immediately following single user message; splitting them across user messages leaves three tool_use blocks unanswered in the first message.",
+      "C": "The `tool_result` blocks should be sent with the `assistant` role.",
+      "D": "The `fetch_report` tool should be forced to run sequentially with `tool_choice: {\"type\": \"tool\"}`."
+    },
+    "expl_en": "Why B is correct: The rule: every tool_use block in an assistant turn must find a matching tool_result in the immediately following user message. Because the first user message contains only one result, the other three tool_use blocks are unanswered and the API rejects the request. Collect the four tool_result blocks in one user message.\nWhy A is wrong: Parallel tool use is a standard Messages API feature; ignoring blocks is wrong and still leaves tool_use blocks unanswered.\nWhy C is wrong: tool_result is always sent with the user role; the role is right, the structure is wrong.\nWhy D is wrong: tool_choice forces tool selection, it doesn't change how results are returned; if you wanted to switch off parallel calls you would use disable_parallel_tool_use, but the problem is the loop's structure."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.1",
+    "body_tr": "Bir developer productivity agent'ı `run_tests` tool'unu çağırıyor. Tool bazen bir ortam hatasıyla exception fırlatıyor. Geliştiricinin loop'u exception'ı yakalayıp loop'u sonlandırıyor ve kullanıcıya \"Agent hatası\" gösteriyor. Kullanıcılar, agent'ın hatayı görüp alternatif bir yol denemesini (ör. bağımlılıkları yeniden kurmak) bekliyor.\nDoğru tasarım hangisidir?",
+    "opts_tr": {
+      "A": "Exception'ı yakalayıp aynı tool çağrısını otomatik olarak 5 kez tekrar dene, sonra loop'u sonlandır.",
+      "B": "Exception'ı yakalayıp hata mesajını system prompt'a ekle ve loop'u yeniden başlat.",
+      "C": "Exception'ı yakala ve hatayı Claude'a `is_error: true` işaretli bir `tool_result` bloğu olarak (ilgili `tool_use_id` ile) geri gönder; loop devam etsin ki Claude hatayı görüp başka bir yol deneyebilsin.",
+      "D": "Exception'ı yakala, tool_result göndermeden Claude'a \"tool başarısız oldu\" yazan düz bir user mesajı ekle."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: Tool hataları loop'u kırmamalı; Claude'a is_error: true ile tool_result olarak iletilmelidir. Böylece Claude hatayı bağlamıyla görür ve alternatif bir yol seçer — agentic loop'un hata toleransı buradan gelir.\nWhy A is wrong: Körlemesine tekrar, ortam hatasında aynı sonucu verir ve Claude'un akıl yürütmesini devreden çıkarır.\nWhy B is wrong: System prompt'a hata eklemek ve yeniden başlamak biriken bağlamı kaybettirir; hata, ilgili tool çağrısının sonucu olarak history'de durmalı.\nWhy D is wrong: Bekleyen tool_use bloğu karşılıksız kalır — API bir sonraki isteği reddeder; ayrıca hata yapılandırılmamış biçimde iletilmiş olur.",
+    "body_en": "A developer productivity agent calls a `run_tests` tool. The tool sometimes throws an exception due to an environment error. The developer's loop catches the exception, terminates the loop and shows the user \"Agent error\". Users expect the agent to see the error and try an alternative path (e.g. reinstalling dependencies).\nWhat is the correct design?",
+    "opts_en": {
+      "A": "Catch the exception, automatically retry the same tool call 5 times, then terminate the loop.",
+      "B": "Catch the exception, add the error message to the system prompt and restart the loop.",
+      "C": "Catch the exception and return the error to Claude as a `tool_result` block flagged `is_error: true` (with the matching `tool_use_id`); let the loop continue so Claude can see the error and try another path.",
+      "D": "Catch the exception and, without sending a tool_result, append a plain user message saying \"the tool failed\"."
+    },
+    "expl_en": "Why C is correct: Tool errors should not break the loop; they are reported to Claude as a tool_result with is_error: true. Claude sees the error in context and chooses an alternative — that is where an agentic loop's fault tolerance comes from.\nWhy A is wrong: Blind retries produce the same result on an environment error and take Claude's reasoning out of the loop.\nWhy B is wrong: Putting the error in the system prompt and restarting loses the accumulated context; the error belongs in history as the result of the relevant tool call.\nWhy D is wrong: The pending tool_use block is left unanswered — the API rejects the next request; the error is also passed in an unstructured way."
+  },
+  {
+    "d": 1,
+    "sc": 6,
+    "ts": "Task Statement 1.1",
+    "body_tr": "Bir veri çıkarım agent'ı iki tool kullanıyor: `create_record` (kayıt oluşturur, ID döndürür) ve `attach_document` (verilen kayıt ID'sine belge ekler). Claude bazen tek yanıtta her iki tool'u da çağırıyor; `attach_document` henüz var olmayan bir ID ile çağrıldığı için hata alıyor.\nEn uygun düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "`attach_document` tool'unu kaldır ve belge eklemeyi `create_record` içinde yap.",
+      "B": "Tool'lar arasında sıralı bağımlılık var; `tool_choice={\"type\": \"auto\", \"disable_parallel_tool_use\": True}` ile Claude'un yanıt başına en fazla bir tool çağırmasını sağla, böylece `attach_document` her zaman gerçek ID ile çağrılır.",
+      "C": "Loop'ta hatalı `attach_document` çağrısını yok say ve bir sonraki döngüde tekrarla.",
+      "D": "System prompt'a \"önce create_record, sonra attach_document\" yaz ve iki few-shot örnek ekle."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Paralel tool çağrısı bağımsız işler için latency avantajı sağlar, ama A'nın çıktısı B'nin girdisiyse çağrılar sıralı olmalı. disable_parallel_tool_use bunu deterministik olarak sağlar: Claude yanıt başına tek tool çağırır, ID'yi aldıktan sonra ikinci tool'u çağırır.\nWhy A is wrong: Tool tasarımını değiştirmek bazen makul olabilir ama burada gereksiz; sorun tool'lar değil, çağrıların paralel yapılması.\nWhy C is wrong: Hatalı çağrıyı yok saymak karşılıksız tool_use bırakır ve deterministik bir sıralama sağlamaz.\nWhy D is wrong: Prompt talimatı olasılıksaldır; Claude çoğu zaman uyar ama garanti vermez. API'nin bunun için sunduğu yapılandırılmış mekanizma varken prompt'a güvenmek yanlış.",
+    "body_en": "A data extraction agent uses two tools: `create_record` (creates a record, returns an ID) and `attach_document` (attaches a document to the given record ID). Claude sometimes calls both tools in a single response; `attach_document` is called with an ID that doesn't exist yet and fails.\nWhat is the most appropriate fix?",
+    "opts_en": {
+      "A": "Remove the `attach_document` tool and attach documents inside `create_record`.",
+      "B": "There is a sequential dependency between the tools; set `tool_choice={\"type\": \"auto\", \"disable_parallel_tool_use\": True}` so Claude makes at most one tool call per response, ensuring `attach_document` is always called with a real ID.",
+      "C": "Ignore the failed `attach_document` call in the loop and repeat it on the next iteration.",
+      "D": "Write \"first create_record, then attach_document\" in the system prompt and add two few-shot examples."
+    },
+    "expl_en": "Why B is correct: Parallel tool use gives a latency advantage for independent work, but when A's output is B's input the calls must be sequential. disable_parallel_tool_use guarantees that deterministically: Claude makes one tool call per response and calls the second tool after receiving the ID.\nWhy A is wrong: Changing the tool design can sometimes be reasonable, but it's unnecessary here; the problem isn't the tools, it's the calls being made in parallel.\nWhy C is wrong: Ignoring the failed call leaves an unanswered tool_use and provides no deterministic ordering.\nWhy D is wrong: A prompt instruction is probabilistic; Claude usually complies but there's no guarantee. Relying on the prompt when the API provides a structured mechanism for exactly this is wrong."
+  },
+  {
+    "d": 1,
+    "sc": 1,
+    "ts": "Task Statement 1.1",
+    "body_tr": "Bir müşteri destek agent'ının loop'u, tanımadığı her `stop_reason` değerinde isteği otomatik olarak aynı mesajlarla yeniden gönderiyor. Bazı içerik moderasyonu isteklerinde `stop_reason` `\"refusal\"` dönüyor ve loop aynı isteği art arda 50 kez gönderip iteration cap'e çarpıyor.\nDoğru davranış hangisidir?",
+    "opts_tr": {
+      "A": "`refusal` görüldüğünde system prompt'u kaldırıp isteği tekrar gönder.",
+      "B": "`refusal` görüldüğünde `max_tokens`'ı artır ve tekrar dene.",
+      "C": "`refusal`, Claude'un güvenlik nedeniyle yanıt vermeyi reddettiğini gösterir; aynı isteği körlemesine tekrarlama — durumu logla, kullanıcıya uygun bir mesaj göster ve gerekiyorsa insan incelemesine yönlendir.",
+      "D": "`refusal` görüldüğünde loop'u `tool_use` gibi işle ve boş tool_result gönder."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: refusal ayrı bir stop_reason değeridir ve tekrar edilebilir bir hata değildir; aynı girdi aynı sonucu verir. Sağlam loop bunu tanır, loglar, kullanıcıya bildirir ve gerekiyorsa insana yönlendirir. \"Tanımadığım her değeri tekrar gönder\" varsayılanı hem maliyet hem sonsuz döngü riski yaratır.\nWhy A is wrong: Güvenlik yönlendirmesini kaldırmaya çalışmak reddi aşma girişimidir; hem uygunsuz hem de sonucu değiştirmez.\nWhy B is wrong: refusal'ın token sınırıyla ilgisi yoktur.\nWhy D is wrong: refusal bir tool çağrısı değildir; eşleşen tool_use olmadan tool_result API hatası üretir.",
+    "body_en": "A customer support agent's loop automatically resends the request with the same messages for every `stop_reason` value it doesn't recognise. On some content-moderation requests `stop_reason` comes back as `\"refusal\"`, and the loop resends the same request 50 times in a row until it hits the iteration cap.\nWhat is the correct behaviour?",
+    "opts_en": {
+      "A": "On `refusal`, remove the system prompt and resend the request.",
+      "B": "On `refusal`, raise `max_tokens` and retry.",
+      "C": "`refusal` means Claude declined to respond for safety reasons; don't blindly repeat the same request — log it, show the user an appropriate message and route to human review if needed.",
+      "D": "On `refusal`, treat it like `tool_use` and send an empty tool_result."
+    },
+    "expl_en": "Why C is correct: refusal is a distinct stop_reason value and not a retryable error; the same input yields the same result. A robust loop recognises it, logs it, informs the user and escalates to a human if needed. A \"resend on any unknown value\" default creates both cost and infinite-loop risk.\nWhy A is wrong: Trying to strip safety guidance is an attempt to work around the refusal; it is inappropriate and doesn't change the outcome.\nWhy B is wrong: refusal has nothing to do with the token limit.\nWhy D is wrong: refusal is not a tool call; a tool_result without a matching tool_use produces an API error."
+  },
+  {
+    "d": 1,
+    "sc": 3,
+    "ts": "Task Statement 1.2",
+    "body_tr": "Bir coordinator, beş SaaS tedarikçisinin karşılaştırmalı analizi için üç araştırma subagent'ı başlatıyor: \"tedarikçilere genel bakış\", \"fiyatlandırma modelleri\" ve \"Tedarikçi X derinlemesine inceleme\". Loglar: \"genel bakış\" subagent'ı her tedarikçinin fiyatlandırmasını da araştırmış; \"Tedarikçi X\" subagent'ı \"genel bakış\"ın zaten işlediği kaynakları yeniden çekmiş. Maliyet beklenenin 2 katı, sentez raporunda Tedarikçi X'in fiyatı iki farklı rakamla geçiyor.\nKök neden ve en etkili düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "Sentez subagent'ına \"çelişen rakamlarda en güncel olanı seç\" talimatı ekle.",
+      "B": "Üç subagent'ı tek bir subagent'ta birleştir — tekrar ortadan kalkar.",
+      "C": "Coordinator'ın kapsam bölümlemesi hatalı — \"genel bakış\" bir şemsiye, \"Tedarikçi X\" bir alt küme; alt görevler örtüşüyor. Ayrık kapsamlarla yeniden ayrıştır (ör. tedarikçi başına bir subagent ya da boyut başına bir subagent) ve her prompt'a neyin kapsam dışı olduğunu açıkça yaz.",
+      "D": "Subagent'ların birbirleriyle konuşup hangi kaynağın çekildiğini paylaşmasını sağla."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: Exam guide'ın \"partitioning research scope to minimize duplication\" becerisi. Şemsiye ve alt küme alt görevler doğal olarak örtüşür; sonuç tekrar eden kaynak çekimi, maliyet ve çelişkili bulgular. Coordinator alt görevleri ayrık tanımlar ve sınırları prompt'ta belirtir; tekrar kaynağında önlenir.\nWhy A is wrong: Semptomu sonda maskeler; tekrar eden araştırmanın maliyeti ödenmiş olur ve \"en güncel\" kuralı çelişkinin kaynağını çözmez.\nWhy B is wrong: Paralelliği ve odaklanmayı kaybettirir; beş tedarikçi × birden çok boyut tek context'te attention dilution riski.\nWhy D is wrong: Hub-and-spoke ihlali; gözlemlenebilirlik kaybı ve kök nedeni (örtüşen ayrıştırma) çözmez.",
+    "body_en": "A coordinator launches three research subagents for a comparative analysis of five SaaS vendors: \"vendor overview\", \"pricing models\" and \"Vendor X deep dive\". Logs: the \"overview\" subagent also researched every vendor's pricing; the \"Vendor X\" subagent re-fetched sources the \"overview\" had already processed. Cost is 2× the expected, and the synthesis report quotes two different prices for Vendor X.\nWhat is the root cause and the most effective fix?",
+    "opts_en": {
+      "A": "Add a \"when figures conflict, pick the most recent\" instruction to the synthesis subagent.",
+      "B": "Merge the three subagents into a single one — duplication disappears.",
+      "C": "The coordinator's scope partitioning is wrong — \"overview\" is an umbrella and \"Vendor X\" a subset; the subtasks overlap. Re-decompose with disjoint scopes (e.g. one subagent per vendor, or one per dimension) and state explicitly in each prompt what is out of scope.",
+      "D": "Let the subagents talk to each other and share which sources have been fetched."
+    },
+    "expl_en": "Why C is correct: The exam guide's skill \"partitioning research scope to minimize duplication\". Umbrella and subset subtasks naturally overlap; the result is duplicate fetching, cost and contradictory findings. The coordinator defines disjoint subtasks and states boundaries in the prompts; duplication is prevented at the source.\nWhy A is wrong: Masks the symptom at the end; the duplicate research has already been paid for, and a \"most recent\" rule doesn't resolve the source of the conflict.\nWhy B is wrong: Loses parallelism and focus; five vendors × several dimensions in one context risks attention dilution.\nWhy D is wrong: A hub-and-spoke violation; loss of observability, and it doesn't fix the root cause (overlapping decomposition)."
+  },
+  {
+    "d": 1,
+    "sc": 1,
+    "ts": "Task Statement 1.2",
+    "body_tr": "Bir coordinator'ın system prompt'unda \"asla rakip ürün adlarından bahsetme\" kuralı var. Coordinator, yanıt taslağı yazması için bir subagent başlatıyor; subagent'ın AgentDefinition prompt'unda bu kural yok. Subagent'ın ürettiği taslaklar rakip adları içeriyor. Geliştirici şaşkın: \"Kural coordinator'ın system prompt'unda, subagent neden uymuyor?\"\nDoğru açıklama hangisidir?",
+    "opts_tr": {
+      "A": "Subagent kurala uyuyor ama coordinator sentez sırasında rakip adlarını ekliyor.",
+      "B": "Subagent coordinator'ın system prompt'unu ve konuşma geçmişini miras almaz; yalnızca kendi AgentDefinition prompt'unu, Task çağrısındaki görev prompt'unu, kendi tool'larını ve proje CLAUDE.md'sini alır. Kural subagent'ın prompt'una (ya da CLAUDE.md'ye) yazılmalı.",
+      "C": "Subagent'lar system prompt'ları yalnızca `fork_session` ile miras alır; coordinator subagent'ı fork ile başlatmalı.",
+      "D": "Coordinator, Task çağrısında `inherit_system_prompt: true` parametresini vermeli."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: İzolasyon ilkesinin mekanizma düzeyindeki hali. Subagent'ın aldıkları: kendi system prompt'u (AgentDefinition.prompt), görev prompt'u, tool tanımları, proje CLAUDE.md. Almadıkları: coordinator'ın konuşma geçmişi ve system prompt'u. Her subagent için geçerli olması gereken kural, subagent prompt'una ya da CLAUDE.md'ye yazılır.\nWhy A is wrong: Senaryo taslakların subagent'tan geldiğini söylüyor; sorun aktarımda değil, subagent'ın kuralı hiç görmemesinde.\nWhy C is wrong: fork_session konuşma geçmişini fork noktasına kadar kopyalar; bu bir subagent yapılandırma yöntemi değil, oturum dallandırma mekanizmasıdır. Kural yine de subagent'ın kendi prompt'unda olmalı.\nWhy D is wrong: Böyle bir parametre yok; subagent'a bağlam aktarımının yolu prompt'a açıkça yazmaktır.",
+    "body_en": "A coordinator's system prompt contains the rule \"never mention competitor product names\". The coordinator launches a subagent to draft replies; the rule is not in the subagent's AgentDefinition prompt. The subagent's drafts contain competitor names. The developer is puzzled: \"The rule is in the coordinator's system prompt, why doesn't the subagent follow it?\"\nWhich explanation is correct?",
+    "opts_en": {
+      "A": "The subagent follows the rule but the coordinator adds the competitor names during synthesis.",
+      "B": "A subagent doesn't inherit the coordinator's system prompt or conversation history; it receives only its own AgentDefinition prompt, the task prompt in the Task call, its own tools and the project CLAUDE.md. The rule must be written into the subagent's prompt (or CLAUDE.md).",
+      "C": "Subagents inherit system prompts only via `fork_session`; the coordinator should launch the subagent with a fork.",
+      "D": "The coordinator should pass an `inherit_system_prompt: true` parameter in the Task call."
+    },
+    "expl_en": "Why B is correct: The isolation principle at the mechanism level. A subagent receives: its own system prompt (AgentDefinition.prompt), the task prompt, tool definitions, the project CLAUDE.md. It does not receive: the coordinator's conversation history or system prompt. A rule that must apply to every subagent goes into the subagent prompt or CLAUDE.md.\nWhy A is wrong: The scenario says the drafts come from the subagent; the problem isn't in the handoff but in the subagent never seeing the rule.\nWhy C is wrong: fork_session copies conversation history up to the fork point; it is a session-branching mechanism, not a subagent configuration method. The rule still belongs in the subagent's own prompt.\nWhy D is wrong: No such parameter exists; the way to pass context to a subagent is to write it explicitly into the prompt."
+  },
+  {
+    "d": 1,
+    "sc": 3,
+    "ts": "Task Statement 1.2",
+    "body_tr": "Bir araştırma sisteminde coordinator, sentez subagent'ının taslağını \"tüm alt konular kapsandı mı, her iddianın kaynağı var mı\" kriterleriyle değerlendiriyor, eksik varsa yalnızca ilgili araştırma subagent'ını yeniden çağırıyor ve bunu en fazla üç tur tekrarlıyor.\nAnthropic'in \"Building Effective Agents\" terminolojisinde bu döngü hangi desendir ve neden bir üst sınır vardır?",
+    "opts_tr": {
+      "A": "Prompt chaining — sabit adımlar; üst sınır adım sayısını belirler.",
+      "B": "Parallelization (voting) — aynı görev üç kez çalıştırılıp çoğunluk alınır.",
+      "C": "Routing — coordinator taslağı uygun subagent'a yönlendirir; sınır yönlendirme sayısını kısıtlar.",
+      "D": "Evaluator-optimizer — üret → açık kriterlerle değerlendir → hedefli iyileştir döngüsü; üst sınır, coordinator'ın sonsuza kadar \"biraz daha iyileştir\" demesini önleyen iterasyon bütçesidir."
+    },
+    "ans": "D",
+    "expl_tr": "Why D is correct: Coordinator'ın sentez çıktısını değerlendirip hedefli yeniden delege etmesi evaluator-optimizer desenidir (exam guide 1.2: \"iterative refinement loops where the coordinator evaluates synthesis output\"). Kriterler açık olmalı ve döngünün bütçesi olmalı; aksi halde iyileştirme sonlanmaz.\nWhy A is wrong: Prompt chaining önceden belirlenmiş sıralı adımlardır; burada koşullu bir değerlendir-iyileştir döngüsü var.\nWhy B is wrong: Voting aynı görevi paralel tekrar edip birleştirir; burada tek taslak değerlendirilip düzeltiliyor.\nWhy C is wrong: Routing girdiyi sınıflandırıp uygun akışa gönderir; değerlendirme-iyileştirme döngüsü değildir.",
+    "body_en": "In a research system the coordinator evaluates the synthesis subagent's draft against the criteria \"were all subtopics covered, does every claim have a source\", re-invokes only the relevant research subagent if something is missing, and repeats this at most three times.\nIn Anthropic's \"Building Effective Agents\" terminology, which pattern is this loop, and why is there an upper bound?",
+    "opts_en": {
+      "A": "Prompt chaining — fixed steps; the bound sets the number of steps.",
+      "B": "Parallelization (voting) — the same task runs three times and the majority is taken.",
+      "C": "Routing — the coordinator routes the draft to the appropriate subagent; the bound limits the number of routes.",
+      "D": "Evaluator-optimizer — a generate → evaluate against explicit criteria → refine in a targeted way loop; the bound is the iteration budget that stops the coordinator saying \"refine a bit more\" forever."
+    },
+    "expl_en": "Why D is correct: A coordinator evaluating synthesis output and re-delegating in a targeted way is the evaluator-optimizer pattern (exam guide 1.2: \"iterative refinement loops where the coordinator evaluates synthesis output\"). Criteria must be explicit and the loop must have a budget; otherwise refinement never ends.\nWhy A is wrong: Prompt chaining is predetermined sequential steps; here there is a conditional evaluate-refine loop.\nWhy B is wrong: Voting repeats the same task in parallel and combines; here one draft is evaluated and corrected.\nWhy C is wrong: Routing classifies the input and sends it to the appropriate flow; it isn't an evaluate-refine loop."
+  },
+  {
+    "d": 1,
+    "sc": 3,
+    "ts": "Task Statement 1.3",
+    "body_tr": "Bir araştırma sistemi her sorgu için 6 subagent başlatıyor: 5'i basit web araması yapıp ham sonuç döndürüyor, 1'i sentez yapıyor. Tüm subagent'lar coordinator ile aynı büyük modeli kullanıyor ve maliyetin %80'i arama subagent'larından geliyor. Kalite ölçümleri arama subagent'larının işinin daha küçük bir modelle de aynı kalitede yapılabildiğini gösteriyor.\nEn uygun optimizasyon hangisidir?",
+    "opts_tr": {
+      "A": "Arama subagent sayısını 5'ten 2'ye düşür.",
+      "B": "Arama subagent'larının AgentDefinition'ında `model` alanını daha küçük/ucuz bir modele (ör. `haiku`) ayarla; sentez subagent'ı ve coordinator büyük modelde kalsın.",
+      "C": "Tüm sistemi daha küçük modele geçir.",
+      "D": "Arama subagent'larını kaldırıp aramayı coordinator'da yap."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: AgentDefinition'ın model alanı, subagent başına model seçimine izin verir. Basit, yüksek hacimli işlere ucuz model, muhakeme gerektiren sentez ve koordinasyona güçlü model — maliyet düşer, kalite korunur. Sınavın \"subagent yapılandırması\" konusunun pratik karşılığı.\nWhy A is wrong: Kapsamı daraltır; sorun subagent sayısı değil, her birinin gereksiz pahalı model kullanması.\nWhy C is wrong: Sentez ve koordinasyon kalitesini riske atar; ölçümler yalnızca arama işinin küçük modelle yapılabildiğini gösteriyor.\nWhy D is wrong: Coordinator'ın context'ini ham arama sonuçlarıyla şişirir (attention dilution) ve paralelliği kaybettirir.",
+    "body_en": "A research system launches 6 subagents per query: 5 do simple web searches and return raw results, 1 does synthesis. All subagents use the same large model as the coordinator, and 80% of the cost comes from the search subagents. Quality measurements show the search subagents' work can be done at the same quality with a smaller model.\nWhat is the most appropriate optimisation?",
+    "opts_en": {
+      "A": "Reduce the number of search subagents from 5 to 2.",
+      "B": "Set the `model` field in the search subagents' AgentDefinition to a smaller/cheaper model (e.g. `haiku`); keep the synthesis subagent and the coordinator on the large model.",
+      "C": "Move the whole system to the smaller model.",
+      "D": "Remove the search subagents and do the searching in the coordinator."
+    },
+    "expl_en": "Why B is correct: The model field of AgentDefinition allows per-subagent model selection. Cheap model for simple high-volume work, strong model for synthesis and coordination that need reasoning — cost drops, quality is preserved. The practical side of the exam's \"subagent configuration\" topic.\nWhy A is wrong: Narrows the scope; the problem isn't the number of subagents but each using an unnecessarily expensive model.\nWhy C is wrong: Risks synthesis and coordination quality; the measurements only show the search work can be done with the small model.\nWhy D is wrong: Bloats the coordinator's context with raw search results (attention dilution) and loses parallelism."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.3",
+    "body_tr": "Bir coordinator, \"bağımlılık açıklarını tara\" görevi için bir subagent başlatıyor. Subagent bazen 200'den fazla tur çalışıp her paketi tek tek araştırıyor, coordinator'a hiç dönmüyor ve maliyet patlıyor. Subagent'ın prompt'unda \"kritik ve yüksek önemli açıkları raporla\" hedefi var ama bir sınır yok.\nEn uygun düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "Subagent'ı kaldırıp taramayı coordinator içinde yap.",
+      "B": "Coordinator'a \"subagent 5 dakikadan uzun sürerse iptal et\" talimatı ver.",
+      "C": "AgentDefinition'da `maxTurns` ile üst sınır koy ve prompt'a ölçülebilir bir bitiş kriteri ekle (ör. \"kritik/yüksek açık listesi ve etkilenen paketler hazır olunca raporla; düşük öneme girme\"); sınıra ulaşılırsa subagent o ana kadarki bulguları döndürür.",
+      "D": "Subagent'a daha büyük bir model ata ki daha hızlı bitirsin."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: maxTurns, subagent'ın çalışabileceği tur sayısını deterministik olarak sınırlar (1.1'deki safety-net iteration cap'in subagent karşılığı); ölçülebilir bitiş kriteri ise subagent'ın kendi kendine ne zaman duracağını bilmesini sağlar. İkisi birlikte hem kaçak maliyeti hem sonu gelmeyen keşfi önler.\nWhy A is wrong: Coordinator'ın context'ini şişirir ve sorunu (sınırsız keşif) taşımaktan başka bir şey yapmaz.\nWhy B is wrong: Coordinator'a verilen prompt talimatı olasılıksaldır ve coordinator çalışan subagent'ı bir prompt cümlesiyle iptal edemez; sınır yapılandırmada olmalı.\nWhy D is wrong: Daha büyük model sınırsız keşif problemini çözmez; muhtemelen daha pahalı hale getirir.",
+    "body_en": "A coordinator launches a subagent for the task \"scan for dependency vulnerabilities\". The subagent sometimes runs for more than 200 turns, investigating every package one by one, never returns to the coordinator, and cost explodes. The subagent's prompt has the goal \"report critical and high vulnerabilities\" but no bound.\nWhat is the most appropriate fix?",
+    "opts_en": {
+      "A": "Remove the subagent and do the scan inside the coordinator.",
+      "B": "Instruct the coordinator to \"cancel the subagent if it takes longer than 5 minutes\".",
+      "C": "Set an upper bound with `maxTurns` in the AgentDefinition and add a measurable completion criterion to the prompt (e.g. \"report once the critical/high list and affected packages are ready; don't go into low severity\"); if the bound is hit, the subagent returns its findings so far.",
+      "D": "Assign the subagent a bigger model so it finishes faster."
+    },
+    "expl_en": "Why C is correct: maxTurns deterministically bounds how many turns the subagent can run (the subagent counterpart of the safety-net iteration cap from 1.1); the measurable completion criterion lets the subagent know when to stop on its own. Together they prevent both runaway cost and endless exploration.\nWhy A is wrong: Bloats the coordinator's context and merely relocates the problem (unbounded exploration).\nWhy B is wrong: A prompt instruction to the coordinator is probabilistic, and the coordinator can't cancel a running subagent with a sentence in a prompt; the bound belongs in configuration.\nWhy D is wrong: A bigger model doesn't fix unbounded exploration; it probably makes it more expensive."
+  },
+  {
+    "d": 1,
+    "sc": 2,
+    "ts": "Task Statement 1.3",
+    "body_tr": "Bir Claude Code refactoring coordinator'ı modül başına bir subagent başlatıyor; her modül subagent'ı dosya başına, her dosya subagent'ı da fonksiyon başına yeni subagent'lar açıyor. Tek bir çalıştırma yüzlerce subagent üretiyor, maliyet beklenenin 10 katı ve hangi değişikliğin nereden geldiği izlenemiyor.\nEn uygun düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "Tüm subagent'lara `haiku` modelini ata.",
+      "B": "Ayrıştırmayı coordinator'da merkezileştir ve iç içe spawning'i sınırla (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, ör. 1): modül subagent'ları kendi kapsamlarındaki dosyaları doğrudan işler, yeni subagent açmaz; coordinator tek ayrıştırma noktası olarak kalır.",
+      "C": "Subagent'ların birbirleriyle doğrudan iletişim kurmasına izin ver ki değişiklikleri koordine etsinler.",
+      "D": "Refactoring'i tek bir agent'ta, subagent olmadan yap."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Kontrolsüz iç içe spawning maliyeti katlar, gözlemlenebilirliği yok eder (hub-and-spoke ilkesi derinlikle erozyona uğrar) ve ayrıştırmayı dağıtır. Derinlik sınırı ve merkezi ayrıştırma her üç sorunu da çözer; çoğu tasarımda tek seviye yeterlidir.\nWhy A is wrong: Ucuz model maliyeti azaltır ama subagent sayısını, izlenebilirlik kaybını ve dağınık ayrıştırmayı değiştirmez.\nWhy C is wrong: Hub-and-spoke ihlali; izlenebilirlik daha da kötüleşir.\nWhy D is wrong: Paralelliği ve uzmanlaşmayı yok eder; büyük refactoring tek context'te attention dilution'a girer. Sorun subagent kullanmak değil, derinliği kontrol etmemek.",
+    "body_en": "A Claude Code refactoring coordinator launches one subagent per module; each module subagent launches one per file, and each file subagent launches new subagents per function. A single run produces hundreds of subagents, cost is 10× the expected, and it's impossible to trace which change came from where.\nWhat is the most appropriate fix?",
+    "opts_en": {
+      "A": "Assign the `haiku` model to all subagents.",
+      "B": "Centralise decomposition in the coordinator and limit nested spawning (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, e.g. 1): module subagents process the files in their scope directly and don't spawn new subagents; the coordinator remains the single decomposition point.",
+      "C": "Allow subagents to communicate with each other directly so they can coordinate changes.",
+      "D": "Do the refactoring in a single agent, without subagents."
+    },
+    "expl_en": "Why B is correct: Uncontrolled nested spawning compounds cost, destroys observability (the hub-and-spoke principle erodes with depth) and fragments decomposition. A depth limit and centralised decomposition fix all three; a single level suffices for most designs.\nWhy A is wrong: A cheaper model reduces cost but doesn't change the number of subagents, the traceability loss or the fragmented decomposition.\nWhy C is wrong: A hub-and-spoke violation; traceability gets even worse.\nWhy D is wrong: Throws away parallelism and specialisation; a large refactoring in one context hits attention dilution. The problem isn't using subagents, it's not controlling depth."
+  },
+  {
+    "d": 1,
+    "sc": 6,
+    "ts": "Task Statement 1.3",
+    "body_tr": "Bir belge işleme coordinator'ı, üç çıkarım subagent'ının serbest metin çıktılarını alıp sonradan JSON'a çevirmeye çalışıyor; kaynak sayfa numaraları ve belge adları metinde çoğu zaman kayıp olduğu için dönüşüm eksik kalıyor ve nihai rapordaki atıflar tutarsız.\nEn etkili düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "Yapılandırılmış format subagent'ın çıktısında başlamalı: her çıkarım subagent'ının prompt'una çıktı şeması koy (`claim / document / page / confidence` alanlarıyla JSON), böylece metadata zincir boyunca hiç kaybolmaz; coordinator sonradan dönüştürme yapmaz.",
+      "B": "Coordinator'ın dönüşüm prompt'unu güçlendir — \"eksik kaynakları tahmin et\".",
+      "C": "Sentez subagent'ına coordinator'ın tam konuşma geçmişini ver ki kaynakları kendisi bulsun.",
+      "D": "Kaynak atıflarını rapordan tamamen kaldır."
+    },
+    "ans": "A",
+    "expl_tr": "Why A is correct: Coordinator düz metni sonradan yapılandıramaz — metinde kaybolan metadata geri getirilemez. 1.3'ün Kural 2'si: içeriği metadatadan ayır; bunun mekanizması subagent prompt'undaki çıktı şemasıdır. Yapı üretim anında oluşursa search → coordinator → synthesis boyunca korunur.\nWhy B is wrong: \"Tahmin et\" uydurma atıf üretir — provenance sorununu daha kötü hale getirir.\nWhy C is wrong: İzolasyon ilkesi tuzağı; ayrıca metadata coordinator'ın geçmişinde de yok, çünkü subagent'lar hiç yapılandırılmış üretmedi.\nWhy D is wrong: Gereksinimi ortadan kaldırmak sorunu çözmek değildir.",
+    "body_en": "A document processing coordinator takes the free-text outputs of three extraction subagents and tries to convert them to JSON afterwards; because source page numbers and document names are usually lost in the text, the conversion is incomplete and the citations in the final report are inconsistent.\nWhat is the most effective fix?",
+    "opts_en": {
+      "A": "The structured format must start in the subagent's output: put an output schema in each extraction subagent's prompt (JSON with `claim / document / page / confidence` fields), so the metadata is never lost along the chain; the coordinator does no after-the-fact conversion.",
+      "B": "Strengthen the coordinator's conversion prompt — \"guess the missing sources\".",
+      "C": "Give the synthesis subagent the coordinator's full conversation history so it can find the sources itself.",
+      "D": "Remove source citations from the report entirely."
+    },
+    "expl_en": "Why A is correct: The coordinator can't structure plain text after the fact — metadata lost in the text can't be recovered. Rule 2 of 1.3: separate content from metadata; the mechanism is the output schema in the subagent prompt. If the structure is created at production time it is preserved along search → coordinator → synthesis.\nWhy B is wrong: \"Guess\" produces fabricated citations — it makes the provenance problem worse.\nWhy C is wrong: The isolation principle trap; besides, the metadata isn't in the coordinator's history either, because the subagents never produced it in structured form.\nWhy D is wrong: Removing the requirement isn't solving the problem."
+  },
+  {
+    "d": 1,
+    "sc": 2,
+    "ts": "Task Statement 1.4",
+    "body_tr": "Bir Claude Code deploy agent'ında `deploy_service` tool'unu, `run_tests` başarıyla tamamlanmadan engelleyen bir PreToolUse hook var. Hook yalnızca `permissionDecision: \"deny\"` döndürüyor. Engelleme çalışıyor, ama agent artık birçok oturumda \"deploy yapamıyorum, izin yok\" diyip duruyor ve testleri çalıştırmayı hiç denemiyor.\nSorun nedir?",
+    "opts_tr": {
+      "A": "Hook `deny` yerine `allow` döndürüp uyarı loglamalı.",
+      "B": "Hook engelliyor ama nedenini söylemiyor. `permissionDecisionReason` ile \"deploy_service için önce run_tests başarıyla tamamlanmalı\" mesajı Claude'a iletilmeli; böylece agent kendini düzeltip önce testleri çalıştırır. Gate + eyleme dönük red = deterministik kural + kendini düzelten agent.",
+      "C": "Gate yaklaşımı yanlış — system prompt'a \"deploy'dan önce test çalıştır\" yazılmalı.",
+      "D": "`deploy_service` tool'u tamamen kaldırılmalı."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Gate kural ihlalini sıfırlar ama görevin tamamlanmasını garanti etmez. Sessiz bir red görünce Claude neyin engellendiğini ve önce ne yapması gerektiğini bilmez; \"izin yok\" sonucuna varır. Red mesajı eyleme dönük olmalıdır.\nWhy A is wrong: allow döndürmek gate'i kaldırır; test edilmemiş deploy'a izin verir.\nWhy C is wrong: Prompt'a dönmek deterministik garantiyi kaybettirir; sorun gate'te değil, gate'in iletişiminde.\nWhy D is wrong: Amaç deploy'u yasaklamak değil, doğru sırada yapılmasını garanti etmek — gate bunu zaten sağlıyor.",
+    "body_en": "A Claude Code deploy agent has a PreToolUse hook that blocks the `deploy_service` tool until `run_tests` has completed successfully. The hook returns only `permissionDecision: \"deny\"`. The blocking works, but the agent now keeps saying \"I can't deploy, no permission\" in many sessions and never attempts to run the tests.\nWhat is the problem?",
+    "opts_en": {
+      "A": "The hook should return `allow` instead of `deny` and log a warning.",
+      "B": "The hook blocks but doesn't say why. The message \"run_tests must complete successfully before deploy_service\" must be passed to Claude via `permissionDecisionReason`; the agent then self-corrects and runs the tests first. Gate + actionable rejection = deterministic rule + self-correcting agent.",
+      "C": "The gate approach is wrong — write \"run tests before deploying\" in the system prompt.",
+      "D": "The `deploy_service` tool should be removed entirely."
+    },
+    "expl_en": "Why B is correct: The gate drives rule violations to zero but doesn't guarantee task completion. Seeing a silent rejection, Claude doesn't know what was blocked or what to do first; it concludes \"no permission\". The rejection message must be actionable.\nWhy A is wrong: Returning allow removes the gate; it permits an untested deploy.\nWhy C is wrong: Going back to the prompt loses the deterministic guarantee; the problem isn't the gate but the gate's communication.\nWhy D is wrong: The goal isn't to prohibit deploys but to guarantee the right order — which the gate already does."
+  },
+  {
+    "d": 1,
+    "sc": 1,
+    "ts": "Task Statement 1.4",
+    "body_tr": "Bir müşteri tek mesajda üç şey istiyor: (1) çift çekilen ücretin iadesi, (2) fatura adresinin güncellenmesi, (3) hesabının kapatılması. Şirket politikası: açık bir iade işlemi varken hesap kapatılamaz. Agent üç konuyu ayrıştırıp üçünü de paralel yürütüyor; hesap kapatma iade tamamlanmadan çalıştığı için politika ihlali oluşuyor.\nDoğru tasarım hangisidir?",
+    "opts_tr": {
+      "A": "Üç konuyu tamamen sıralı işle — paralellik multi-concern isteklerde riskli.",
+      "B": "Hesap kapatma talebini yok say ve müşteriye \"ayrı bir talep açın\" de.",
+      "C": "Ayrıştırma doğru, ama yürütme sırası bağımlılığa göre belirlenmeli: (1) iade ve (2) adres güncelleme bağımsız → paralel; (3) hesap kapatma iadeye bağımlı → iade tamamlandıktan sonra. Sonuçları tek birleşik yanıtta sun; politika ayrıca `close_account` tool'unda programatik gate ile de korunmalı.",
+      "D": "System prompt'a \"hesap kapatmadan önce iadeyi bitir\" talimatı ekle."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: Multi-concern handling = ayrıştır → bağımsızları paralel → bağımlıları sırayla → tek birleşik çözüm. Bağımlılık tespiti ayrıştırmanın parçasıdır. Politika (açık iade varken kapatma yok) finansal/compliance niteliğinde olduğu için prompt'a değil, close_account'a programatik gate'e de dayanmalı.\nWhy A is wrong: Bağımsız konuları da sıraya sokmak gereksiz gecikme yaratır; kural \"bağımlı olanı sırala\"dır, \"hepsini sırala\" değil.\nWhy B is wrong: Müşterinin talebini geri çevirmek çözüm değil; talep meşru, yalnızca sırası var.\nWhy D is wrong: Prompt talimatı olasılıksal; politika ihlali riski devam eder. Sıralama mantığı ve gate kodda olmalı.",
+    "body_en": "A customer asks for three things in one message: (1) a refund for a duplicate charge, (2) an update to their billing address, (3) closure of their account. Company policy: an account can't be closed while a refund is open. The agent decomposes the three items and runs all three in parallel; account closure runs before the refund completes, causing a policy violation.\nWhat is the correct design?",
+    "opts_en": {
+      "A": "Process the three items strictly sequentially — parallelism is risky in multi-concern requests.",
+      "B": "Ignore the closure request and tell the customer to \"open a separate request\".",
+      "C": "The decomposition is right, but execution order must follow the dependency: (1) refund and (2) address update are independent → parallel; (3) closure depends on the refund → after the refund completes. Present the outcomes in one unified reply; the policy should also be protected by a programmatic gate on the `close_account` tool.",
+      "D": "Add the instruction \"finish the refund before closing the account\" to the system prompt."
+    },
+    "expl_en": "Why C is correct: Multi-concern handling = decompose → independent items in parallel → dependent ones in order → one unified resolution. Detecting dependencies is part of decomposition. Because the policy (no closure while a refund is open) is financial/compliance in nature, it should also rest on a programmatic gate on close_account, not on the prompt.\nWhy A is wrong: Serialising the independent items too adds needless latency; the rule is \"sequence the dependent one\", not \"sequence everything\".\nWhy B is wrong: Turning the customer away isn't a solution; the request is legitimate, it just has an order.\nWhy D is wrong: A prompt instruction is probabilistic; the policy-violation risk remains. Ordering logic and the gate belong in code."
+  },
+  {
+    "d": 1,
+    "sc": 1,
+    "ts": "Task Statement 1.4",
+    "body_tr": "Bir destek agent'ı çözemediği vakaları insan temsilciye devrederken müşteri ID'si, konuşma özeti, kök neden ve önerilen aksiyonu içeren yapılandırılmış bir özet gönderiyor. İnsan temsilciler şikayet ediyor: agent'ın zaten denediği çözümleri (kargo yeniden gönderimi, kupon tanımı) tekrar deniyorlar ve müşteriye aynı soruları yeniden soruyorlar; müşteriler bundan rahatsız.\nHandoff özetinde eksik olan hangisidir?",
+    "opts_tr": {
+      "A": "Agent'ın önerisine ilişkin güven skoru.",
+      "B": "Şimdiye kadar yapılan aksiyonlar: hangi tool'lar çağrıldı, ne denendi, sonuçları ne oldu ve müşteriden hangi bilgiler zaten alındı — insanın aynı adımları tekrar etmemesi için.",
+      "C": "Tam konuşma transcript'i.",
+      "D": "Müşterinin geçmiş tüm siparişlerinin listesi."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Self-contained handoff özetinin zorunlu alanlarından biri \"yapılan aksiyonlar\"dır. Kök neden ve öneri, insanın ne yapacağını söyler; yapılan aksiyonlar ise ne yapmaması gerektiğini. Eksikliği tam olarak senaryodaki tekrar ve müşteri rahatsızlığını üretir.\nWhy A is wrong: Güven skoru faydalı bağlam ama tekrar eden adımları önlemez.\nWhy C is wrong: Tam transcript hacim ekler; özetin amacı transcript'e erişim olmadan devam edebilmektir. Eksik olan yapılandırılmış bir alan, ham kayıt değil.\nWhy D is wrong: İlgisiz veri; tekrar sorununu çözmez.",
+    "body_en": "When a support agent hands cases it can't resolve to a human representative, it sends a structured summary containing the customer ID, conversation summary, root cause and recommended action. Human representatives complain: they re-try solutions the agent already tried (re-shipping, issuing a coupon) and ask the customer the same questions again; customers are annoyed.\nWhat is missing from the handoff summary?",
+    "opts_en": {
+      "A": "A confidence score for the agent's recommendation.",
+      "B": "Actions taken so far: which tools were called, what was tried, what the outcomes were and what information has already been collected from the customer — so the human doesn't repeat the same steps.",
+      "C": "The full conversation transcript.",
+      "D": "A list of all the customer's past orders."
+    },
+    "expl_en": "Why B is correct: \"Actions taken\" is one of the mandatory fields of a self-contained handoff summary. Root cause and recommendation tell the human what to do; actions taken tell them what not to redo. Its absence produces exactly the repetition and customer annoyance in the scenario.\nWhy A is wrong: A confidence score is useful context but doesn't prevent repeated steps.\nWhy C is wrong: A full transcript adds volume; the point of the summary is to continue without transcript access. What's missing is a structured field, not the raw record.\nWhy D is wrong: Irrelevant data; it doesn't solve the repetition problem."
+  },
+  {
+    "d": 1,
+    "sc": 5,
+    "ts": "Task Statement 1.5",
+    "body_tr": "Bir ekip, Claude Code'da `settings.json` üzerinden `Bash` tool'u için bir PreToolUse hook tanımlıyor. Hook script'i tehlikeli komutu tespit edince stdout'a \"BLOCKED\" yazıp `exit 1` ile çıkıyor. Ancak komutlar yine de çalışıyor.\nSorun nedir?",
+    "opts_tr": {
+      "A": "Hook'lar yalnızca Agent SDK'da çalışır; settings.json hook'ları Bash için geçerli değildir.",
+      "B": "Hook `matcher` alanı `\"Bash\"` yerine `\"bash\"` olmalı — büyük/küçük harf duyarlı değil ama küçük harf zorunlu.",
+      "C": "settings.json hook'larında engelleme sinyali **exit code 2**'dir (stderr'deki mesaj Claude'a iletilir); `exit 1` engellemeyen bir hata olarak yorumlanır. Alternatif olarak stdout'a `hookSpecificOutput.permissionDecision: \"deny\"` içeren JSON yazılabilir.",
+      "D": "PreToolUse Bash komutlarını engelleyemez; PostToolUse kullanılmalı."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: Claude Code shell hook'larında karar exit code ile verilir: 0 = devam, 2 = engelle (stderr Claude'a gider); diğer kodlar engellemeyen hata olarak ele alınır. Ya da stdout'a yapılandırılmış JSON (permissionDecision: deny + reason) yazılır. Script yanlış exit code kullanıyor.\nWhy A is wrong: settings.json hook'ları Claude Code'un standart mekanizmasıdır ve Bash dahil tüm tool'lara uygulanır.\nWhy B is wrong: Matcher tool adıyla eşleşir; sorun matcher değil, karar sinyali.\nWhy D is wrong: Engelleme tam olarak PreToolUse'un işidir; PostToolUse engelleyemez.",
+    "body_en": "A team defines a PreToolUse hook for the `Bash` tool via `settings.json` in Claude Code. When the hook script detects a dangerous command it prints \"BLOCKED\" to stdout and exits with `exit 1`. Yet the commands still run.\nWhat is the problem?",
+    "opts_en": {
+      "A": "Hooks only work in the Agent SDK; settings.json hooks don't apply to Bash.",
+      "B": "The hook `matcher` field should be `\"bash\"` instead of `\"Bash\"` — lower case is mandatory.",
+      "C": "In settings.json hooks the blocking signal is **exit code 2** (the stderr message is passed to Claude); `exit 1` is interpreted as a non-blocking error. Alternatively, write JSON containing `hookSpecificOutput.permissionDecision: \"deny\"` to stdout.",
+      "D": "PreToolUse can't block Bash commands; PostToolUse must be used."
+    },
+    "expl_en": "Why C is correct: In Claude Code shell hooks the decision is given by exit code: 0 = continue, 2 = block (stderr goes to Claude); other codes are treated as non-blocking errors. Or structured JSON (permissionDecision: deny + reason) is written to stdout. The script uses the wrong exit code.\nWhy A is wrong: settings.json hooks are Claude Code's standard mechanism and apply to all tools including Bash.\nWhy B is wrong: The matcher matches the tool name; the problem isn't the matcher but the decision signal.\nWhy D is wrong: Blocking is exactly PreToolUse's job; PostToolUse can't block."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.5",
+    "body_tr": "Bir ekip, `Write` tool'unun proje dizini dışına yazmasını engellemek için bir PreToolUse hook ekliyor. Hook'un `matcher` alanı boş bırakılmış. Ekleme sonrası her tool çağrısı (Read, Grep, Bash dahil) 300 ms yavaşlıyor ve bazı Read çağrıları hook'un yol kontrolünde yanlışlıkla engelleniyor.\nEn uygun düzeltme hangisidir?",
+    "opts_tr": {
+      "A": "Hook'u kaldır ve kuralı system prompt'a yaz.",
+      "B": "Hook'un `matcher` alanını yalnızca ilgili tool'larla sınırla (ör. `\"Write|Edit\"`); böylece hook yalnızca dosya yazan çağrılarda çalışır, diğer tool'lar etkilenmez.",
+      "C": "Hook'u PostToolUse'a taşı — daha az çağrıda çalışır.",
+      "D": "Hook script'inin timeout'unu 100 ms'ye düşür."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Matcher, hook'un hangi tool'lara uygulanacağını belirler. Matcher yoksa hook her tool çağrısında çalışır — gereksiz latency ve yanlışlıkla engelleme. Kapsamı daraltmak hem performansı hem doğruluğu düzeltir.\nWhy A is wrong: Güvenlik sınırı (proje dizini dışına yazma) deterministik gate gerektirir; prompt olasılıksal.\nWhy C is wrong: PostToolUse dosya yazıldıktan sonra çalışır — engelleyemez; ayrıca matcher olmadan yine her çağrıda çalışır.\nWhy D is wrong: Timeout'u kısmak gereksiz çalışmayı ortadan kaldırmaz ve hook'un zaman aşımına düşüp ya hep izin vermesine ya da hep engellemesine yol açabilir.",
+    "body_en": "A team adds a PreToolUse hook to stop the `Write` tool writing outside the project directory. The hook's `matcher` field is left empty. After the change every tool call (including Read, Grep and Bash) is 300 ms slower, and some Read calls are wrongly blocked by the hook's path check.\nWhat is the most appropriate fix?",
+    "opts_en": {
+      "A": "Remove the hook and put the rule in the system prompt.",
+      "B": "Restrict the hook's `matcher` to the relevant tools only (e.g. `\"Write|Edit\"`); the hook then runs only on file-writing calls and other tools are unaffected.",
+      "C": "Move the hook to PostToolUse — it runs on fewer calls.",
+      "D": "Reduce the hook script's timeout to 100 ms."
+    },
+    "expl_en": "Why B is correct: The matcher determines which tools the hook applies to. Without a matcher the hook runs on every tool call — unnecessary latency and accidental blocking. Narrowing the scope fixes both performance and correctness.\nWhy A is wrong: A security boundary (writing outside the project directory) needs a deterministic gate; a prompt is probabilistic.\nWhy C is wrong: PostToolUse runs after the file has been written — it can't block; and without a matcher it still runs on every call.\nWhy D is wrong: Shortening the timeout doesn't remove the unnecessary work and can make the hook time out and either always allow or always block."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.5",
+    "body_tr": "Bir geliştirici, dokümantasyon üreten bir Claude Code agent'ının `Bash` tool'unu hiçbir koşulda kullanmamasını istiyor — agent yalnızca Markdown dosyaları okuyup yazmalı. Geliştirici, her Bash çağrısını reddeden bir PreToolUse hook yazmayı planlıyor.\nEn basit ve en güvenli deterministik çözüm hangisidir?",
+    "opts_tr": {
+      "A": "`Bash` tool'unu agent'ın `allowedTools` listesinden çıkar (ya da `disallowedTools`'a ekle); hiç verilmeyen bir tool çağrılamaz — hook yazmaya gerek yok.",
+      "B": "Planlandığı gibi her Bash çağrısını reddeden PreToolUse hook yaz.",
+      "C": "System prompt'a \"Bash kullanma\" yaz.",
+      "D": "PostToolUse hook ile Bash çıktısını boş string'e çevir."
+    },
+    "ans": "A",
+    "expl_tr": "Why A is correct: Karar çerçevesinin ilk satırı: agent bir işlemi hiçbir koşulda yapmayacaksa tool'u hiç verme — en basit deterministik çözüm. Hook'lar koşullu kurallar (\"bazen evet, bazen hayır\") içindir; koşulsuz yasak için hook yazmak gereksiz kod ve bakım yükü.\nWhy B is wrong: Çalışır ama gereksiz karmaşık; her zaman reddedilen bir tool'un hiç tanımlanmaması daha basit ve daha az hata yüzeyi.\nWhy C is wrong: Prompt olasılıksal; \"hiçbir koşulda\" gereksinimi deterministik mekanizma ister.\nWhy D is wrong: PostToolUse komut çalıştıktan sonra tetiklenir; komut zaten çalışmış olur.",
+    "body_en": "A developer wants a documentation-generating Claude Code agent to never use the `Bash` tool under any circumstances — the agent should only read and write Markdown files. The developer plans to write a PreToolUse hook that rejects every Bash call.\nWhat is the simplest and safest deterministic solution?",
+    "opts_en": {
+      "A": "Remove the `Bash` tool from the agent's `allowedTools` list (or add it to `disallowedTools`); a tool that is never granted can't be called — no hook needed.",
+      "B": "Write the PreToolUse hook that rejects every Bash call, as planned.",
+      "C": "Write \"don't use Bash\" in the system prompt.",
+      "D": "Use a PostToolUse hook to replace the Bash output with an empty string."
+    },
+    "expl_en": "Why A is correct: The first row of the decision framework: if the agent should never perform an operation, don't grant the tool — the simplest deterministic solution. Hooks are for conditional rules (\"sometimes yes, sometimes no\"); writing a hook for an unconditional ban is unnecessary code and maintenance.\nWhy B is wrong: It works but is needlessly complex; not defining a tool that is always rejected is simpler and has a smaller failure surface.\nWhy C is wrong: A prompt is probabilistic; a \"never under any circumstances\" requirement needs a deterministic mechanism.\nWhy D is wrong: PostToolUse fires after the command has run; the command has already executed."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.5",
+    "body_tr": "Bir Claude Code agent'ı test fixture'ları üretirken bazen gerçek müşteri e-posta adreslerini test dosyalarına yazıyor. Ekip, dosyaları engellemek yerine e-posta adreslerinin yazılmadan önce otomatik olarak `user@example.com` biçimine maskelenmesini istiyor; agent'ın akışı kesilmemeli.\nHangi hook tasarımı doğrudur?",
+    "opts_tr": {
+      "A": "PreToolUse hook `permissionDecision: \"deny\"` döndürsün; agent maskeleyip tekrar denesin.",
+      "B": "PostToolUse hook dosya yazıldıktan sonra diskteki dosyayı düzenlesin.",
+      "C": "Write/Edit için PreToolUse hook: içerikteki e-posta adreslerini regex ile maskele ve `updatedInput` ile değiştirilmiş içeriği `permissionDecision: \"allow\"` eşliğinde döndür; dosya yalnızca maskelenmiş haliyle yazılır, agent'ın akışı kesilmez.",
+      "D": "System prompt'a \"gerçek e-posta kullanma\" talimatı ekle."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: PreToolUse'un updatedInput çıktısı, tool girdisini deterministik olarak dönüştürüp öyle çalıştırmayı sağlar — engellemeden düzeltme. PII gereksinimi için doğru mekanizma: ham veri diske hiç yazılmaz, agent'a \"reddedildi\" döngüsü yaşatılmaz.\nWhy A is wrong: Deny akışı keser ve düzeltmeyi olasılıksal olarak agent'a bırakır; gereksinim engelleme değil maskeleme.\nWhy B is wrong: Ham e-postalar bir an için diske yazılmış olur (log/yedek riski); ayrıca yazım sonrası düzenleme, yazım öncesi dönüşümden daha kırılgan.\nWhy D is wrong: Prompt olasılıksal; PII sızıntısı için deterministik kontrol gerekir.",
+    "body_en": "A Claude Code agent generating test fixtures sometimes writes real customer email addresses into test files. Rather than blocking the files, the team wants email addresses automatically masked to the `user@example.com` form before they are written; the agent's flow must not be interrupted.\nWhich hook design is correct?",
+    "opts_en": {
+      "A": "A PreToolUse hook returns `permissionDecision: \"deny\"`; the agent masks and retries.",
+      "B": "A PostToolUse hook edits the file on disk after it has been written.",
+      "C": "A PreToolUse hook on Write/Edit: regex-mask the email addresses in the content and return the modified content via `updatedInput` together with `permissionDecision: \"allow\"`; the file is written only in masked form and the agent's flow isn't interrupted.",
+      "D": "Add the instruction \"don't use real emails\" to the system prompt."
+    },
+    "expl_en": "Why C is correct: PreToolUse's updatedInput output deterministically transforms the tool input and runs it that way — correction without blocking. The right mechanism for a PII requirement: raw data never hits disk, and the agent isn't put through a \"rejected\" cycle.\nWhy A is wrong: Deny interrupts the flow and leaves the correction to the agent probabilistically; the requirement is masking, not blocking.\nWhy B is wrong: The raw emails are on disk for a moment (log/backup risk); post-write editing is also more fragile than pre-write transformation.\nWhy D is wrong: A prompt is probabilistic; a PII leak needs deterministic control."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.6",
+    "body_tr": "Bir agent, \"monorepo'daki güvenlik açıklarını bul ve düzelt\" görevini dinamik ayrıştırmayla yürütüyor: yapıyı haritalıyor, riskli alanları belirliyor, her bulguda yeni alt görevler üretiyor. Üç gündür haritalama ve alt görev üretme devam ediyor; tek bir düzeltme yapılmadı. Ekip dinamik ayrıştırmadan vazgeçmeyi düşünüyor.\nEn uygun değerlendirme hangisidir?",
+    "opts_tr": {
+      "A": "Dinamik ayrıştırma bu göreve uygun değil — sabit bir pipeline'a geç (tüm dosyaları listele, her birini tara, düzelt).",
+      "B": "Desen doğru — bağımlılıklar önceden bilinmiyor. Eksik olan sınırlar: ölçülebilir hedef (ör. \"kritik/yüksek açıklar için düzeltme PR'ları\"), keşif fazı için bütçe (tur/alt görev sayısı), derinlik sınırı ve getiri eşiği (\"yeni keşif plana bir şey eklemiyorsa yürütmeye geç\"). Bunlar eklenince keşif biter, yürütme başlar.",
+      "C": "Daha büyük bir model kullan — daha hızlı karar verir.",
+      "D": "Alt görev üretimini kapat ve agent'a ilk bulduğu 10 açığı düzeltmesini söyle."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Dinamik ayrıştırmanın bilinen riski sonu gelmeyen keşiftir; çözümü deseni terk etmek değil, açık durma kriteri ve bütçe tanımlamaktır. Bağımlılıkları bilinmeyen bir monorepo için sabit pipeline uyum sağlayamaz.\nWhy A is wrong: Sabit pipeline beklenmedik bulgulara uyum sağlayamaz ve \"her dosyayı tara\" attention dilution ve önceliksizlik yaratır.\nWhy C is wrong: Model gücü sınırsız keşif sorununu çözmez.\nWhy D is wrong: Keyfi bir kesme; yüksek etkili alanları kaçırma riski. Sınırlar rastgele değil, ölçülebilir hedefe bağlı olmalı.",
+    "body_en": "An agent runs the task \"find and fix security vulnerabilities in the monorepo\" with dynamic decomposition: it maps the structure, identifies risky areas and generates new subtasks on every finding. Mapping and subtask generation have continued for three days; not a single fix has been made. The team is considering abandoning dynamic decomposition.\nWhat is the most appropriate assessment?",
+    "opts_en": {
+      "A": "Dynamic decomposition doesn't suit this task — switch to a fixed pipeline (list all files, scan each, fix).",
+      "B": "The pattern is right — dependencies aren't known in advance. What's missing are bounds: a measurable goal (e.g. \"fix PRs for critical/high vulnerabilities\"), a budget for the exploration phase (turns/subtask count), a depth limit and a diminishing-returns threshold (\"if a new discovery adds nothing to the plan, move to execution\"). With these added, exploration ends and execution begins.",
+      "C": "Use a bigger model — it decides faster.",
+      "D": "Turn off subtask generation and tell the agent to fix the first 10 vulnerabilities it found."
+    },
+    "expl_en": "Why B is correct: The known risk of dynamic decomposition is never-ending exploration; the fix isn't abandoning the pattern but defining explicit stopping criteria and a budget. For a monorepo with unknown dependencies a fixed pipeline can't adapt.\nWhy A is wrong: A fixed pipeline can't adapt to unexpected findings, and \"scan every file\" creates attention dilution and a lack of prioritisation.\nWhy C is wrong: Model strength doesn't fix unbounded exploration.\nWhy D is wrong: An arbitrary cut-off; risk of missing high-impact areas. Bounds should be tied to a measurable goal, not random."
+  },
+  {
+    "d": 1,
+    "sc": 5,
+    "ts": "Task Statement 1.6",
+    "body_tr": "Bir CI kod inceleme pipeline'ı attention dilution nedeniyle multi-pass mimariye (per-file analysis + cross-file integration) geçirildi ve bulgu kalitesi belirgin şekilde arttı. Ancak bir yönetici, 30 dosyalık PR'larda 31 API çağrısı yapılmasına itiraz ediyor ve \"tek geçişe geri dönelim, çok pahalı\" diyor.\nDoğru değerlendirme hangisidir?",
+    "opts_tr": {
+      "A": "Yönetici haklı — 31 çağrı 1 çağrıdan 31 kat pahalı; tek geçişe dön ve prompt'a \"tutarlı ol\" ekle.",
+      "B": "Uzlaşma olarak dosyaları 3'lü gruplar halinde tek geçişte incele.",
+      "C": "Multi-pass kalır: per-file çağrılar bağımsızdır ve paralel çalışır (toplam süre artmaz), her çağrı küçüktür (toplam token maliyeti tek büyük çağrıdan çok farklı değil) ve kaçırılan bir bug'ın maliyeti ek çağrılardan yüksektir. Tek geçiş, çözülmüş olan tutarsızlık sorununu geri getirir.",
+      "D": "Multi-pass'i yalnızca 10 dosyadan küçük PR'larda kullan."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: Çağrı sayısı ≠ maliyet. Per-file çağrılar paralel ve küçüktür; token toplamı tek dev çağrıya yakındır, süre artmaz. Attention dilution kapasite değil tutarlılık sorunu olduğundan tek geçişe dönmek kaliteyi geri düşürür. Kaçırılan bug'ın maliyeti trade-off'u belirler.\nWhy A is wrong: Çağrı sayısını maliyetle karıştırıyor; \"tutarlı ol\" talimatı yapısal sorunu çözmez.\nWhy B is wrong: Küçük gruplar dilution'ı azaltır ama ortadan kaldırmaz ve cross-file pass olmadan dosyalar arası sorunlar yine kaçar.\nWhy D is wrong: Ters mantık — attention dilution büyük PR'larda daha şiddetlidir; multi-pass tam orada gerekir.",
+    "body_en": "A CI code review pipeline was moved to a multi-pass architecture (per-file analysis + cross-file integration) because of attention dilution, and finding quality improved markedly. But a manager objects to 31 API calls on 30-file PRs and says \"let's go back to a single pass, it's too expensive\".\nWhat is the correct assessment?",
+    "opts_en": {
+      "A": "The manager is right — 31 calls are 31× the cost of 1; go back to a single pass and add \"be consistent\" to the prompt.",
+      "B": "As a compromise, review files in groups of 3 in a single pass.",
+      "C": "Multi-pass stays: per-file calls are independent and run in parallel (total time doesn't grow), each call is small (total token cost isn't very different from one large call), and the cost of a missed bug exceeds the extra calls. A single pass brings back the inconsistency problem that was solved.",
+      "D": "Use multi-pass only on PRs smaller than 10 files."
+    },
+    "expl_en": "Why C is correct: Number of calls ≠ cost. Per-file calls are parallel and small; the token total is close to one giant call, and time doesn't grow. Because attention dilution is a consistency problem, not a capacity one, returning to a single pass drops quality again. The cost of a missed bug decides the trade-off.\nWhy A is wrong: Confuses call count with cost; a \"be consistent\" instruction doesn't fix the structural problem.\nWhy B is wrong: Small groups reduce dilution but don't eliminate it, and without the cross-file pass cross-file issues are still missed.\nWhy D is wrong: Backwards — attention dilution is worse on large PRs; that's exactly where multi-pass is needed."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.7",
+    "body_tr": "Bir developer üç farklı projede paralel çalışıyor ve her sabah `claude --continue` ile \"dünkü oturuma\" dönüyor. Sık sık yanlış oturum açılıyor — komut, bulunduğu dizindeki en son oturumu getiriyor, o da çoğu zaman kısa bir deneme oturumu oluyor. Developer oturum ID'lerini ezberlemek istemiyor.\nDoğru yaklaşım hangisidir?",
+    "opts_tr": {
+      "A": "Her projede tek oturum kullan; deneme için yeni oturum açma.",
+      "B": "`claude --resume` argümansız çalıştırıp her seferinde seçiciden ara.",
+      "C": "Oturumlara ad ver (`claude --name auth-refactor` ile başlangıçta ya da oturum içinde `/rename auth-refactor`) ve `claude --resume auth-refactor` ile ada göre devam et; `--continue` \"en son oturum\"u seçer, adlandırılmış resume ise belirli oturumu.",
+      "D": "Her oturum sonunda transcript'i kopyalayıp ertesi gün prompt'a yapıştır."
+    },
+    "ans": "C",
+    "expl_tr": "Why C is correct: --continue en son oturumu açar, hangisi olduğunu seçmezsin; --resume <ad veya ID> belirli bir oturumu seçer. Oturum adlandırma (--name / /rename) ID ezberlemeden hedefli resume sağlar — exam guide'ın \"named session resumption\" dediği budur.\nWhy A is wrong: İş akışını kısıtlar; sorun oturum sayısı değil, seçim mekanizması.\nWhy B is wrong: Çalışır ama her seferinde manuel arama; adlandırma bunu tek komuta indirir.\nWhy D is wrong: Oturumlar zaten diske kaydedilir; manuel transcript taşımak gereksiz ve kayıplı.",
+    "body_en": "A developer works on three projects in parallel and every morning returns to \"yesterday's session\" with `claude --continue`. The wrong session often opens — the command brings up the most recent session in the current directory, which is usually a short experiment. The developer doesn't want to memorise session IDs.\nWhat is the correct approach?",
+    "opts_en": {
+      "A": "Use a single session per project; don't open new sessions for experiments.",
+      "B": "Run `claude --resume` without arguments and search the picker every time.",
+      "C": "Name the sessions (`claude --name auth-refactor` at startup, or `/rename auth-refactor` in session) and continue by name with `claude --resume auth-refactor`; `--continue` picks \"the most recent session\", named resume picks a specific one.",
+      "D": "Copy the transcript at the end of every session and paste it into the prompt the next day."
+    },
+    "expl_en": "Why C is correct: --continue opens the most recent session without you choosing; --resume <name or ID> selects a specific session. Session naming (--name / /rename) gives targeted resume without memorising IDs — that's what the exam guide calls \"named session resumption\".\nWhy A is wrong: Constrains the workflow; the problem isn't the number of sessions but the selection mechanism.\nWhy B is wrong: Works, but manual searching every time; naming reduces it to one command.\nWhy D is wrong: Sessions are already saved to disk; manually carrying transcripts is unnecessary and lossy."
+  },
+  {
+    "d": 1,
+    "sc": 2,
+    "ts": "Task Statement 1.7",
+    "body_tr": "Bir ekip TypeScript Agent SDK ile bir kod tabanı analizi oturumu çalıştırdı ve session ID'sini sakladı. İki bağımsız migration denemesi için şu seçeneklerle yeni sorgular başlatıyorlar:\n`{ forkSession: true }`\nHer deneme analizi sıfırdan yapıyor.\nSorun nedir?",
+    "opts_tr": {
+      "A": "`forkSession` yalnızca `resume` ile anlamlıdır — hangi oturumun dallanacağını `resume: \"<session_id>\"` söyler. `resume` olmadan her sorgu yeni, boş bir oturumdur. Doğru: `{ resume: \"<session_id>\", forkSession: true }`, her deneme için bir kez.",
+      "B": "`forkSession` yerine `continueConversation: true` kullanılmalı; son oturumu bulup dallandırır.",
+      "C": "TypeScript SDK'da fork desteklenmez; Python SDK kullanılmalı.",
+      "D": "`forkSession: \"<session_id>\"` yazılmalı."
+    },
+    "ans": "A",
+    "expl_tr": "Why A is correct: forkSession bir bayraktır: \"resume ettiğin oturumun üzerine yazma, yeni ID ile dallan\". Kopyalanacak oturumu resume belirler; resume yoksa dallanacak bir şey yoktur.\nWhy B is wrong: continueConversation en son oturumu devam ettirir, dallandırmaz — iki deneme aynı oturumu sırayla kirletir.\nWhy C is wrong: Fork her iki SDK'da da vardır (forkSession / fork_session).\nWhy D is wrong: forkSession boolean'dır; oturum kimliği resume'a yazılır.",
+    "body_en": "A team ran a codebase analysis session with the TypeScript Agent SDK and stored the session ID. For two independent migration attempts they start new queries with these options:\n`{ forkSession: true }`\nEvery attempt does the analysis from scratch.\nWhat is the problem?",
+    "opts_en": {
+      "A": "`forkSession` is only meaningful together with `resume` — `resume: \"<session_id>\"` says which session to branch. Without `resume`, every query is a new, empty session. Correct: `{ resume: \"<session_id>\", forkSession: true }`, once per attempt.",
+      "B": "`continueConversation: true` should be used instead of `forkSession`; it finds the last session and branches it.",
+      "C": "Forking isn't supported in the TypeScript SDK; the Python SDK must be used.",
+      "D": "It should be written as `forkSession: \"<session_id>\"`."
+    },
+    "expl_en": "Why A is correct: forkSession is a flag: \"don't overwrite the session you're resuming, branch with a new ID\". Which session gets copied is determined by resume; without resume there is nothing to branch.\nWhy B is wrong: continueConversation continues the most recent session, it doesn't branch — the two attempts contaminate the same session in sequence.\nWhy C is wrong: Forking exists in both SDKs (forkSession / fork_session).\nWhy D is wrong: forkSession is a boolean; the session identifier goes in resume."
+  },
+  {
+    "d": 1,
+    "sc": 4,
+    "ts": "Task Statement 1.7",
+    "body_tr": "Bir Claude Code oturumu 3 saattir büyük bir kod tabanında çalışıyor. Hiçbir dosya dışarıdan değişmedi, ama context dolmaya yaklaştı ve agent'ın yanıtları yavaşlayıp yüzeyselleşti. Developer birikmiş anlayışı kaybetmek istemiyor.\nEn uygun yaklaşım hangisidir?",
+    "opts_tr": {
+      "A": "Fresh start with summary injection — yeni oturum aç, özeti elle yaz ve enjekte et.",
+      "B": "`/compact` ile (isteğe bağlı bir odakla, ör. \"mimari kararları ve açık bug listesini koru\") aynı oturumda context'i sıkıştır; dosyalar değişmediği için bayat veri sorunu yok, yalnızca context doluluğu var. Kritik detaylar için önceden bir `PreCompact` hook'u ile bulguları dosyaya yazdırmak güvenlik ağı sağlar.",
+      "C": "Daha büyük context window'a sahip modele geç.",
+      "D": "`fork_session` ile dallan — yeni dal temiz başlar."
+    },
+    "ans": "B",
+    "expl_tr": "Why B is correct: Karar tablosu: \"context doldu ama dosyalar değişmedi → compaction\". Compaction aynı oturumda kalır, Claude otomatik özetler, odak verilebilir. Fresh start dosyalar değiştiğinde ya da kontrollü yeniden başlangıç istendiğinde tercih edilir; burada bayatlık yok. PreCompact hook, sıkıştırmada kaybolabilecek ayrıntılar için güvenlik ağıdır.\nWhy A is wrong: Çalışır ama gereksiz manuel iş ve yeni oturum; bayat veri olmadığında compaction daha hafif çözümdür.\nWhy C is wrong: Daha büyük window yalnızca dolma anını öteler; uzun context'te kalite düşüşü devam eder.\nWhy D is wrong: Fork geçmişi olduğu gibi kopyalar — dolu context aynen taşınır; hiçbir şeyi küçültmez.",
+    "body_en": "A Claude Code session has been working on a large codebase for 3 hours. No files changed externally, but the context is close to full and the agent's answers have become slow and superficial. The developer doesn't want to lose the accumulated understanding.\nWhat is the most appropriate approach?",
+    "opts_en": {
+      "A": "Fresh start with summary injection — open a new session, write the summary by hand and inject it.",
+      "B": "Compact the context in the same session with `/compact` (optionally with a focus, e.g. \"preserve architectural decisions and the open bug list\"); since no files changed there is no stale-data problem, only context fullness. Having a `PreCompact` hook write findings to a file beforehand provides a safety net for critical details.",
+      "C": "Switch to a model with a bigger context window.",
+      "D": "Branch with `fork_session` — the new branch starts clean."
+    },
+    "expl_en": "Why B is correct: Decision table: \"context full but files unchanged → compaction\". Compaction stays in the same session, Claude summarises automatically, and a focus can be given. Fresh start is preferred when files changed or a controlled restart is wanted; there's no staleness here. The PreCompact hook is a safety net for details compaction might lose.\nWhy A is wrong: Works, but unnecessary manual work and a new session; when there's no stale data, compaction is the lighter fix.\nWhy C is wrong: A bigger window only postpones the moment it fills; quality decline in long contexts continues.\nWhy D is wrong: Forking copies the history as-is — the full context is carried over unchanged; nothing gets smaller."
+  },
+  {
+    "d": 1,
+    "sc": 2,
+    "ts": "Task Statement 1.7",
+    "body_tr": "Bir developer, kapsamlı API değişiklikleri sonrası fresh start with summary injection yapıyor. Yazdığı özet yalnızca \"auth modülünü inceledik, middleware yaklaşımı seçildi, testler geçiyor\" diyor. Yeni oturumda agent, silinmiş endpoint'lere referans veren tavsiyeler üretmeye devam ediyor.\nÖzette eksik olan hangisidir?",
+    "opts_tr": {
+      "A": "Önceki oturumun tam transcript'i.",
+      "B": "Kullanılan modelin adı ve oturum süresi.",
+      "C": "Agent'ın önceki oturumdaki tüm tool çağrılarının listesi.",
+      "D": "Neyin artık geçerli olmayabileceği: o zamandan beri değişen/silinen dosya ve modüller ile \"bunlara ait önceki bulguları geçersiz say, yeniden oku\" notu — ve kalan işler listesi. İyi bir özet yalnızca bilineni değil, şüpheliyi de işaretler."
+    },
+    "ans": "D",
+    "expl_tr": "Why D is correct: Summary injection'ın amacı bayat varsayımlardan arınmış yeni başlangıçtır. Özet bulguları taşırken değişen dosyaları ve geçersiz varsayımları açıkça işaretlemezse, agent önceki bilgiyi güncel sanır — senaryodaki hata budur. Şablon: bulgular, kararlar, tamamlanan/kalan işler, değişen dosyalar.\nWhy A is wrong: Tam transcript bayat tool sonuçlarını da taşır; fresh start'ın amacını bozar.\nWhy B is wrong: Agent'ın akıl yürütmesi için değersiz bilgi.\nWhy C is wrong: Tool çağrı listesi bulgu değildir ve bayat sonuçları geri getirir; gerekli olan yapılandırılmış bulgular ve geçersizlik notlarıdır.",
+    "body_en": "A developer does a fresh start with summary injection after extensive API changes. The summary they wrote says only \"we reviewed the auth module, chose the middleware approach, tests pass\". In the new session the agent keeps producing advice referencing deleted endpoints.\nWhat is missing from the summary?",
+    "opts_en": {
+      "A": "The full transcript of the previous session.",
+      "B": "The name of the model used and the session duration.",
+      "C": "A list of all tool calls the agent made in the previous session.",
+      "D": "What may no longer be valid: the files and modules changed/deleted since then, with a note \"treat earlier findings about these as invalid, re-read them\" — plus the list of remaining work. A good summary flags the doubtful as well as the known."
+    },
+    "expl_en": "Why D is correct: The purpose of summary injection is a fresh start free of stale assumptions. If the summary carries findings but doesn't explicitly mark changed files and invalid assumptions, the agent takes the prior knowledge as current — that's the failure in the scenario. Template: findings, decisions, completed/remaining work, changed files.\nWhy A is wrong: A full transcript also carries the stale tool results; it defeats the purpose of a fresh start.\nWhy B is wrong: Worthless information for the agent's reasoning.\nWhy C is wrong: A list of tool calls isn't findings and brings back stale results; what's needed is structured findings and invalidation notes."
   }
 ]
