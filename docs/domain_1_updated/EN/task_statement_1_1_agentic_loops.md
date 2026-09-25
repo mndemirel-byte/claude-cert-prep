@@ -1,0 +1,256 @@
+# Task Statement 1.1: Agentic Loops
+
+## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+
+---
+
+## The Core Idea
+
+Normally, when you use Claude, it's a single exchange: you send a message, you get a response, done. An **agentic loop** turns Claude into something that can *act* — it can call tools, look at the results, think again, call more tools, and keep going until the job is finished.
+
+Think of it like hiring a research assistant. You don't just ask them a question and get one answer. They go and look things up, come back with what they found, decide they need more information, go look up something else, and eventually come back with a complete answer. That's an agentic loop.
+
+---
+
+## The Lifecycle — Step by Step
+
+Here's exactly how it works in code:
+
+**Step 1:** You send a request to Claude via the Messages API. This includes a system prompt (the agent's instructions), the tool definitions (the `tools` parameter), and the conversation history (`messages`).
+
+**Step 2:** Claude responds. Every response has a field called `stop_reason`. This is the single most important field in agentic systems. It tells you *why Claude stopped generating*.
+
+**Step 3:** You check `stop_reason`:
+
+- If it's `"tool_use"` → Claude wants to use a tool. It's saying "I need to do something before I can give you a final answer." You execute the tool, take the result, **append it to the conversation history**, and send the whole thing back to Claude. Loop back to Step 2.
+- If it's `"end_turn"` → Claude is finished. Present the response to the user. Exit the loop.
+
+These two values are the core of what the exam tests. The essence of the agentic loop is: **send → check stop_reason → either execute tools and loop, or finish.**
+
+The key detail: when you get tool results, you don't just send the results back in isolation. You append them to the full conversation history. Claude needs to see everything that's happened so far — its own previous reasoning, the tool calls it made, and now the results — so it can decide what to do next.
+
+---
+
+## How Tool Results Go Back — The `tool_result` Block
+
+"Append the result to history" isn't enough; the exam expects you to know *how* it's appended. The structure is:
+
+1. Claude's response (`role: "assistant"`) is appended to history as-is — including the `tool_use` block inside it. Every `tool_use` block carries an `id`.
+2. Then a new message with **`role: "user"`** is appended. Its content is not text but **`type: "tool_result"`** blocks. Each block states which tool call it belongs to via the `tool_use_id` field.
+3. If the tool failed, you still send the outcome as a `tool_result` — but with `is_error: true`. You don't break the loop; Claude sees the error and tries a different approach.
+
+```python
+# Claude's response: content contains a tool_use block, stop_reason == "tool_use"
+messages.append({"role": "assistant", "content": response.content})
+
+tool_results = []
+for block in response.content:
+    if block.type == "tool_use":
+        try:
+            output = run_tool(block.name, block.input)
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": str(output),
+            })
+        except Exception as e:
+            tool_results.append({
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": f"Tool error: {e}",
+                "is_error": True,          # report the error to Claude, don't break the loop
+            })
+
+messages.append({"role": "user", "content": tool_results})
+```
+
+Common mistakes: sending `tool_result` with the `assistant` role, omitting `tool_use_id`, or pasting the tool output as plain text into a user message. Each of these either produces an API error or leaves Claude unable to recognise the output as a tool result.
+
+---
+
+## Parallel Tool Calls — The `content[0]` Trap
+
+Claude can return **multiple `tool_use` blocks in a single response** (for example, querying the weather for three cities at once). In that case the rule is strict:
+
+> For **every** `tool_use` block in an assistant response, there must be a matching `tool_result` block in the immediately following **single** `user` message.
+
+Wrong: sending each tool result as a separate user message. Right: collecting all `tool_result` blocks in the `content` list of one user message (which is exactly what the code above does).
+
+This is why any code that reasons from `response.content[0]` is suspect — the first block might be text, and the second and third might be tool calls. Always iterate over the **entire** `response.content` list.
+
+To turn parallel calls off: `tool_choice={"type": "auto", "disable_parallel_tool_use": True}`. Claude will then make at most one tool call per response. Use this for tool sets with sequential dependencies (A's output is B's input); otherwise parallel calls are preferred for latency.
+
+---
+
+## All Values of `stop_reason`
+
+The exam's core is `tool_use` and `end_turn`, but a robust agentic loop must handle **all** values. Otherwise the loop silently returns a truncated answer or spins forever.
+
+| `stop_reason` | Meaning | What the loop should do |
+|---|---|---|
+| `end_turn` | Claude finished naturally | Present the response, exit the loop |
+| `tool_use` | Claude wants to call tools | Execute the tools, append `tool_result`s, continue |
+| `max_tokens` | Output hit the `max_tokens` limit — the response is **truncated** | Raise `max_tokens` and retry, or ask it to continue; **never treat as finished** |
+| `pause_turn` | A server-side tool (e.g. web search) reached its iteration limit | Append the response to history as-is and send again — Claude picks up where it left off |
+| `stop_sequence` | One of your custom stop sequences was generated | Read the `stop_sequence` field and handle per your own logic |
+| `refusal` | Claude declined for safety reasons | Log it, inform the user; don't blindly retry the same request |
+| `model_context_window_exceeded` | The context window filled up | Treat the output as truncated; summarise/trim history and restart |
+
+Exam trap: "The agent sometimes stops mid-sentence and the loop presents that as the final answer" → this is the `max_tokens` case, caused by a loop that only checks `end_turn`/`tool_use`.
+
+---
+
+## The Three Anti-Patterns (Exam Traps)
+
+The exam tests whether you know the **wrong** ways to control this loop. There are three, and you need to reject them instantly when you see them in answer options.
+
+### Anti-pattern 1: Parsing Natural Language to Decide Completion
+
+Checking if Claude's response contains the phrase "I'm done" or "Here's your final answer." This is unreliable because natural language is ambiguous — Claude might say "I'm done searching" but still need to synthesise results. The `stop_reason` field exists precisely so you don't have to guess from the text.
+
+### Anti-pattern 2: Arbitrary Iteration Caps as the Primary Stopping Mechanism
+
+For example, "stop after 10 loops no matter what." This is wrong because it either cuts off useful work (what if loop 11 was the important one?) or wastes time running unnecessary iterations. Claude signals when it's done via `stop_reason`.
+
+Nuance: an iteration cap is legitimate as a **safety net** — it bounds cost if a tool keeps failing or Claude keeps repeating the same call. What's wrong is making it the *primary* control mechanism. And when the cap is hit, don't stop silently: log it explicitly and tell the user.
+
+### Anti-pattern 3: Checking for Text Content as a Completion Signal
+
+For example: `if response.content[0].type == "text": we're done`. This is a trap because **Claude can return text AND tool calls in the same response.** It might say "I found some initial results, let me now check the database" — that response has text *and* a tool_use block. If you stop because you saw text, you've terminated prematurely.
+
+---
+
+## Full Loop Skeleton
+
+A reference implementation that puts everything above together:
+
+```python
+MAX_ITERATIONS = 50   # safety net — NOT the primary mechanism
+
+def run_agent(client, system, tools, messages):
+    for i in range(MAX_ITERATIONS):
+        response = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=4096,
+            system=system,
+            tools=tools,
+            messages=messages,
+        )
+        messages.append({"role": "assistant", "content": response.content})
+
+        match response.stop_reason:
+            case "end_turn":
+                return response                      # done
+
+            case "tool_use":
+                tool_results = []
+                for block in response.content:       # the whole list — not content[0]
+                    if block.type == "tool_use":
+                        tool_results.append(execute_and_wrap(block))  # handles is_error
+                messages.append({"role": "user", "content": tool_results})
+                continue
+
+            case "pause_turn":
+                continue                             # resend with the same history
+
+            case "max_tokens":
+                messages.append({"role": "user",
+                                 "content": "Your response was cut off. Continue where you left off."})
+                continue
+
+            case "refusal" | "model_context_window_exceeded":
+                log_and_notify(response.stop_reason)
+                return response
+
+    raise RuntimeError(f"Did not complete within {MAX_ITERATIONS} iterations")  # never return silently
+```
+
+---
+
+## Model-Driven vs Pre-Configured Decision-Making
+
+In an agentic loop, **Claude decides** which tool to call and when, based on the context. You don't write a script that says "first call tool A, then tool B, then tool C." You give Claude access to tools and let it reason about which ones it needs.
+
+The exam favours this model-driven approach for flexibility. However — when there are critical business rules (like "always verify identity before issuing a refund"), you enforce those programmatically, not by hoping Claude remembers. (Covered in detail in Task Statements 1.4 and 1.5.)
+
+---
+
+## Key Exam Takeaways
+
+| Concept | Remember |
+|---|---|
+| `stop_reason` | The **primary** termination signal for the agentic loop — never infer from text |
+| `"tool_use"` | Execute the tools, append `tool_result` blocks to history in a single user message, send back to Claude |
+| `"end_turn"` | Agent is finished — present the final response |
+| `"max_tokens"` | Response is truncated — don't treat as finished, continue it |
+| `"pause_turn"` | Server-side tool loop paused — resend with the same history |
+| `tool_result` block | In a `role: "user"` message, matched by `tool_use_id`; `is_error: true` for failures |
+| Parallel tool calls | One response can hold several `tool_use` blocks → all results in **one** user message; don't trust `content[0]` |
+| Conversation history | Assistant response + tool results must be **appended** to the full history, not sent in isolation |
+| Anti-patterns | Natural language parsing, arbitrary iteration caps (as primary), content-type checks |
+| Iteration cap | Safety net only — when hit, don't return silently; log and notify |
+
+---
+
+## Practice Scenario 1
+
+> A developer has built an agent that helps users research topics. The agent has access to a web search tool. The developer's loop logic checks `response.content[0].type == "text"` to determine when the agent has finished — if it finds text, it exits the loop and presents the response to the user.
+>
+> Users report that the agent frequently gives incomplete answers, often stopping after a single search when it should be doing further research.
+>
+> **What is the bug, and how should it be fixed?**
+
+### Correct Answer
+
+**Root Cause:** Claude can return text AND `tool_use` blocks in the same response. The developer's logic checks `content[0].type == "text"` and treats it as a completion signal. But Claude often returns a text block (e.g., "I found some initial results, let me search for more details") *alongside* a `tool_use` block in the same response. The loop sees the text, assumes the agent is done, and exits prematurely — even though Claude was still mid-task.
+
+**The Fix:**
+
+`stop_reason` is not inside the response text. It's a separate field on the response object itself:
+
+- `response.content` → the actual content (text blocks, tool_use blocks, or both — a list)
+- `response.stop_reason` → a structured field that tells you *why* Claude stopped generating
+
+```python
+# WRONG — unreliable, causes premature termination
+if response.content[0].type == "text":
+    return response
+
+# CORRECT — stop_reason is the primary signal
+if response.stop_reason == "end_turn":
+    return response
+elif response.stop_reason == "tool_use":
+    # execute EVERY tool_use block in the content list
+    # append the tool_result blocks to history in a single user message
+    # send the updated conversation back to Claude
+```
+
+**Key Principle:** `stop_reason` is a **structured field on the response object**, not part of the response text. It is the primary mechanism for determining whether the agentic loop should continue or terminate.
+
+---
+
+## Practice Scenario 2
+
+> An agent uses a `query_sales` tool to compare sales data for three regions. Claude returns three separate `tool_use` blocks in a single response (one per region). The developer's code appends each tool result to history as its own `{"role": "user", "content": [tool_result]}` message.
+>
+> The API returns an error on the second request.
+>
+> **What is the problem?**
+>
+> **A)** Claude can only call one tool at a time; `disable_parallel_tool_use` should have been enabled.
+>
+> **B)** The results for all `tool_use` blocks in an assistant response must be sent as `tool_result` blocks in the immediately following **single** user message; splitting them across messages produces an invalid conversation structure.
+>
+> **C)** The `tool_result` blocks should have been sent with the `assistant` role.
+>
+> **D)** The three queries must be run sequentially; parallel tool use isn't supported by the Messages API.
+
+### Correct Answer: B
+
+**Why B is correct:** The rule is explicit — every `tool_use` block in an assistant turn must find its matching `tool_result` block in the next user message. Because the first user message contains only one result, the other two `tool_use` blocks are left unanswered and the API rejects the request. The fix: collect all three `tool_result` blocks in the `content` list of one user message.
+
+**Why A is wrong:** Claude can make parallel tool calls; that's a feature, not a bug. `disable_parallel_tool_use` exists to turn it off, but the problem here is that the loop handles parallel calls incorrectly.
+
+**Why C is wrong:** `tool_result` blocks are always sent with the `user` role. The role is right; the message structure is wrong.
+
+**Why D is wrong:** Parallel tool use is a standard Messages API feature and reduces latency. The solution is to write the loop correctly, not to disable the feature.

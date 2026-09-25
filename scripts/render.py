@@ -18,8 +18,7 @@ EN_DESC={1:"Agentic loops, multi-agent orchestration, subagent invocation and co
 3:"CLAUDE.md hierarchy, custom slash commands and skills, path-specific rules, plan mode vs direct execution, iterative refinement, CI/CD integration.",
 4:"Explicit criteria, few-shot prompting, structured output with tool_use, validation-retry loops, batch processing, multi-instance review.",
 5:"Context preservation, escalation and ambiguity resolution, error propagation, codebase exploration, human review and confidence calibration, information provenance."}
-EN_LTITLE={"1.3":"Subagent Invocation and Context Passing","1.4":"Workflow Enforcement and Handoff","1.5":"Agent SDK Hooks","1.6":"Task Decomposition Strategies","1.7":"Session State and Resumption","3.1":"CLAUDE.md Hierarchy","3.2":"Custom Slash Commands & Skills","3.6":"CI/CD Integration","4.2":"Few-Shot Prompting","4.3":"Structured Output with Tool_use","4.4":"Validation-Retry Loops"}
-EN_LESSON_FILES={"1.1":"task_statement_1_1_agentic_loops.md","1.2":"task_statement_1_2_multi_agent_orchestration.md"}
+EN_LTITLE={"1.1":"Agentic Loops","1.2":"Multi-Agent Orchestration","1.3":"Subagent Invocation and Context Passing","1.4":"Workflow Enforcement and Handoff","1.5":"Agent SDK Hooks","1.6":"Task Decomposition Strategies","1.7":"Session State and Resumption","3.1":"CLAUDE.md Hierarchy","3.2":"Custom Slash Commands & Skills","3.6":"CI/CD Integration","4.2":"Few-Shot Prompting","4.3":"Structured Output with Tool_use","4.4":"Validation-Retry Loops"}
 NOTE_EN='<p class="langnote">English version of this section is not available yet — showing the Turkish text.</p>'
 def en_title(tr_title):
     idx=tr_title.split(":")[0].strip()
@@ -29,16 +28,10 @@ def en_title(tr_title):
     return tr_title.split(":",1)[1].strip()
 import os
 def en_lesson_body(idx,f_tr,tr_body):
-    src=EN_LESSON_FILES.get(idx)
-    if src is None and not f_tr.endswith("_TR.md"): return tr_body  # already English
+    if not f_tr.endswith("_TR.md"): return tr_body  # already English
     lp=os.path.join(ROOT,"content","en_lessons",f"{idx}.md")
-    if src is None and os.path.exists(lp): return MD(open(lp,encoding="utf-8").read())
-    if src is None: return NOTE_EN+tr_body
-    t=open(P+src,encoding="utf-8").read()
-    m=re.search(r'^# (.+)$',t,re.M); body=t[m.end():]
-    body=re.sub(r'^\s*## Domain \d.*$','',body,count=1,flags=re.M)
-    body=re.sub(r'^\s*---\s*$','',body,count=1,flags=re.M)
-    return MD(body)
+    if os.path.exists(lp): return MD(open(lp,encoding="utf-8").read())
+    return NOTE_EN+tr_body
 def bi(tr,en): return f'<span class="l-tr">{tr}</span><span class="l-en">{en}</span>'
 
 P=os.path.join(ROOT,"content","tr")+os.sep

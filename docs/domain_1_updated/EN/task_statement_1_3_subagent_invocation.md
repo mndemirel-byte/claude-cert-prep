@@ -1,3 +1,9 @@
+# Task Statement 1.3: Subagent Invocation and Context Passing
+
+## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+
+---
+
 ## The Core Idea
 
 In Task Statement 1.2 we learned that the coordinator manages subagents. Now we get to the real question: **how does the coordinator create subagents, and how does it pass information to them?**

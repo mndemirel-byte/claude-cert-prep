@@ -1,3 +1,9 @@
+# Task Statement 1.7: Session State and Resumption
+
+## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+
+---
+
 ## The Core Idea
 
 Agents can run for a long time. Sometimes you need to leave a session and come back later. Or the agent has been running for a long time and the context has started to degrade. This task statement answers the question: **how do you manage a session?**

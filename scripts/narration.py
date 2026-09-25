@@ -60,15 +60,12 @@ def discover_lessons(en_dir: str, tr_dir: str) -> list:
         if 'practice_exam' in name or 'yeterlilik_testi' in name:
             continue
         m = TR_LESSON_FILENAME_RE.match(name)
-        if not m:
+        if not m or not m.group(3):
             continue
-        domain, n, is_tr = int(m.group(1)), int(m.group(2)), m.group(3)
+        domain, n = int(m.group(1)), int(m.group(2))
         lesson_id = f"{domain}.{n}"
         sources.setdefault(lesson_id, LessonSource(lesson_id, domain, None, None))
-        if is_tr:
-            sources[lesson_id].tr_path = os.path.join(tr_dir, name)
-        else:
-            sources[lesson_id].en_path = os.path.join(tr_dir, name)
+        sources[lesson_id].tr_path = os.path.join(tr_dir, name)
 
     return [sources[k] for k in sorted(sources, key=lambda k: tuple(map(int, k.split('.'))))]
 

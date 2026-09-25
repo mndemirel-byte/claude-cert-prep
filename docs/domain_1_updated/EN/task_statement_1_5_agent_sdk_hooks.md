@@ -1,3 +1,9 @@
+# Task Statement 1.5: Agent SDK Hooks
+
+## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+
+---
+
 ## The Core Idea
 
 In Task Statement 1.4 we learned why programmatic enforcement is necessary. Now we learn **how** it's implemented in the Agent SDK and Claude Code. The answer: **hooks**.

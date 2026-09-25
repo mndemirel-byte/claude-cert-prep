@@ -1,0 +1,209 @@
+# Task Statement 1.2: Multi-Agent Orchestration
+
+## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+
+---
+
+## The Core Idea
+
+A single agent with a loop is powerful, but some problems are too complex for one agent to handle well. You need specialists. This is where **multi-agent orchestration** comes in.
+
+The architecture the exam tests is called **hub-and-spoke**. In Anthropic's "Building Effective Agents" terminology the same pattern is called **orchestrator-workers** — both names may appear on the exam. Picture a wheel:
+
+- **The hub** is the **coordinator agent** (orchestrator). It sits at the centre and runs the show.
+- **The spokes** are **subagents** (workers) — specialists that each do one thing well (e.g., web search, document analysis, code review, synthesis).
+
+The critical rule: **ALL communication flows through the coordinator.** Subagents never talk to each other directly. If the web search agent finds something that the synthesis agent needs, it doesn't pass it sideways — it returns its results to the coordinator, and the coordinator passes the relevant information to the synthesis agent.
+
+---
+
+## Why This Matters
+
+This hub-and-spoke pattern gives you three things:
+
+1. **Observability** — every piece of information flows through one place, so you can log and monitor everything.
+2. **Consistent error handling** — if a subagent fails, the coordinator catches it and decides what to do.
+3. **Control** — the coordinator decides what context each subagent sees, which prevents information leakage and keeps subagents focused.
+
+### Alternative topologies — and why the exam prefers hub-and-spoke
+
+| Topology | How it works | Where it fits | Weakness |
+|---|---|---|---|
+| **Single agent** | One loop, all tools | Simple, narrowly scoped tasks | Context bloats, attention dilutes (see 1.6) |
+| **Sequential pipeline** | A → B → C, each output feeds the next | Predictable work with known steps | Can't adapt to unexpected findings |
+| **Hub-and-spoke** | Coordinator distributes, collects, evaluates | Open-ended, multi-faceted research and analysis | Coordinator can bottleneck; a decomposition error affects everything |
+| **Peer-to-peer** | Subagents message each other directly | — | Observability and error handling are lost; **a distractor on the exam** |
+
+On the exam, any option along the lines of "let subagents talk to each other directly, skip the coordinator" is always wrong.
+
+---
+
+## The Isolation Principle (Most Commonly Misunderstood Concept)
+
+This is the concept the exam hammers hardest. Commit it to memory:
+
+> **Subagents do NOT automatically inherit the coordinator's conversation history. Subagents do NOT share memory between invocations. Every piece of information a subagent needs must be explicitly included in its prompt.**
+
+Think of each subagent like a brand new employee you're handing a task to. They know nothing about what's happened in the project unless you tell them in their briefing. If you forget to mention something, they simply don't know it.
+
+### What exactly is inherited, and what isn't?
+
+"Inherits nothing" is a fine shorthand for the exam, but technically there is nuance (in the Claude Code / Agent SDK context):
+
+| A subagent **does** receive | A subagent **does not** receive |
+|---|---|
+| Its own system prompt (the `prompt` in its AgentDefinition) | The coordinator's **conversation history** |
+| The task prompt the coordinator wrote in the Task call | The coordinator's system prompt |
+| The tools defined for it | Intermediate findings produced by other subagents |
+| Project CLAUDE.md files | Its own memory from previous invocations (each call starts fresh) |
+
+Exception: a branch created with `fork_session` receives the history up to the fork point (see 1.3 and 1.7). That is not a violation of the isolation principle — it is a deliberate design choice.
+
+The exam message never changes: **if you want a subagent to know something the coordinator knows, you have to write it into the prompt.**
+
+---
+
+## The Coordinator's Responsibilities
+
+The coordinator does all of the following:
+
+- **Task decomposition** — breaks a complex request into subtasks
+- **Scope partitioning** — ensures the subtasks **do not overlap**
+- **Dynamic subagent selection** — decides which subagents are needed (not always all of them)
+- **Context passing** — gives each subagent exactly the information it needs
+- **Result aggregation** — collects outputs from subagents and combines them
+- **Iterative refinement** — evaluates the combined output, identifies gaps, and re-delegates if needed
+- **Error handling** — catches failures and decides how to recover
+
+Below we expand on three of these that the exam specifically emphasises.
+
+---
+
+## Scope Partitioning — Preventing Duplication
+
+A skill the exam guide names explicitly: *"Partitioning research scope to minimize duplication across subagents."*
+
+Decomposition doesn't just mean "split the topic"; it also means making the pieces **disjoint (non-overlapping)**. Bad decomposition has two symptoms: (1) some topics are never covered (the "narrow decomposition" below), and (2) the same topic is covered by more than one subagent.
+
+Example — researching "the electric vehicle market":
+
+- **Bad:** Subagent A → "EV market overview", Subagent B → "EV battery technology", Subagent C → "EV manufacturers". A's scope overlaps with B and C; all three end up researching Tesla's battery strategy.
+- **Good:** A → "demand and sales data (by region)", B → "battery and charging infrastructure technology", C → "manufacturer strategy and competition". Each subagent's boundary is written into its prompt: *"Do not cover battery technology — that is another subagent's scope."*
+
+Symptoms and cost: the same sources are fetched multiple times (token cost), the synthesis agent receives contradictory or repeated findings, and the report says the same thing twice. When the exam presents "two subagents are pulling the same sources and cost has doubled", the answer is **the coordinator defining explicit scope boundaries in the prompts** — not reducing the number of subagents, and not letting them talk to each other.
+
+---
+
+## Dynamic Selection — The "Route Through All" Anti-Pattern
+
+Exam guide: *"Designing coordinators that dynamically select subagents rather than routing through all."*
+
+The coordinator should not push every request through every available subagent. Launching web search, document analysis, and data visualisation subagents for a simple question ("What does this function do?"):
+
+- creates unnecessary cost and latency,
+- feeds irrelevant output into synthesis as noise,
+- widens the failure surface (every extra subagent is another point of failure).
+
+The right approach: the coordinator analyses the request and selects **only the necessary** subagents. That selection is left to the model (model-driven) — the coordinator's prompt describes when each subagent should be used, and the coordinator decides accordingly. On the exam, "run all subagents in sequence for every request" is a distractor.
+
+---
+
+## Iterative Refinement — The Evaluator-Optimizer Loop
+
+Exam guide: *"Implementing iterative refinement loops where the coordinator evaluates synthesis output."*
+
+The coordinator's job doesn't end when it receives the synthesis output. It runs a loop corresponding to the **evaluator-optimizer** pattern from "Building Effective Agents":
+
+1. The synthesis subagent produces a draft.
+2. The coordinator evaluates the draft **against explicit criteria**: Were all subtopics covered? Does every claim have a source? Were conflicting findings resolved?
+3. If there are gaps, the coordinator re-delegates **in a targeted way** — it doesn't rerun everything, it re-invokes only the relevant subagent for the missing subtopic.
+4. The loop ends when the criteria are met or the **iteration budget** is exhausted.
+
+Two important nuances: the evaluation criteria must be explicit in the prompt (not "is it good?" but "are these 5 subtopics covered?"). And the loop must have an upper bound — otherwise the coordinator can keep saying "refine a bit more" forever (the safety-net logic from 1.1 applies here too).
+
+---
+
+## The Narrow Decomposition Failure (Exam Trap)
+
+This is a specific failure mode the exam tests. Here's how it works:
+
+A user asks: *"What is the impact of AI on creative industries?"*
+
+The coordinator decomposes this into subtasks, but only generates subtasks about visual arts — digital painting, graphic design, illustration. It completely misses music, writing, film, and gaming.
+
+Each subagent does excellent work on its assigned subtask. The synthesis is well-written. But the final report only covers visual arts.
+
+**Where is the failure?** Not in the subagents. Not in the synthesis. The failure is in **the coordinator's task decomposition**. It sliced the problem too narrowly at the very start. The exam expects you to **trace the failure back to its origin**, not blame downstream components.
+
+Diagnostic method: **test the subagent independently** with the missing topic. If it returns good results, the problem isn't the subagent — it's that the topic was never given to it, i.e. the coordinator.
+
+---
+
+## Key Exam Takeaways
+
+| Concept | Remember |
+|---|---|
+| Hub-and-spoke (orchestrator-workers) | Coordinator at the centre, subagents as spokes, ALL communication through the coordinator |
+| Isolation principle | Subagents don't inherit conversation history — every piece of context must be explicitly passed |
+| Coordinator responsibilities | Decomposition, scope partitioning, dynamic selection, context passing, aggregation, refinement, error handling |
+| Scope partitioning | Subtasks must be disjoint; overlap = duplicate sources + cost + contradictory findings |
+| Dynamic selection | Launch only the subagents that are needed — "route through all" is an anti-pattern |
+| Iterative refinement | Coordinator evaluates synthesis against explicit criteria, re-delegates in a targeted way, with an iteration budget |
+| Narrow decomposition | When entire topics are missing from the final output, trace the failure back to the coordinator's decomposition |
+| No direct subagent communication | The peer-to-peer option is always a distractor |
+
+---
+
+## Practice Scenario 1
+
+> A multi-agent research system has a coordinator, a web search subagent, a document analysis subagent, and a synthesis subagent. A user asks for a report on "renewable energy technologies."
+>
+> The final report is well-written and thoroughly researched, but it only covers solar and wind energy. Geothermal, tidal, biomass, and nuclear fusion are completely absent.
+>
+> The web search and document analysis subagents are functioning correctly — when tested independently with queries about geothermal or tidal energy, they return excellent results.
+>
+> **What is the root cause?**
+>
+> **A)** The web search subagent's search queries are too narrow and need broader search terms.
+>
+> **B)** The coordinator's task decomposition failed to include geothermal, tidal, biomass, and fusion as research subtopics.
+>
+> **C)** The synthesis subagent filtered out some research topics when combining the results.
+>
+> **D)** The subagents need access to the coordinator's full conversation history to understand the broader scope.
+
+### Correct Answer: B
+
+**Why B is correct:** The subagents work perfectly when given the right queries — the problem is they were never *asked* about geothermal, tidal, biomass, or fusion. The coordinator decomposed "renewable energy technologies" into only solar and wind subtopics. The failure originates at the coordinator's task decomposition step.
+
+**Why A is wrong:** The web search subagent returns excellent results when tested independently with geothermal or tidal queries. Its search capability is fine — it was simply never given those topics to search for. The fault is upstream.
+
+**Why C is wrong:** The synthesis subagent can only synthesise what it receives. If no research on geothermal or tidal was ever conducted, there's nothing for it to filter out. The missing topics were never researched in the first place.
+
+**Why D is wrong:** This is the isolation principle trap. Giving subagents the coordinator's full conversation history is the opposite of good architecture. Subagents should receive only the specific context they need, explicitly passed by the coordinator. The fix is to improve the coordinator's decomposition, not to break the isolation principle.
+
+---
+
+## Practice Scenario 2
+
+> A coordinator launches three research subagents for a report on "enterprise cybersecurity threats": "general threat landscape", "ransomware", and "phishing". Logs show that all three subagents downloaded the same 6 industry reports, and that ransomware was researched in depth by both the first and the second subagent. Total token cost is 2.5× what was expected, and the synthesis report repeats the same statistics three times in different wording.
+>
+> **What is the most effective fix?**
+>
+> **A)** Reduce to a single subagent — let one subagent research the whole topic.
+>
+> **B)** Let the subagents communicate with each other directly so they can share which sources have already been downloaded.
+>
+> **C)** Redesign the coordinator's decomposition with disjoint scopes — write into each subagent's prompt what it should cover **and what it should not**; remove umbrella subtasks like "general threat landscape" that overlap with the others.
+>
+> **D)** Add an instruction to the synthesis subagent to "merge duplicate information."
+
+### Correct Answer: C
+
+**Why C is correct:** The problem is scope partitioning. The "general threat landscape" subtask is an umbrella over the other two — it naturally researches ransomware and phishing as well. Having the coordinator define disjoint subtasks and state the boundaries explicitly in the prompts ("do not cover ransomware, that is a separate subagent's scope") prevents the duplication at its source; cost and inconsistency are solved together.
+
+**Why A is wrong:** Falling back to a single subagent throws away the speed advantage of parallelism and risks attention dilution from too many topics in one pass (see 1.6). The problem isn't the number of subagents, it's the overlapping scopes.
+
+**Why B is wrong:** A violation of the hub-and-spoke principle. Direct subagent-to-subagent communication loses observability and the coordinator's control; it also doesn't fix the root cause (overlapping decomposition) — it tries to coordinate around the symptom.
+
+**Why D is wrong:** This masks the symptom in the last component. The token cost of the duplicate research has already been paid; even if synthesis merges the repeats, the wasted work continues. Trace the failure to its origin — the coordinator's decomposition.

@@ -1,3 +1,9 @@
+# Task Statement 1.6: Task Decomposition Strategies
+
+## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+
+---
+
 ## The Core Idea
 
 How do you break big tasks into pieces? There are two fundamental patterns, and you need to know when each is right. The selection criterion comes down to a single question: **are the steps known in advance, or are they discovered along the way?**

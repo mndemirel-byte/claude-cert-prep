@@ -1,3 +1,9 @@
+# Task Statement 1.4: Workflow Enforcement and Handoff
+
+## Domain 1 — Agentic Architecture & Orchestration (27% of Exam)
+
+---
+
 ## The Core Idea
 
 Agentic loops, multi-agent orchestration, context passing — all of these rely on Claude making **flexible** and **intelligent** decisions. But some decisions can't be left to flexibility. Some rules must be applied **every single time, without exception**.
