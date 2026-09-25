@@ -4,6 +4,7 @@ verified by actually running this script, not by mocking a paid external API).""
 import argparse
 import json
 import os
+import subprocess
 
 from openai import OpenAI
 
@@ -59,6 +60,16 @@ def output_path(lesson_id: str, language: str) -> str:
     return os.path.join(AUDIO_DIR, language, narration_filename(lesson_id))
 
 
+def reencode_to_64kbps_mono(path: str) -> None:
+    """Re-encode in place via ffmpeg to keep narration file sizes reasonable."""
+    tmp = path + ".tmp.mp3"
+    subprocess.run(
+        ["ffmpeg", "-y", "-v", "error", "-i", path, "-ac", "1", "-b:a", "64k", tmp],
+        check=True,
+    )
+    os.replace(tmp, path)
+
+
 def collect_lesson_texts() -> dict:
     lesson_texts = {}
     for lesson in discover_lessons(EN_DIR, TR_DIR):
@@ -108,6 +119,7 @@ def main() -> None:
                 ) as response:
                     for data in response.iter_bytes():
                         f.write(data)
+        reencode_to_64kbps_mono(out)
         manifest[f"{job.id}:{job.language}"] = content_hash(job.text)
         save_manifest(manifest)
 

@@ -316,7 +316,8 @@
 
 ---
 
-## Question 11 (Task Statement 1.1)
+## Question 11 (Task Statement 1.1) — YENİ
+
 > Bir rapor üreten agent'ın loop'u yalnızca `end_turn` ve `tool_use` değerlerini kontrol ediyor; diğer her durumda yanıtı nihai kabul edip kullanıcıya sunuyor. Kullanıcılar iki şikayet bildiriyor:
 >
 > 1. Uzun raporlar bazen cümlenin ortasında kesiliyor ve öyle sunuluyor
@@ -344,7 +345,8 @@
 
 ---
 
-## Question 12 (Task Statement 1.1)
+## Question 12 (Task Statement 1.1) — YENİ
+
 > Bir agent, üç bölgenin stok verisini karşılaştırmak için Claude'a `get_inventory` tool'unu veriyor. Claude tek yanıtta üç `tool_use` bloğu döndürüyor (her bölge için bir tane). Geliştiricinin kodu şöyle:
 >
 > ```python
@@ -380,7 +382,8 @@
 
 ---
 
-## Question 13 (Task Statement 1.5)
+## Question 13 (Task Statement 1.5) — YENİ
+
 > Bir finans agent'ı `wire_transfer` tool'uyla para transferi yapabiliyor. Ekip, $10.000 üzerindeki transferlerin yönetici onayı olmadan gerçekleşmemesini istiyor. Bir geliştirici şu çözümü öneriyor: "`wire_transfer` için bir `PostToolUse` hook yazalım; tutar $10.000'ı aşıyorsa ve onay yoksa hook işlemi engellesin."
 >
 > **Bu öneri hakkında doğru değerlendirme hangisidir?**
@@ -405,7 +408,8 @@
 
 ---
 
-## Question 14 (Task Statement 1.2)
+## Question 14 (Task Statement 1.2) — YENİ
+
 > Bir coordinator, "yapay zeka düzenlemeleri" raporu için dört araştırma subagent'ı başlatıyor: "AB düzenlemeleri", "ABD düzenlemeleri", "küresel düzenleme eğilimleri" ve "AI Act analizi". Loglar: "küresel eğilimler" subagent'ı AB ve ABD kaynaklarının çoğunu yeniden çekmiş; "AI Act analizi" ile "AB düzenlemeleri" subagent'ları neredeyse aynı dokümanları işlemiş. Token maliyeti beklenenin 2 katı, sentez raporunda AI Act üç farklı yerde üç farklı şekilde anlatılıyor.
 >
 > **Kök neden ve en etkili düzeltme hangisidir?**
@@ -430,7 +434,8 @@
 
 ---
 
-## Question 15 (Task Statement 1.7 / 1.3)
+## Question 15 (Task Statement 1.7 / 1.3) — YENİ
+
 > Bir geliştirici, Agent SDK ile bir kod tabanı analizi oturumu yürütmüş ve session ID'sini kaydetmiş. Şimdi aynı analizden iki bağımsız refactoring denemesi başlatmak istiyor ve şu kodu yazıyor:
 >
 > ```python
@@ -461,7 +466,8 @@
 
 ---
 
-## Question 16 (Task Statement 1.3)
+## Question 16 (Task Statement 1.3) — YENİ
+
 > Bir coordinator agent, araştırma subagent'ları başlatıyor; bu subagent'lar kendi alt konuları için başka subagent'lar başlatıyor, onlar da daha alt konular için yenilerini. Loglar üç seviye derinlikte onlarca subagent gösteriyor. Bir çalıştırmanın maliyeti beklenenin 8 katı, hangi bulgunun hangi subagent'tan geldiği izlenemiyor ve bazı alt-alt konular birbiriyle örtüşüyor.
 >
 > **En uygun düzeltme hangisidir?**

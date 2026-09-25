@@ -82,19 +82,16 @@ def test_pairs_en_and_tr_lesson_files_by_task_statement_id(tmp_path):
     ]
 
 
-def test_treats_unsuffixed_tr_dir_file_as_en_source_for_domain_1_quirk(tmp_path):
+def test_ignores_unsuffixed_files_in_tr_dir(tmp_path):
     en_dir = tmp_path / "en_lessons"
     tr_dir = tmp_path / "tr"
     en_dir.mkdir()
     tr_dir.mkdir()
-    en_only_file = tr_dir / "task_statement_1_3_subagent_invocation.md"
-    en_only_file.write_text("# Subagent Invocation\n")
+    (tr_dir / "task_statement_1_3_subagent_invocation.md").write_text("# Subagent Invocation\n")
 
     lessons = discover_lessons(str(en_dir), str(tr_dir))
 
-    assert lessons == [
-        LessonSource(id="1.3", domain=1, en_path=str(en_only_file), tr_path=None),
-    ]
+    assert lessons == []
 
 
 def test_excludes_practice_exam_and_yeterlilik_testi_files_from_lessons(tmp_path):
