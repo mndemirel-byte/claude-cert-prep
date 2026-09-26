@@ -419,11 +419,20 @@
       var lang=root.dataset.lang;
       return 'Domain '+domainId+' · '+(lang==='en'?MOCK_META.titles_en[domainId]:MOCK_META.titles_tr[domainId]);
     }
+    function fitFcText(el){
+      var max=1.35,min=0.65,step=0.05,size=max;
+      el.style.fontSize=size+'rem';
+      while(size>min&&el.scrollHeight>el.clientHeight+1){
+        size=Math.max(min,size-step);
+        el.style.fontSize=size+'rem';
+      }
+    }
     function renderCard(){
       var lang=root.dataset.lang, card=deck.cards[idx], en=lang==='en';
       $('fc-card').classList.remove('flipped');
       $('fc-q').innerHTML=en?card.question_en:card.question_tr;
       $('fc-a').innerHTML=en?card.answer_en:card.answer_tr;
+      fitFcText($('fc-q')); fitFcText($('fc-a'));
       var prog=(idx+1)+' / '+deck.cards.length;
       $('fc-meta-q').textContent=domainMeta(deck.domain);
       $('fc-meta-a').textContent=en?card.lesson_en:card.lesson_tr;
@@ -449,6 +458,8 @@
     $('fc-next').addEventListener('click',function(){if(idx<deck.cards.length-1){idx++;renderCard();}});
     $('fc-shuffle').addEventListener('click',function(){if(!deck)return;deck.cards=shuffleFC(deck.cards);idx=0;renderCard();});
     updaters.push(function(){if(deck)renderCard();});
+    window.addEventListener('hashchange',function(){if(deck&&location.hash==='#flashcards')renderCard();});
+    window.addEventListener('resize',function(){if(deck&&location.hash==='#flashcards')renderCard();});
     var firstDomain=document.querySelector('.fc-domain-card');
     if(firstDomain)openDeck(firstDomain.dataset.domain);
   })();
