@@ -32,7 +32,7 @@
   });
 
   var pages=document.querySelectorAll('.page');
-  var navGroups={home:['home','domains'],scenarios:['scenarios'],practice:['practice'],'quick-mock':['practice'],'full-length-mock':['practice'],'practice-exam':['practice'],flashcards:['practice','flashcards'],'exam-guide':['exam-guide']};
+  var navGroups={home:['home','domains'],scenarios:['scenarios'],practice:['practice'],'quick-mock':['practice'],'full-length-mock':['practice'],'practice-exam':['practice'],'qna-setup':['practice'],'qna-session':['practice'],flashcards:['practice','flashcards'],'exam-guide':['exam-guide']};
   var navLinks=document.querySelectorAll('[data-nav]');
   function route(){
     var h=(location.hash||'#home').slice(1);
@@ -409,6 +409,102 @@
   });
   window.addEventListener('hashchange',refreshIntroHistory);
   refreshIntroHistory();
+
+  /* ---------- Q&A ---------- */
+  (function(){
+    if(typeof MOCK_POOL==='undefined')return;
+    var qna=null, selectedDomain='all';
+    function shuffleQna(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+    function qnaPool(domain){return domain==='all'?MOCK_POOL.slice():MOCK_POOL.filter(function(q){return q.d===Number(domain);});}
+    function qnaRefill(){
+      qna.remaining=shuffleQna(qna.pool);
+      if(qna.pool.length>1&&qna.lastQ&&qna.remaining[0]===qna.lastQ){qna.remaining.push(qna.remaining.shift());}
+    }
+    function qnaNext(){
+      if(!qna.remaining.length)qnaRefill();
+      var q=qna.remaining.shift();
+      qna.lastQ=q; qna.current=q;
+      qna.picked=null; qna.answered=false; qna.count++;
+      renderQnaQuestion();
+    }
+    function domName(d,lang){return lang==='en'?MOCK_META.titles_en[d]:MOCK_META.titles_tr[d];}
+    function renderQnaQuestion(){
+      var tq=T(), lang=root.dataset.lang, q=qna.current;
+      $('qna-progress').textContent=(lang==='en'?'Question ':'Soru ')+qna.count;
+      $('qna-scoretxt').textContent=(lang==='en'?'Correct ':'Doğru ')+qna.correct+' · '+(lang==='en'?'Wrong ':'Yanlış ')+qna.wrong;
+      var op=QF(q,'opts');
+      var h='<article class="q'+(qna.answered?' answered':'')+'"><div class="qhead"><span class="qn">'+(lang==='en'?'Domain ':'Domain ')+q.d+' — '+domName(q.d,lang)+'</span><span class="qts">'+q.ts+'</span></div><div class="prose qbody">'+QF(q,'body')+'</div><div class="opts">';
+      ['A','B','C','D'].forEach(function(k){
+        var cls='opt';
+        if(qna.answered){if(k===q.ans)cls+=' correct';else if(k===qna.picked)cls+=' wrong';}
+        h+='<button class="'+cls+'" data-k="'+k+'"'+(qna.answered?' disabled':'')+'><span class="k">'+k+'</span><span class="t">'+op[k]+'</span></button>';
+      });
+      h+='</div><div class="verdict'+(qna.answered?(qna.picked===q.ans?' ok':' bad'):'')+'">'+(qna.answered?(qna.picked===q.ans?tq.right:tq.wrong(q.ans)):'')+'</div>';
+      h+='<div class="expl prose"><div class="explhd">'+(lang==='en'?'Correct answer':'Doğru cevap')+': <b>'+q.ans+'</b></div>'+QF(q,'expl')+'</div></article>';
+      $('qna-q').innerHTML=h;
+      $('qna-q').querySelectorAll('.opt').forEach(function(b){
+        b.addEventListener('click',function(){
+          if(qna.answered)return;
+          qna.picked=b.dataset.k; qna.answered=true;
+          var ok=qna.picked===q.ans;
+          if(ok)qna.correct++; else qna.wrong++;
+          var p=qna.perDomain[q.d]=qna.perDomain[q.d]||{n:0,ok:0,wrongTs:{}};
+          p.n++; if(ok)p.ok++; else p.wrongTs[q.ts]=(p.wrongTs[q.ts]||0)+1;
+          renderQnaQuestion();
+        });
+      });
+      $('qna-next').hidden=!qna.answered;
+    }
+    function renderQnaResult(){
+      var lang=root.dataset.lang;
+      var h='<a class="back" href="#practice">'+(lang==='en'?'← Practice':'← Practice')+'</a><p class="kicker">'+(lang==='en'?'Result':'Sonuç')+'</p>';
+      h+='<div class="resultcard"><div class="bigscore">'+qna.correct+' / '+qna.count+'<small>'+(lang==='en'?'correct':'doğru')+'</small></div>';
+      h+='<p style="color:var(--muted);margin:14px 0 0">'+(lang==='en'?'Wrong: ':'Yanlış: ')+qna.wrong+'</p>';
+      if(qna.domain==='all'){
+        h+='<ul class="dombreak">';
+        Object.keys(qna.perDomain).sort().forEach(function(dk){
+          var d=Number(dk),p=qna.perDomain[dk],pc=p.n?Math.round(100*p.ok/p.n):0;
+          h+='<li style="--c:'+MOCK_META.hues[d]+'"><span>'+(lang==='en'?'Domain ':'Domain ')+d+' — '+domName(d,lang)+'</span><b>'+p.ok+' / '+p.n+' '+(lang==='en'?'correct':'doğru')+'</b><span class="bar"><i style="width:'+pc+'%"></i></span></li>';
+        });
+        h+='</ul>';
+        if(qna.worst){
+          var wp=qna.perDomain[qna.worst], tsList=Object.keys(wp.wrongTs).sort(function(a,b){return wp.wrongTs[b]-wp.wrongTs[a];});
+          h+='<div class="langnote" style="margin-top:16px">'+(lang==='en'?'Study recommendation — focus on ':'Çalışma önerisi — odaklan: ')+'<b>Domain '+qna.worst+' — '+domName(qna.worst,lang)+'</b>'+(tsList.length?(' ('+(lang==='en'?'task statements: ':"task statement'lar: ")+tsList.join(', ')+')'):'')+' — <a href="#domain-'+qna.worst+'-lessons">'+(lang==='en'?'go to lessons →':'derslere git →')+'</a></div>';
+        }
+      }
+      h+='</div><p class="pagenav"><a href="#practice">'+(lang==='en'?'← Practice':'← Practice')+'</a><a href="#qna-setup">'+(lang==='en'?'New session →':'Yeni oturum →')+'</a></p>';
+      $('qna-live').hidden=true; $('qna-result').hidden=false; $('qna-result').innerHTML=h;
+    }
+    function qnaFinish(){
+      var worst=null;
+      Object.keys(qna.perDomain).forEach(function(dk){var p=qna.perDomain[dk],w=p.n-p.ok;if(w>0&&(!worst||w>qna.perDomain[worst].n-qna.perDomain[worst].ok))worst=dk;});
+      qna.worst=worst?Number(worst):null;
+      renderQnaResult();
+      window.scrollTo({top:0});
+    }
+    document.querySelectorAll('.qna-domain-card').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('.qna-domain-card').forEach(function(b){b.classList.remove('selected');});
+        btn.classList.add('selected'); selectedDomain=btn.dataset.domain;
+      });
+    });
+    var startBtn=$('qna-start');
+    if(startBtn)startBtn.addEventListener('click',function(){
+      var pool=qnaPool(selectedDomain);
+      if(!pool.length)return;
+      qna={domain:selectedDomain,pool:pool,remaining:[],count:0,correct:0,wrong:0,perDomain:{},current:null,picked:null,answered:false,lastQ:null,worst:null};
+      location.hash='#qna-session';
+      $('qna-result').hidden=true; $('qna-live').hidden=false;
+      qnaNext(); window.scrollTo({top:0});
+    });
+    var nextBtn=$('qna-next'); if(nextBtn)nextBtn.addEventListener('click',function(){qnaNext();window.scrollTo({top:0});});
+    var finishBtn=$('qna-finish'); if(finishBtn)finishBtn.addEventListener('click',qnaFinish);
+    updaters.push(function(){
+      if(!qna)return;
+      if(location.hash==='#qna-session'&&$('qna-live')&&!$('qna-live').hidden&&qna.current)renderQnaQuestion();
+      if(location.hash==='#qna-session'&&$('qna-result')&&!$('qna-result').hidden)renderQnaResult();
+    });
+  })();
 
   /* ---------- flashcards ---------- */
   (function(){

@@ -217,8 +217,9 @@ html[data-lang="tr"] .langtoggle span[data-l="tr"],html[data-lang="en"] .langtog
 .practice-card.primary p{color:var(--on-accent);opacity:.85}
 .practice-card.primary:hover{border-color:var(--accent)}
 .fc-domains{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:24px 0}
-.fc-domain-card{cursor:pointer;font:inherit;width:100%;min-width:0;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;color:inherit;transition:border-color .15s}
-.fc-domain-card.selected{border-color:var(--c)}
+.qna-domains{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:24px 0}
+.fc-domain-card,.qna-domain-card{cursor:pointer;font:inherit;width:100%;min-width:0;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;color:inherit;transition:border-color .15s}
+.fc-domain-card.selected,.qna-domain-card.selected{border-color:var(--c)}
 .fcd-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
 .fcd-badge{width:28px;height:28px;border-radius:50%;background:var(--c);color:var(--on-domain);font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex:none}
 .fcd-count{color:var(--muted);font-size:.75rem}
@@ -19567,6 +19568,7 @@ Areas that remained limited due to inaccessible / missing sources.
 <div class="practice-cards">
 <a class="practice-card" href="#quick-mock"><h2>Quick Mock<span class="ac-go">→</span></h2><p><span class="l-tr">24 soru · 2 dk/soru · ~48 dk</span><span class="l-en">24 questions · 2 min/question · ~48 min</span></p></a>
 <a class="practice-card primary" href="#full-length-mock"><h2>Full-Length Mock<span class="ac-go">→</span></h2><p><span class="l-tr">60 soru · 2 dk/soru · gerçek sınav koşulları</span><span class="l-en">60 questions · 2 min/question · real exam conditions</span></p></a>
+<a class="practice-card" href="#qna-setup"><h2>Q&amp;A<span class="ac-go">→</span></h2><p><span class="l-tr">Tek soru, anında değerlendirme, domain seçimi</span><span class="l-en">One question at a time, instant feedback, pick a domain</span></p></a>
 <a class="practice-card" href="#flashcards"><h2>Flashcards<span class="ac-go">→</span></h2><p><span class="l-tr">Domain başına kavram kartları</span><span class="l-en">Concept cards per Domain</span></p></a>
 </div>
 </section><section id="quick-mock" class="page mock">
@@ -19597,6 +19599,44 @@ Areas that remained limited due to inaccessible / missing sources.
 </tbody></table>
 <button class="bigbtn" id="full-start"><span class="l-tr">Sınava başla</span><span class="l-en">Start exam</span></button>
 <div id="full-history"></div>
+</section><section id="qna-setup" class="page mock">
+<a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
+<p class="kicker"><span class="l-tr">Çalışma</span><span class="l-en">Study</span></p>
+<h1>Q&amp;A</h1>
+<p class="lede"><span class="l-tr">Bir domain seç ya da tüm domainlerden karışık soru al. Sorular tek tek gelir; cevap verince hemen doğru/yanlış ve açıklama görünür.</span><span class="l-en">Pick a Domain, or draw mixed questions from all Domains. Questions come one at a time; answering shows right/wrong and the explanation immediately.</span></p>
+<div class="qna-domains" id="qna-domain-list"><button type="button" class="qna-domain-card selected" data-domain="all" style="--c:#5b6472">
+<span class="fcd-top"><span class="fcd-badge">∀</span><span class="fcd-count"><span class="l-tr">400 soru</span><span class="l-en">400 questions</span></span></span>
+<span class="fcd-title"><span class="l-tr">Tüm domainler</span><span class="l-en">All domains</span></span>
+<span class="fcd-bar"></span>
+</button><button type="button" class="qna-domain-card" data-domain="1" style="--c:var(--d1)">
+<span class="fcd-top"><span class="fcd-badge">1</span><span class="fcd-count"><span class="l-tr">97 soru</span><span class="l-en">97 questions</span></span></span>
+<span class="fcd-title"><span class="l-tr">Agentic Mimari ve Orkestrasyon</span><span class="l-en">Agentic Architecture & Orchestration</span></span>
+<span class="fcd-bar"></span>
+</button><button type="button" class="qna-domain-card" data-domain="2" style="--c:var(--d2)">
+<span class="fcd-top"><span class="fcd-badge">2</span><span class="fcd-count"><span class="l-tr">68 soru</span><span class="l-en">68 questions</span></span></span>
+<span class="fcd-title"><span class="l-tr">Araç Tasarımı ve MCP Entegrasyonu</span><span class="l-en">Tool Design & MCP Integration</span></span>
+<span class="fcd-bar"></span>
+</button><button type="button" class="qna-domain-card" data-domain="3" style="--c:var(--d3)">
+<span class="fcd-top"><span class="fcd-badge">3</span><span class="fcd-count"><span class="l-tr">92 soru</span><span class="l-en">92 questions</span></span></span>
+<span class="fcd-title"><span class="l-tr">Claude Code Konfigürasyonu ve İş Akışları</span><span class="l-en">Claude Code Configuration & Workflows</span></span>
+<span class="fcd-bar"></span>
+</button><button type="button" class="qna-domain-card" data-domain="4" style="--c:var(--d4)">
+<span class="fcd-top"><span class="fcd-badge">4</span><span class="fcd-count"><span class="l-tr">70 soru</span><span class="l-en">70 questions</span></span></span>
+<span class="fcd-title"><span class="l-tr">Prompt Engineering ve Yapılandırılmış Çıktı</span><span class="l-en">Prompt Engineering & Structured Output</span></span>
+<span class="fcd-bar"></span>
+</button><button type="button" class="qna-domain-card" data-domain="5" style="--c:var(--d5)">
+<span class="fcd-top"><span class="fcd-badge">5</span><span class="fcd-count"><span class="l-tr">73 soru</span><span class="l-en">73 questions</span></span></span>
+<span class="fcd-title"><span class="l-tr">Bağlam Yönetimi ve Güvenilirlik</span><span class="l-en">Context Management & Reliability</span></span>
+<span class="fcd-bar"></span>
+</button></div>
+<button class="bigbtn" id="qna-start"><span class="l-tr">Başla</span><span class="l-en">Start</span></button>
+</section><section id="qna-session" class="page mock qna">
+<div id="qna-live">
+<div class="exambar"><span id="qna-progress"></span><span id="qna-scoretxt"></span><button class="reset" id="qna-finish"><span class="l-tr">Bitir</span><span class="l-en">Finish</span></button></div>
+<div id="qna-q"></div>
+<div class="examnav"><span></span><button class="bigbtn" id="qna-next" hidden><span class="l-tr">Sonraki soru →</span><span class="l-en">Next question →</span></button></div>
+</div>
+<div id="qna-result" hidden></div>
 </section><section id="flashcards" class="page fcpage">
 <a class="back" href="#practice"><span class="l-tr">← Practice</span><span class="l-en">← Practice</span></a>
 <p class="kicker"><span class="l-tr">Practice · Flashcards</span><span class="l-en">Practice · Flashcards</span></p>
@@ -20010,7 +20050,7 @@ if (typeof module !== 'undefined' && module.exports) {
   });
 
   var pages=document.querySelectorAll('.page');
-  var navGroups={home:['home','domains'],scenarios:['scenarios'],practice:['practice'],'quick-mock':['practice'],'full-length-mock':['practice'],'practice-exam':['practice'],flashcards:['practice','flashcards'],'exam-guide':['exam-guide']};
+  var navGroups={home:['home','domains'],scenarios:['scenarios'],practice:['practice'],'quick-mock':['practice'],'full-length-mock':['practice'],'practice-exam':['practice'],'qna-setup':['practice'],'qna-session':['practice'],flashcards:['practice','flashcards'],'exam-guide':['exam-guide']};
   var navLinks=document.querySelectorAll('[data-nav]');
   function route(){
     var h=(location.hash||'#home').slice(1);
@@ -20387,6 +20427,102 @@ if (typeof module !== 'undefined' && module.exports) {
   });
   window.addEventListener('hashchange',refreshIntroHistory);
   refreshIntroHistory();
+
+  /* ---------- Q&A ---------- */
+  (function(){
+    if(typeof MOCK_POOL==='undefined')return;
+    var qna=null, selectedDomain='all';
+    function shuffleQna(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+    function qnaPool(domain){return domain==='all'?MOCK_POOL.slice():MOCK_POOL.filter(function(q){return q.d===Number(domain);});}
+    function qnaRefill(){
+      qna.remaining=shuffleQna(qna.pool);
+      if(qna.pool.length>1&&qna.lastQ&&qna.remaining[0]===qna.lastQ){qna.remaining.push(qna.remaining.shift());}
+    }
+    function qnaNext(){
+      if(!qna.remaining.length)qnaRefill();
+      var q=qna.remaining.shift();
+      qna.lastQ=q; qna.current=q;
+      qna.picked=null; qna.answered=false; qna.count++;
+      renderQnaQuestion();
+    }
+    function domName(d,lang){return lang==='en'?MOCK_META.titles_en[d]:MOCK_META.titles_tr[d];}
+    function renderQnaQuestion(){
+      var tq=T(), lang=root.dataset.lang, q=qna.current;
+      $('qna-progress').textContent=(lang==='en'?'Question ':'Soru ')+qna.count;
+      $('qna-scoretxt').textContent=(lang==='en'?'Correct ':'Doğru ')+qna.correct+' · '+(lang==='en'?'Wrong ':'Yanlış ')+qna.wrong;
+      var op=QF(q,'opts');
+      var h='<article class="q'+(qna.answered?' answered':'')+'"><div class="qhead"><span class="qn">'+(lang==='en'?'Domain ':'Domain ')+q.d+' — '+domName(q.d,lang)+'</span><span class="qts">'+q.ts+'</span></div><div class="prose qbody">'+QF(q,'body')+'</div><div class="opts">';
+      ['A','B','C','D'].forEach(function(k){
+        var cls='opt';
+        if(qna.answered){if(k===q.ans)cls+=' correct';else if(k===qna.picked)cls+=' wrong';}
+        h+='<button class="'+cls+'" data-k="'+k+'"'+(qna.answered?' disabled':'')+'><span class="k">'+k+'</span><span class="t">'+op[k]+'</span></button>';
+      });
+      h+='</div><div class="verdict'+(qna.answered?(qna.picked===q.ans?' ok':' bad'):'')+'">'+(qna.answered?(qna.picked===q.ans?tq.right:tq.wrong(q.ans)):'')+'</div>';
+      h+='<div class="expl prose"><div class="explhd">'+(lang==='en'?'Correct answer':'Doğru cevap')+': <b>'+q.ans+'</b></div>'+QF(q,'expl')+'</div></article>';
+      $('qna-q').innerHTML=h;
+      $('qna-q').querySelectorAll('.opt').forEach(function(b){
+        b.addEventListener('click',function(){
+          if(qna.answered)return;
+          qna.picked=b.dataset.k; qna.answered=true;
+          var ok=qna.picked===q.ans;
+          if(ok)qna.correct++; else qna.wrong++;
+          var p=qna.perDomain[q.d]=qna.perDomain[q.d]||{n:0,ok:0,wrongTs:{}};
+          p.n++; if(ok)p.ok++; else p.wrongTs[q.ts]=(p.wrongTs[q.ts]||0)+1;
+          renderQnaQuestion();
+        });
+      });
+      $('qna-next').hidden=!qna.answered;
+    }
+    function renderQnaResult(){
+      var lang=root.dataset.lang;
+      var h='<a class="back" href="#practice">'+(lang==='en'?'← Practice':'← Practice')+'</a><p class="kicker">'+(lang==='en'?'Result':'Sonuç')+'</p>';
+      h+='<div class="resultcard"><div class="bigscore">'+qna.correct+' / '+qna.count+'<small>'+(lang==='en'?'correct':'doğru')+'</small></div>';
+      h+='<p style="color:var(--muted);margin:14px 0 0">'+(lang==='en'?'Wrong: ':'Yanlış: ')+qna.wrong+'</p>';
+      if(qna.domain==='all'){
+        h+='<ul class="dombreak">';
+        Object.keys(qna.perDomain).sort().forEach(function(dk){
+          var d=Number(dk),p=qna.perDomain[dk],pc=p.n?Math.round(100*p.ok/p.n):0;
+          h+='<li style="--c:'+MOCK_META.hues[d]+'"><span>'+(lang==='en'?'Domain ':'Domain ')+d+' — '+domName(d,lang)+'</span><b>'+p.ok+' / '+p.n+' '+(lang==='en'?'correct':'doğru')+'</b><span class="bar"><i style="width:'+pc+'%"></i></span></li>';
+        });
+        h+='</ul>';
+        if(qna.worst){
+          var wp=qna.perDomain[qna.worst], tsList=Object.keys(wp.wrongTs).sort(function(a,b){return wp.wrongTs[b]-wp.wrongTs[a];});
+          h+='<div class="langnote" style="margin-top:16px">'+(lang==='en'?'Study recommendation — focus on ':'Çalışma önerisi — odaklan: ')+'<b>Domain '+qna.worst+' — '+domName(qna.worst,lang)+'</b>'+(tsList.length?(' ('+(lang==='en'?'task statements: ':"task statement'lar: ")+tsList.join(', ')+')'):'')+' — <a href="#domain-'+qna.worst+'-lessons">'+(lang==='en'?'go to lessons →':'derslere git →')+'</a></div>';
+        }
+      }
+      h+='</div><p class="pagenav"><a href="#practice">'+(lang==='en'?'← Practice':'← Practice')+'</a><a href="#qna-setup">'+(lang==='en'?'New session →':'Yeni oturum →')+'</a></p>';
+      $('qna-live').hidden=true; $('qna-result').hidden=false; $('qna-result').innerHTML=h;
+    }
+    function qnaFinish(){
+      var worst=null;
+      Object.keys(qna.perDomain).forEach(function(dk){var p=qna.perDomain[dk],w=p.n-p.ok;if(w>0&&(!worst||w>qna.perDomain[worst].n-qna.perDomain[worst].ok))worst=dk;});
+      qna.worst=worst?Number(worst):null;
+      renderQnaResult();
+      window.scrollTo({top:0});
+    }
+    document.querySelectorAll('.qna-domain-card').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        document.querySelectorAll('.qna-domain-card').forEach(function(b){b.classList.remove('selected');});
+        btn.classList.add('selected'); selectedDomain=btn.dataset.domain;
+      });
+    });
+    var startBtn=$('qna-start');
+    if(startBtn)startBtn.addEventListener('click',function(){
+      var pool=qnaPool(selectedDomain);
+      if(!pool.length)return;
+      qna={domain:selectedDomain,pool:pool,remaining:[],count:0,correct:0,wrong:0,perDomain:{},current:null,picked:null,answered:false,lastQ:null,worst:null};
+      location.hash='#qna-session';
+      $('qna-result').hidden=true; $('qna-live').hidden=false;
+      qnaNext(); window.scrollTo({top:0});
+    });
+    var nextBtn=$('qna-next'); if(nextBtn)nextBtn.addEventListener('click',function(){qnaNext();window.scrollTo({top:0});});
+    var finishBtn=$('qna-finish'); if(finishBtn)finishBtn.addEventListener('click',qnaFinish);
+    updaters.push(function(){
+      if(!qna)return;
+      if(location.hash==='#qna-session'&&$('qna-live')&&!$('qna-live').hidden&&qna.current)renderQnaQuestion();
+      if(location.hash==='#qna-session'&&$('qna-result')&&!$('qna-result').hidden)renderQnaResult();
+    });
+  })();
 
   /* ---------- flashcards ---------- */
   (function(){

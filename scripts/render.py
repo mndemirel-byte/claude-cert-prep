@@ -220,6 +220,7 @@ practice=f'''<section id="practice" class="page practice">
 <div class="practice-cards">
 <a class="practice-card" href="#quick-mock"><h2>Quick Mock<span class="ac-go">→</span></h2><p>{bi("24 soru · 2 dk/soru · ~48 dk","24 questions · 2 min/question · ~48 min")}</p></a>
 <a class="practice-card primary" href="#full-length-mock"><h2>Full-Length Mock<span class="ac-go">→</span></h2><p>{bi("60 soru · 2 dk/soru · gerçek sınav koşulları","60 questions · 2 min/question · real exam conditions")}</p></a>
+<a class="practice-card" href="#qna-setup"><h2>Q&amp;A<span class="ac-go">→</span></h2><p>{bi("Tek soru, anında değerlendirme, domain seçimi","One question at a time, instant feedback, pick a domain")}</p></a>
 <a class="practice-card" href="#flashcards"><h2>Flashcards<span class="ac-go">→</span></h2><p>{bi("Domain başına kavram kartları","Concept cards per Domain")}</p></a>
 </div>
 </section>'''
@@ -258,6 +259,41 @@ fullmock=f'''<section id="full-length-mock" class="page mock">
 <div id="full-history"></div>
 </section>'''
 pages.append(fullmock)
+
+qna_counts={}
+for q in POOL: qna_counts[q["d"]]=qna_counts.get(q["d"],0)+1
+qna_domain_cards=f'''<button type="button" class="qna-domain-card selected" data-domain="all" style="--c:#5b6472">
+<span class="fcd-top"><span class="fcd-badge">∀</span><span class="fcd-count">{bi(f"{len(POOL)} soru",f"{len(POOL)} questions")}</span></span>
+<span class="fcd-title">{bi("Tüm domainler","All domains")}</span>
+<span class="fcd-bar"></span>
+</button>'''
+for d in D:
+    n=qna_counts.get(d["id"],0)
+    qna_domain_cards+=f'''<button type="button" class="qna-domain-card" data-domain="{d["id"]}" style="--c:{d["hue"]}">
+<span class="fcd-top"><span class="fcd-badge">{d["id"]}</span><span class="fcd-count">{bi(f"{n} soru",f"{n} questions")}</span></span>
+<span class="fcd-title">{bi(esc(d["title"]),EN_TITLE[d["id"]])}</span>
+<span class="fcd-bar"></span>
+</button>'''
+
+qnasetup=f'''<section id="qna-setup" class="page mock">
+<a class="back" href="#practice">{bi("← Practice","← Practice")}</a>
+<p class="kicker">{bi("Çalışma","Study")}</p>
+<h1>Q&amp;A</h1>
+<p class="lede">{bi("Bir domain seç ya da tüm domainlerden karışık soru al. Sorular tek tek gelir; cevap verince hemen doğru/yanlış ve açıklama görünür.","Pick a Domain, or draw mixed questions from all Domains. Questions come one at a time; answering shows right/wrong and the explanation immediately.")}</p>
+<div class="qna-domains" id="qna-domain-list">{qna_domain_cards}</div>
+<button class="bigbtn" id="qna-start">{bi("Başla","Start")}</button>
+</section>'''
+pages.append(qnasetup)
+
+qnasession=f'''<section id="qna-session" class="page mock qna">
+<div id="qna-live">
+<div class="exambar"><span id="qna-progress"></span><span id="qna-scoretxt"></span><button class="reset" id="qna-finish">{bi("Bitir","Finish")}</button></div>
+<div id="qna-q"></div>
+<div class="examnav"><span></span><button class="bigbtn" id="qna-next" hidden>{bi("Sonraki soru →","Next question →")}</button></div>
+</div>
+<div id="qna-result" hidden></div>
+</section>'''
+pages.append(qnasession)
 
 fc_domain_cards=''
 for d in D:
