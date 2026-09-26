@@ -162,6 +162,9 @@ home.append(f'''<a class="action-card ac-guide" href="#exam-guide"><span class="
 home.append(f'''<a class="action-card ac-scenarios" href="#scenarios"><span class="ac-t">{bi("Sınav senaryoları","Exam scenarios")}<span class="ac-go">→</span></span><span class="ac-s">{bi("6 senaryodan 4'ü rastgele seçilir; hangi domain hangi bağlamda sorulur?","4 of 6 are drawn at random; which domain is asked in which context?")}</span></a>''')
 home.append(f'''<a class="action-card ac-practice" href="#practice"><span class="ac-t">Practice<span class="ac-go">→</span></span><span class="ac-s">{bi("Quick Mock, Full-Length Mock veya Flashcards ile çalış","Study with Quick Mock, Full-Length Mock, or Flashcards")}</span></a>''')
 home.append('</div>')
+home.append('<div class="action-cards action-cards-single">')
+home.append(f'''<a class="action-card ac-exercises" href="#exercises"><span class="ac-t">{bi("Hazırlık Alıştırmaları","Preparation Exercises")}<span class="ac-go">→</span></span><span class="ac-s">{bi("Sınavda ele alınan konularda pratik aşinalık kazanmak için bu uygulamalı alıştırmaları tamamlayın.","Complete these hands-on exercises to build practical familiarity with the topics covered on the exam.")}</span></a>''')
+home.append('</div>')
 home.append('<ol class="domains" id="domain-list">')
 for d in D:
     home.append(f'''<li class="drow" style="--c:{d["hue"]}">
@@ -419,6 +422,85 @@ pages.append(f'''<section id="exam-guide" class="page mock">
 
 <a class="regcta" href="{REG_URL}" target="_blank" rel="noopener" style="margin-top:24px">{bi("Sınava register ol","Register for exam")} <span>→</span></a>
 </section>''')
+
+EXERCISES=[
+ {"title_tr":"Alıştırma 1: Eskalasyon Mantığına Sahip Çok Araçlı Bir Agent İnşa Et","title_en":"Exercise 1: Build a Multi-Tool Agent with Escalation Logic",
+  "obj_tr":"Araç entegrasyonu, yapılandırılmış hata yönetimi ve eskalasyon kalıplarına sahip bir agentic loop tasarlamayı pratik et.",
+  "obj_en":"Practice designing an agentic loop with tool integration, structured error handling, and escalation patterns.",
+  "steps_tr":["Her aracın amacını, beklenen girdilerini ve sınır koşullarını net biçimde ayıran açıklamalara sahip 3-4 MCP aracı tanımla. Seçim karışıklığını önlemek için dikkatli açıklama gerektiren, işlevsel olarak benzer en az iki araç ekle.",
+   "Araç çalıştırmaya devam mı edileceğine yoksa nihai yanıtın mı sunulacağına karar vermek için <code>stop_reason</code>'ı kontrol eden bir agentic loop uygula. Hem \"tool_use\" hem \"end_turn\" durdurma nedenlerini doğru şekilde ele al.",
+   "Araçlarına yapılandırılmış hata yanıtları ekle: <code>errorCategory</code> (transient/validation/permission), <code>isRetryable</code> boolean ve insan tarafından okunabilir açıklamalar içersin. Agent'ın her hata türünü uygun şekilde ele aldığını test et (geçici hataları yeniden deneme, iş kurallarına ilişkin hataları kullanıcıya açıklama).",
+   "Eşik tutarını aşan işlemleri engelleyip tetiklendiğinde bir eskalasyon iş akışına yönlendiren, araç çağrılarını yakalayan programatik bir hook uygula.",
+   "Çok endişeli mesajlarla (birden fazla sorunu içeren istekler) test et ve agent'ın isteği ayrıştırdığını, her sorunu ele aldığını ve birleşik bir yanıt sentezlediğini doğrula."],
+  "steps_en":["Define 3-4 MCP tools with detailed descriptions that clearly differentiate each tool's purpose, expected inputs, and boundary conditions. Include at least two tools with similar functionality that require careful description to avoid selection confusion.",
+   "Implement an agentic loop that checks <code>stop_reason</code> to determine whether to continue tool execution or present the final response. Handle both \"tool_use\" and \"end_turn\" stop reasons correctly.",
+   "Add structured error responses to your tools: include <code>errorCategory</code> (transient/validation/permission), <code>isRetryable</code> boolean, and human-readable descriptions. Test that the agent handles each error type appropriately (retrying transient errors, explaining business errors to the user).",
+   "Implement a programmatic hook that intercepts tool calls to enforce a business rule (e.g., blocking operations above a threshold amount), redirecting to an escalation workflow when triggered.",
+   "Test with multi-concern messages (e.g., requests involving multiple issues) and verify the agent decomposes the request, handles each concern, and synthesizes a unified response."],
+  "doms_tr":"Domain 1 (Agentic Architecture &amp; Orchestration), Domain 2 (Tool Design &amp; MCP Integration), Domain 5 (Context Management &amp; Reliability)",
+  "doms_en":"Domain 1 (Agentic Architecture &amp; Orchestration), Domain 2 (Tool Design &amp; MCP Integration), Domain 5 (Context Management &amp; Reliability)"},
+ {"title_tr":"Alıştırma 2: Bir Takım Geliştirme İş Akışı İçin Claude Code'u Yapılandır","title_en":"Exercise 2: Configure Claude Code for a Team Development Workflow",
+  "obj_tr":"Çok geliştiricili bir proje için CLAUDE.md hiyerarşilerini, özel slash komutlarını, yola özel kuralları ve MCP sunucu entegrasyonunu yapılandırmayı pratik et.",
+  "obj_en":"Practice configuring CLAUDE.md hierarchies, custom slash commands, path-specific rules, and MCP server integration for a multi-developer project.",
+  "steps_tr":["Evrensel kodlama standartları ve test kurallarıyla proje düzeyinde bir CLAUDE.md oluştur. Proje düzeyine yerleştirilen talimatların tüm takım üyelerinde tutarlı biçimde uygulandığını doğrula.",
+   "Farklı kod alanları için YAML frontmatter glob desenleriyle <code>.claude/rules/</code> dosyaları oluştur (ör. API kuralları için <code>paths: [\"src/api/**/*\"]</code>, test kuralları için <code>paths: [\"**/*.test.*\"]</code>). Kuralların yalnızca eşleşen dosyalar düzenlenirken yüklendiğini test et.",
+   "<code>context: fork</code> ve <code>allowed-tools</code> kısıtlamalarına sahip proje kapsamlı bir skill'i <code>.claude/skills/</code> içinde oluştur. Skill'in ana konuşma bağlamını kirletmeden izole biçimde çalıştığını doğrula.",
+   "Kimlik bilgileri için ortam değişkeni genişletmesiyle <code>.mcp.json</code> içinde bir MCP sunucusu yapılandır. <code>~/.claude.json</code> içinde kişisel bir deneysel MCP sunucusu ekle ve ikisinin de aynı anda kullanılabilir olduğunu doğrula.",
+   "Farklı karmaşıklık seviyelerindeki görevlerde plan modunu doğrudan yürütmeyle karşılaştırarak test et: tek dosyalık bir hata düzeltmesi, çok dosyalı bir kütüphane geçişi ve birden fazla geçerli uygulama yaklaşımına sahip yeni bir özellik. Plan modunun ne zaman değer kattığını gözlemle."],
+  "steps_en":["Create a project-level CLAUDE.md with universal coding standards and testing conventions. Verify that instructions placed at the project level are consistently applied across all team members.",
+   "Create <code>.claude/rules/</code> files with YAML frontmatter glob patterns for different code areas (e.g., <code>paths: [\"src/api/**/*\"]</code> for API conventions, <code>paths: [\"**/*.test.*\"]</code> for testing conventions). Test that rules load only when editing matching files.",
+   "Create a project-scoped skill in <code>.claude/skills/</code> with <code>context: fork</code> and <code>allowed-tools</code> restrictions. Verify the skill runs in isolation without polluting the main conversation context.",
+   "Configure an MCP server in <code>.mcp.json</code> with environment variable expansion for credentials. Add a personal experimental MCP server in <code>~/.claude.json</code> and verify both are available simultaneously.",
+   "Test plan mode versus direct execution on tasks of varying complexity: a single-file bug fix, a multi-file library migration, and a new feature with multiple valid implementation approaches. Observe when plan mode provides value."],
+  "doms_tr":"Domain 3 (Claude Code Configuration &amp; Workflows), Domain 2 (Tool Design &amp; MCP Integration)",
+  "doms_en":"Domain 3 (Claude Code Configuration &amp; Workflows), Domain 2 (Tool Design &amp; MCP Integration)"},
+ {"title_tr":"Alıştırma 3: Yapılandırılmış Bir Veri Çıkarım Pipeline'ı İnşa Et","title_en":"Exercise 3: Build a Structured Data Extraction Pipeline",
+  "obj_tr":"JSON şemaları tasarlamayı, yapılandırılmış çıktı için <code>tool_use</code> kullanmayı, validation-retry döngüleri uygulamayı ve batch işleme stratejileri tasarlamayı pratik et.",
+  "obj_en":"Practice designing JSON schemas, using tool_use for structured output, implementing validation-retry loops, and designing batch processing strategies.",
+  "steps_tr":["Zorunlu ve opsiyonel alanlar, \"other\" + detay string deseni içeren bir enum ve kaynak dokümanlarda bulunmayabilecek bilgiler için nullable alanlar içeren bir JSON şemalı çıkarım aracı tanımla. Bazı alanların eksik olduğu dokümanları işle ve modelin değer uydurmak yerine null döndürdüğünü doğrula.",
+   "Bir validation-retry döngüsü uygula: Pydantic ya da JSON şema doğrulaması başarısız olduğunda, dokümanı, başarısız çıkarımı ve belirli doğrulama hatasını içeren bir takip isteği gönder. Hangi hataların retry ile çözülebilir olduğunu (format uyuşmazlıkları) hangilerinin olmadığını (kaynakta bilgi eksik) takip et.",
+   "Farklı formatlardaki dokümanlardan (ör. metin içi atıflar vs kaynakça, anlatı tarzı açıklamalar vs yapılandırılmış tablolar) çıkarımı gösteren few-shot örnekler ekle ve yapısal çeşitliliğe karşı iyileşmeyi doğrula.",
+   "Bir batch işleme stratejisi tasarla: Message Batches API'siyle 100 dokümanlık bir batch gönder, başarısızlıkları <code>custom_id</code> ile ele al, başarısız dokümanları değişikliklerle (ör. boyutu aşan dokümanları parçalama) yeniden gönder ve toplam işlem süresini SLA kısıtlarına göre hesapla.",
+   "Bir insan incelemesi yönlendirme stratejisi uygula: modelin alan düzeyinde güven skorları üretmesini sağla, düşük güvenli çıkarımları insan incelemesine yönlendir ve tutarlı performansı doğrulamak için doküman türüne ve alana göre doğruluğu analiz et."],
+  "steps_en":["Define an extraction tool with a JSON schema containing required and optional fields, an enum with an \"other\" + detail string pattern, and nullable fields for information that may not exist in source documents. Process documents where some fields are absent and verify the model returns null rather than fabricating values.",
+   "Implement a validation-retry loop: when Pydantic or JSON schema validation fails, send a follow-up request including the document, the failed extraction, and the specific validation error. Track which errors are resolvable via retry (format mismatches) versus which are not (information absent from source).",
+   "Add few-shot examples demonstrating extraction from documents with varied formats (e.g., inline citations vs bibliographies, narrative descriptions vs structured tables) and verify improved handling of structural variety.",
+   "Design a batch processing strategy: submit a batch of 100 documents using the Message Batches API, handle failures by <code>custom_id</code>, resubmit failed documents with modifications (e.g., chunking oversized documents), and calculate total processing time relative to SLA constraints.",
+   "Implement a human review routing strategy: have the model output field-level confidence scores, route low-confidence extractions to human review, and analyze accuracy by document type and field to verify consistent performance."],
+  "doms_tr":"Domain 4 (Prompt Engineering &amp; Structured Output), Domain 5 (Context Management &amp; Reliability)",
+  "doms_en":"Domain 4 (Prompt Engineering &amp; Structured Output), Domain 5 (Context Management &amp; Reliability)"},
+ {"title_tr":"Alıştırma 4: Çok Agentli Bir Araştırma Pipeline'ını Tasarla ve Hata Ayıkla","title_en":"Exercise 4: Design and Debug a Multi-Agent Research Pipeline",
+  "obj_tr":"Subagent orkestrasyonunu, bağlam aktarımını, hata yayılımını ve köken (provenance) takibiyle sentezi yönetmeyi pratik et.",
+  "obj_en":"Practice orchestrating subagents, managing context passing, implementing error propagation, and handling synthesis with provenance tracking.",
+  "steps_tr":["En az iki subagent'a (ör. web arama ve doküman analizi) devreden bir koordinatör agent inşa et. Koordinatörün <code>allowedTools</code>'unun \"Task\"ı içerdiğinden ve her subagent'ın araştırma bulgularını otomatik bağlam kalıtımına güvenmeden doğrudan prompt'unda aldığından emin ol.",
+   "Koordinatörün tek bir yanıtta birden fazla Task araç çağrısı yaymasını sağlayarak paralel subagent çalıştırmasını uygula. Sıralı çalıştırmayla karşılaştırarak gecikme iyileşmesini ölç.",
+   "İçeriği metadata'dan ayıran subagent çıktıları tasarla: her bulgu bir iddia, kanıt alıntısı, kaynak URL/doküman adı ve yayın tarihi içermeli. Sentez subagent'ının bulguları birleştirirken kaynak atfını koruduğunu doğrula.",
+   "Hata yayılımını uygula: bir subagent zaman aşımını simüle et ve koordinatörün yapılandırılmış hata bağlamı (hata türü, denenen sorgu, kısmi sonuçlar) aldığını doğrula. Koordinatörün kısmi sonuçlarla devam edebildiğini ve nihai çıktıyı kapsam boşluklarıyla açıkladığını test et.",
+   "Çelişkili kaynak verisiyle (ör. farklı istatistiklere sahip iki güvenilir kaynak) test et ve sentez çıktısının, keyfi olarak birini seçmek yerine her iki değeri de kaynak atfıyla koruduğunu, raporu iyi kurulmuş bulgularla tartışmalı olanları ayıracak şekilde yapılandırdığını doğrula."],
+  "steps_en":["Build a coordinator agent that delegates to at least two subagents (e.g., web search and document analysis). Ensure the coordinator's <code>allowedTools</code> includes \"Task\" and that each subagent receives its research findings directly in its prompt rather than relying on automatic context inheritance.",
+   "Implement parallel subagent execution by having the coordinator emit multiple Task tool calls in a single response. Measure the latency improvement compared to sequential execution.",
+   "Design structured output for subagents that separates content from metadata: each finding should include a claim, evidence excerpt, source URL/document name, and publication date. Verify that the synthesis subagent preserves source attribution when combining findings.",
+   "Implement error propagation: simulate a subagent timeout and verify the coordinator receives structured error context (failure type, attempted query, partial results). Test that the coordinator can proceed with partial results and annotate the final output with coverage gaps.",
+   "Test with conflicting source data (e.g., two credible sources with different statistics) and verify the synthesis output preserves both values with source attribution rather than arbitrarily selecting one, and structures the report to distinguish well-established from contested findings."],
+  "doms_tr":"Domain 1 (Agentic Architecture &amp; Orchestration), Domain 2 (Tool Design &amp; MCP Integration), Domain 5 (Context Management &amp; Reliability)",
+  "doms_en":"Domain 1 (Agentic Architecture &amp; Orchestration), Domain 2 (Tool Design &amp; MCP Integration), Domain 5 (Context Management &amp; Reliability)"},
+]
+def exercise_card(ex):
+    steps_tr="".join(f'<li>{s}</li>' for s in ex["steps_tr"])
+    steps_en="".join(f'<li>{s}</li>' for s in ex["steps_en"])
+    tr_html=f'<p><strong>Amaç:</strong> {ex["obj_tr"]}</p><p><strong>Adımlar:</strong></p><ul>{steps_tr}</ul><p class="sfacts"><strong>Pekiştirilen domainler:</strong> {ex["doms_tr"]}</p>'
+    en_html=f'<p><strong>Objective:</strong> {ex["obj_en"]}</p><p><strong>Steps:</strong></p><ul>{steps_en}</ul><p class="sfacts"><strong>Domains reinforced:</strong> {ex["doms_en"]}</p>'
+    return f'<details class="guide-item"><summary>{bi(esc(ex["title_tr"]),esc(ex["title_en"]))}</summary>{bidiv(tr_html,en_html,"prose")}</details>'
+
+pages.append(f'''<section id="exercises" class="page mock">
+<a class="back" href="#home">{bi("← Ana sayfa","← Home")}</a>
+<p class="kicker">{bi("Resmi sınav kılavuzuna göre","According to the official exam guide")}</p>
+<h1>{bi("Hazırlık Alıştırmaları","Preparation Exercises")}</h1>
+<p class="lede">{bi("Sınavda ele alınan konularda pratik aşinalık kazanmak için bu uygulamalı alıştırmaları tamamlayın. Her alıştırma bir veya daha fazla sınav domain'i genelinde bilgiyi pekiştirmek için tasarlanmıştır.","Complete these hands-on exercises to build practical familiarity with the topics covered on the exam. Each exercise is designed to reinforce knowledge across one or more exam domains.")}</p>
+{"".join(exercise_card(ex) for ex in EXERCISES)}
+<p class="pagenav"><a href="#home">{bi("← Ana sayfa","← Home")}</a><a href="#exam-guide">{bi("Sınav kılavuzu →","Exam guide →")}</a></p>
+</section>''')
+
 SEL_TR='''<p>Resmi kılavuzun tanımı şu: sınav senaryo tabanlı sorular kullanır; her senaryo, bir dizi soruyu çerçeveleyen gerçekçi bir üretim bağlamı sunar ve sınav sırasında <strong>6 senaryoluk havuzdan rastgele 4'ü</strong> sunulur. Yani:</p>
 <ul>
 <li>Sorular bağımsız birer bilgi sorusu değildir; "şu sistemi kuruyorsun" diye başlayan bir senaryo metninin altında gelir ve o senaryonun araç adları, hedef metrikleri ve kısıtları soru gövdesine gömülüdür.</li>
@@ -489,6 +571,7 @@ nav=f'''<nav class="topnav" data-style="apple" data-palette="A">
 <a href="#home" data-nav="home">{bi("Domainler","Domains")}</a>
 <a href="#scenarios" data-nav="scenarios">{bi("Senaryolar","Scenarios")}</a>
 <a href="#practice" data-nav="practice">{bi("Practice","Practice")}</a>
+<a href="#exercises" data-nav="exercises">{bi("Alıştırmalar","Exercises")}</a>
 <a href="#exam-guide" data-nav="exam-guide">{bi("Sınav kılavuzu","Exam guide")}</a>
 </div>
 <button class="langtoggle" id="langtoggle" aria-label="Dil / Language"><span data-l="tr">TR</span><span data-l="en">EN</span></button>

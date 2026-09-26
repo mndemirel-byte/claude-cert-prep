@@ -61,6 +61,8 @@ h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:0 0 20px;font-weight
 .ac-guide{background:var(--surface);border:1px solid var(--line)}
 .ac-scenarios{background:var(--ac-scenarios-bg);border:1px solid var(--ac-scenarios-border);color:var(--ac-scenarios-fg)}
 .ac-practice{background:var(--ink);color:var(--bg)}
+.action-cards-single{grid-template-columns:1fr}
+.ac-exercises{background:var(--surface);border:1px solid var(--line);min-height:auto}
 .domains{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .drow{display:grid;grid-template-columns:72px 1fr 56px;gap:24px;align-items:center;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 .dnum{font-size:40px;font-weight:var(--hw);color:var(--c);line-height:1;text-align:center}
