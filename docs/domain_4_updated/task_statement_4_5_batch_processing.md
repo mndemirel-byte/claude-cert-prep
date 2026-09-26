@@ -1,0 +1,392 @@
+# Task Statement 4.5: Batch Processing
+
+## Domain 4 — Prompt Engineering and Structured Output (20% of the Exam)
+
+---
+
+## Core Idea
+
+Not every Claude call has to be synchronous. The **Message Batches API** provides significant cost savings for certain tasks — but it has constraints, and those constraints are the exam's focus.
+
+The fundamental question: **"Can this workflow tolerate waiting?"**
+
+> **Confusion warning:** In the exam guide, Q10 (`claude -p`, Claude Code headless/CI) and Q11 (Message Batches API) come back to back, and one of Q10's distractors is a `--batch` flag. **No such flag exists.** The Message Batches API is a feature of the *Messages API* (`/v1/messages/batches`); running Claude Code in a pipeline is the `-p` flag (Domain 3.6). When you see the word "batch", check which one is being asked about.
+
+---
+
+## Message Batches API — Core Properties
+
+| Property | Value |
+|---------|-------|
+| **Cost savings** | 50% (compared to the synchronous API); **stacks on top of** the prompt caching discount |
+| **Processing window** | Most batches finish **within 1 hour**; upper bound **24 hours** |
+| **Latency guarantee** | None (no SLA) — but there is a 24-hour **upper bound**; calculations rely on it |
+| **If 24 hours elapse** | Remaining requests become `expired`, are **not billed**, and are resubmitted |
+| **Limit per batch** | 100,000 requests or 256 MB (whichever comes first) |
+| **Result retention** | Downloadable for 29 days after the batch is created |
+| **Request-response matching** | Via `custom_id` — because **results do not come back in request order** |
+| **Supported** | Tool use, multi-turn conversation history, extended thinking, vision, PDF, prompt caching, structured outputs |
+| **Not supported** | `stream: true`; **executing a tool and continuing within a single request** (see below) |
+
+---
+
+## Synchronous vs. Batch — Decision Rule
+
+This distinction always appears on the exam. Memorize it:
+
+### Use the Synchronous API (Blocking workflows)
+
+```
+- Pre-merge code reviews → Developers are waiting on the commit
+- Real-time security scanning → CI/CD pipeline status is awaited
+- User-interactive tasks → A human is waiting for the result
+- Anything with a latency limit shorter than 24 hours → The batch upper bound doesn't fit
+```
+
+**Rule:** If a human or a system is waiting for the result *now* → Synchronous.
+
+### Use the Batch API (Latency-tolerant workflows)
+
+```
+- Nightly reports → Being ready by morning is enough
+- Weekly code quality audits → Can wait until the next day
+- Overnight test generation → Ready in the daytime pipeline
+- Large archive analysis → Not urgent
+- Bulk document extraction → Completing within hours is enough
+```
+
+**Rule:** If latency tolerance is greater than 24 hours (or the SLA calculation works out — see below) and the 50% cost savings is attractive → Batch.
+
+---
+
+## The Exam's Q11 Trap
+
+The exam typically presents this scenario:
+
+> *"An engineering manager proposes moving all Claude calls to the Batch API to reduce costs: nightly reports and pre-merge security checks."*
+
+**Wrong answers (Q11's actual options):**
+- "Move both to batch" — The pre-merge check waits up to 24 hours on every PR
+- "Keep both synchronous" — The 50% savings on nightly reports is wasted
+- "Move both to batch, **fall back to synchronous if it times out (fallback)**" — The most attractive trap: it looks like "I'm handling the worst case", but for the pre-merge check *every* PR first waits and then falls into the timeout; both latency and cost increase
+
+**Correct answer:**
+> *"Only latency-tolerant workflows such as nightly reports / weekly audits are moved to Batch. Pre-merge checks and tasks the CI/CD pipeline is waiting on stay synchronous."*
+
+**Core principle:** Batch does **not replace** synchronous; it **complements** it.
+
+---
+
+## Calculating Submission Frequency from the SLA — Domain 4's Only Calculation Question
+
+The exam guide's Skills item: "*Calculating batch submission frequency based on SLA constraints (e.g., **4-hour windows to guarantee 30-hour SLA with 24-hour batch processing**)*". Preparation Exercise 3 step 14 also says "*calculate total processing time relative to SLA constraints*".
+
+Don't let the sentence "Batch has no SLA" lead you to the conclusion "an SLA cannot be given with batch". Batch has a **24-hour upper bound**; if the SLA is greater than 24 hours, an SLA can be given with batch — as long as the submission frequency is chosen correctly.
+
+### Formula
+
+A document's worst-case latency consists of two parts:
+
+```
+worst-case latency = (waiting for the next submission) + (batch processing upper bound)
+                   = P + 24 hours
+
+Condition: P + 24 ≤ SLA   →   P ≤ SLA − 24
+```
+
+- **P** = submission window (how many hours apart you submit batches). If a document arrives at the *start* of a window, it waits P hours until the next submission.
+- If the document arrives at the end of the window, the wait is ~0; but the SLA is given for the worst case.
+
+### Examples
+
+| SLA | Calculation | Result |
+|-----|-------|-------|
+| 30 hours | P ≤ 30 − 24 = 6 | Submit at most **every 6 hours**; the guide's **4-hour** window leaves 2 hours of margin (4 + 24 = 28 < 30) |
+| 36 hours | P ≤ 12 | Every 12 hours (e.g. 08:00 and 20:00) |
+| 26 hours | P ≤ 2 | Every 2 hours — frequent; still 50% savings |
+| 24 hours or less | P ≤ 0 | **An SLA cannot be given with batch** → synchronous |
+| P = 6 hours fixed | SLA ≥ 6 + 24 | The best SLA you can offer is **30 hours** |
+
+### Exam question patterns
+- "30-hour SLA, 24-hour batch processing; how often should batches be submitted?" → **≤ 6 hours** (4 hours is safe)
+- "We submit every 6 hours; what SLA can we commit to the customer?" → **30 hours**
+- "The SLA is 20 hours, can we use batch?" → **No** (20 < 24)
+- Total processing time question (Exercise 3): 100 documents in a single batch → duration ≤ 24 hours; if the daily volume does not exceed the single-batch limit (100,000 / 256 MB) there is no need to split
+
+---
+
+## custom_id — Request/Response Matching
+
+Batch results **do not come back in request order**; you know which response belongs to which request only via `custom_id`.
+
+**Rules:** 1–64 characters, only `a-z A-Z 0-9 _ -` (regex `^[a-zA-Z0-9_-]{1,64}$`), unique within the batch. Use meaningful IDs (`doc-{id}`, `doc-{id}-chunk-{n}`), not random ones.
+
+```python
+import anthropic
+
+client = anthropic.Anthropic()
+
+# Build the batch requests
+requests = []
+for doc_id, document in documents.items():
+    requests.append({
+        "custom_id": f"doc-{doc_id}",  # Unique ID for tracking
+        "params": {
+            "model": "claude-sonnet-5",
+            "max_tokens": 1000,
+            "messages": [{
+                "role": "user",
+                "content": f"Analyze this document:\n{document}"
+            }]
+        }
+    })
+
+# Submit the batch (GA endpoint — not beta)
+batch = client.messages.batches.create(requests=requests)
+
+# Monitor status: processing_status "in_progress" → "ended"
+import time
+while True:
+    batch = client.messages.batches.retrieve(batch.id)
+    if batch.processing_status == "ended":
+        break
+    time.sleep(60)
+print(batch.request_counts)  # {processing, succeeded, errored, canceled, expired}
+
+# Retrieve the results (.jsonl stream; order not guaranteed)
+for result in client.messages.batches.results(batch.id):
+    doc_id = result.custom_id  # Which document?
+    outcome = result.result
+
+    if outcome.type == "succeeded":
+        response = outcome.message.content[0].text
+        process_result(doc_id, response)
+    elif outcome.type == "expired":
+        resubmit_as_is(doc_id)                      # 24 hours elapsed, not billed → resubmit as is
+    elif outcome.type == "errored":
+        handle_failure(doc_id, outcome.error)       # the request itself is faulty → fix, then submit
+    elif outcome.type == "canceled":
+        pass                                        # you canceled it
+```
+
+---
+
+## Handling Failed Requests
+
+A batch has four result types, and each one calls for a different action:
+
+| `result.type` | What happened? | Billed? | Action |
+|---------------|----------|-----------------|-------|
+| `succeeded` | A response was produced | ✅ | Process it. **Do not resubmit** — cost doubles |
+| `errored` | Request invalid (too large, bad parameter) or server error | ❌ | **Fix** the request (chunk it, repair the parameter), then submit |
+| `expired` | 24 hours elapsed, its turn never came | ❌ | Resubmit **as is** (nothing wrong with the request) |
+| `canceled` | You canceled it | ❌ | Intentional; submit if needed |
+
+### The Correct Approach
+
+```
+1. Retrieve all batch results
+2. Filter the non-succeeded ones via custom_id
+3. Resubmit only these:
+   - expired → unchanged
+   - errored "too large" / context limit → split the document into chunks, resubmit
+   - errored prompt/parameter error → fix, resubmit
+4. Do not resubmit the successful ones
+```
+
+```python
+retry_requests = []
+for result in client.messages.batches.results(batch.id):
+    outcome = result.result
+    if outcome.type == "succeeded":
+        continue
+    original_doc = documents[result.custom_id.removeprefix("doc-")]
+
+    if outcome.type == "expired":
+        retry_requests.append(rebuild_request(result.custom_id))          # as is
+    elif outcome.type == "errored" and "too large" in str(outcome.error):
+        for i, chunk in enumerate(chunk_document(original_doc)):          # chunk it
+            retry_requests.append({
+                "custom_id": f"{result.custom_id}-chunk-{i}",
+                "params": build_params(chunk)
+            })
+    elif outcome.type == "errored":
+        retry_requests.append(fix_and_rebuild(result.custom_id, outcome.error))
+
+# Resubmit only the failures
+if retry_requests:
+    retry_batch = client.messages.batches.create(requests=retry_requests)
+```
+
+---
+
+## Pre-Batch Optimization
+
+**Test with a small sample before submitting a large batch.** The official recommendation: "*Test with the Messages API first — validate request shape synchronously before batching.*" Exam guide: "*prompt refinement on a sample set before batch-processing large volumes to maximize first-pass success rates*".
+
+```
+Why?
+- You submitted a batch of 1000 documents, the prompt is faulty
+- 24 hours later all results are unusable
+- Cost: half is gone, the work starts from scratch
+
+The correct approach:
+1. Pick 10-20 representative documents (the same labeled eval set from Task 4.1)
+2. Test with the synchronous API
+3. Validate extraction quality
+4. Fix the issues
+5. Move to batch → Maximize the first-pass success rate
+```
+
+**Additional savings — prompt caching:** if the system prompt + few-shot examples + tool schema are the same across all requests, they are cached with `cache_control`; the batch's 50% stacks on top of the caching discount. A high cache hit rate is also achieved within the batch (requests are processed in a similar order).
+
+**Large sets:** if the 100,000 request / 256 MB limit is exceeded, use multiple batches. Queued requests in a batch also count toward the rate limit; very high volume can exceed the workspace spending limit.
+
+---
+
+## The "Multi-Turn Tool Calling" Constraint — How to Read It Correctly
+
+The exam's trick question:
+
+> *"I want to run an extraction pipeline that requires multi-step tool calling on the Batch API."*
+
+**Exam answer:** The Batch API does not support this **within a single request**. The exam guide's exact sentence: "*does not support multi-turn tool calling **within a single request** (cannot execute tools mid-request and return results)*".
+
+**What it means, and what it does not mean:**
+
+```
+One batch request = ONE Messages call.
+  ✅ You can define tools (tools=[...]); Claude can return a tool_use block
+  ✅ You can send multi-turn conversation HISTORY (including previous tool_use/tool_result)
+  ✅ Extended thinking, vision, caching, structured outputs work
+  ❌ If Claude calls YOUR tool, the response ends with stop_reason="tool_use";
+     you CANNOT run the tool inside the batch, provide the result, and CONTINUE.
+     Continuing = run the tool yourself → new request with tool_result (new batch or synchronous).
+
+Supported → Batch:
+  Request → Response (text or single-turn tool_use output — e.g. an extraction tool)
+
+Not supported (in a single request) → Synchronous or chained batches:
+  Request → Tool call → (you run it) → Tool result → Continue → Result
+```
+
+Practical consequence: **extraction** (single call, the tool is forced with `tool_choice`, the `input` is taken) is ideal for batch; an **agentic loop** (the next step depends on the tool result) is not suited to batch — either synchronous, or chain each turn as a separate batch (latency grows up to 24 hours per turn).
+
+> **Current note (does not change the exam answer):** *server* tools (tools Anthropic runs, such as web search, code execution, web fetch) work with an agentic loop inside a batch, because the API runs them, not you. The constraint applies only to **client (your) tools**.
+
+---
+
+## Practical Decision Tree
+
+```
+What is the task?
+│
+├─ Are developers/a system waiting for the result NOW? (pre-merge, interactive)
+│   ├─ YES → Synchronous API
+│   └─ NO ↓
+│
+├─ Is the latency limit (SLA) SHORTER than 24 hours?
+│   ├─ YES → Synchronous API
+│   └─ NO (no SLA or > 24 hours) ↓
+│       └─ If there is an SLA, plan the submission window as P ≤ SLA − 24 hours
+│
+├─ Is it necessary to run a client tool and continue in the same request? (agentic loop)
+│   ├─ YES → Synchronous API (or chain the turns as separate batches)
+│   └─ NO ↓
+│
+└─ Is the volume large and cost important?
+    ├─ YES → Batch API (50% savings; test with a small sample first)
+    └─ NO → Synchronous API
+```
+
+---
+
+## Key Takeaway List
+
+| # | Key Takeaway |
+|---|---------------|
+| 1 | **Batch API: 50% cost savings, most within 1 hour / upper bound 24 hours, no latency SLA** — but the 24-hour upper bound is enough to do the math. |
+| 2 | **Blocking workflows (CI/CD, pre-merge) → always synchronous.** Don't fall for the "timeout fallback" trap. |
+| 3 | **Latency-tolerant workflows (nightly report, weekly audit) → batch.** Batch doesn't replace synchronous; it complements it. |
+| 4 | **SLA calculation: P ≤ SLA − 24 hours.** 30-hour SLA → submit at most every 6 hours (4 hours is safe). SLA ≤ 24 hours → no batch. |
+| 5 | **Match with `custom_id`** — results don't come back in order; 1–64 characters, `[A-Za-z0-9_-]`, unique. |
+| 6 | **Batch cannot run a client tool and continue within a single request;** tool use, history, thinking, caching are supported. Extraction ✅, agentic loop ❌. |
+| 7 | **Four result types:** `succeeded` process · `expired` submit as is · `errored` fix/chunk and submit · `canceled`. Don't resubmit the successful ones. |
+| 8 | **Test synchronously with a small sample before a large batch;** additional savings with prompt caching. `client.messages.batches.*` (GA, not beta). |
+
+---
+
+## Practice Questions and Answer Explanations
+
+### Question 1
+
+A team plans to move all Claude calls to the Batch API for 50% cost savings. This includes: (a) nightly code quality reports, (b) pre-merge PR security scanning. Is this plan correct?
+
+**A)** Yes, both uses are suitable for Batch  
+**B)** No, both uses should stay synchronous  
+**C)** No; nightly reports can be moved to batch, PR security scanning should stay synchronous  
+**D)** Yes; both are moved to batch, falling back to the synchronous API if no result arrives within 15 minutes  
+
+**✅ Answer: C**
+
+*Explanation:* Nightly reports are latency-tolerant — being ready by morning is enough, batch is suitable. PR security scanning is a blocking workflow — developers are waiting for the result before merging, synchronous is required. (D) is exam guide Q11's actual trap: for pre-merge scanning *every* PR first waits 15 minutes, then a synchronous call is made — both latency and cost increase, no savings. (B) wastes the savings on nightly reports.
+
+---
+
+### Question 2
+
+500 documents were submitted with the Batch API. After 24 hours: 480 succeeded, 12 `expired`, 8 `errored` ("request too large"). What is the next step?
+
+**A)** Resubmit all 500 documents  
+**B)** Submit the 12 expired documents as is and the 8 errored documents split into chunks in a new batch; do not submit the 480 successful ones  
+**C)** Manually inspect the 20 failed documents and skip them  
+**D)** Resubmit all 20 documents split into chunks  
+
+**✅ Answer: B**
+
+*Explanation:* Thanks to custom_id, you know which documents failed and for what reason. `expired` requests have nothing wrong with them (their turn never came, not billed) → submit unchanged. `errored` "too large" → the document exceeded the context limit → chunk it. Resubmitting the whole batch (A) is unnecessary spending for 480 documents. (D) needlessly chunks the expired documents.
+
+---
+
+### Question 3
+
+In which scenario can the Batch API not be used?
+
+**A)** Weekly analysis of 1000 invoice documents  
+**B)** Overnight test scenario generation  
+**C)** An extraction that must complete in a single request, which for each document first calls a search tool (on your server) and then calls a second tool based on its result  
+**D)** Bulk classification of archive documents  
+
+**✅ Answer: C**
+
+*Explanation:* The Batch API cannot run a client tool and continue within a single request — Claude returns `tool_use` and the request ends; providing the result and continuing requires a new request. This iterative flow requires the synchronous API (or chained batches). The other three are single request → single response jobs.
+
+---
+
+### Question 4
+
+What is the best practice before starting a large batch operation?
+
+**A)** Use the most powerful model — quality increases automatically  
+**B)** Test with the synchronous API on 10-20 representative documents before submitting all documents  
+**C)** Submit the whole batch first, fix the prompt based on the results and resubmit  
+**D)** Submit without custom_id — it's processed faster  
+
+**✅ Answer: B**
+
+*Explanation:* Testing with a small sample catches prompt errors early. Instead of waiting 24 hours to learn that all results are unusable, validating first and then submitting the large batch saves both time and cost.
+
+---
+
+### Question 5
+
+A customer is given a "your document is processed within 30 hours at most" SLA. Documents arrive irregularly throughout the day; the Batch API will be used for cost (processing upper bound 24 hours). At most how many hours apart should batches be submitted?
+
+**A)** Once a day — 24 hours + 24 hours = 48 < 30 × 2  
+**B)** Every 6 hours (4 hours is safer): worst-case latency = wait (6) + processing (24) = 30 ≤ 30  
+**C)** Batch cannot be used; any job with an SLA must be synchronous  
+**D)** Every 12 hours — sufficient since most batches finish in 1 hour  
+
+**✅ Answer: B**
+
+*Explanation:* P ≤ SLA − 24 = 6 hours. The exam guide's example is a 4-hour window (28 hours, 2 hours of margin). (A) with once-a-day submission, a document arriving at the start of the window may wait 24 + 24 = 48 hours. (C) confuses "no SLA" with "an SLA cannot be given"; the 24-hour upper bound is enough to do the math. (D) the SLA is for the worst case; "most finish in 1 hour" is an average, not a guarantee — 12 + 24 = 36 > 30.

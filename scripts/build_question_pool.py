@@ -1,4 +1,4 @@
-"""One-off: converts docs/question-pool-merged-338.json (the authored Question Pool,
+"""One-off: converts docs/question-pool-merged-400.json (the authored Question Pool,
 our source of truth for questions) into content/question_pool.json, the build's
 consumable schema (#12). Not part of the regular build — re-run only if the
 authored pool changes."""
@@ -7,7 +7,7 @@ import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SOURCE = os.path.join(ROOT, "docs", "question-pool-merged-338.json")
+SOURCE = os.path.join(ROOT, "docs", "question-pool-merged-400.json")
 
 merged = json.load(open(SOURCE, encoding="utf-8"))
 

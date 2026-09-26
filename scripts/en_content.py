@@ -403,7 +403,7 @@ On every run the agent does the analysis from scratch; it remembers nothing from
 }
 
 Q_EN.update({
-("base",2,1):{"body":"""A customer support agent has 3 tools:
+("base",2,1):{"body":"""A customer-support agent has 3 tools:
 
 - `get_account_info`: "Retrieves account information"
 - `get_billing_info`: "Retrieves billing information"
@@ -412,93 +412,105 @@ Q_EN.update({
 Users complain: when they say "I want to upgrade my subscription" the agent calls `get_account_info`; billing queries go to `get_subscription_info`. Overall misrouting rate is 30%.
 
 **What should be done as the first step?**""",
- "opts":{"A":"Merge the three tools into a single `get_customer_data` tool — Claude can't make mistakes with one tool.",
-         "B":"Add few-shot examples to the system prompt such as \"use get_billing_info for billing questions, get_subscription_info for subscription questions\".",
-         "C":"Expand each tool's description — state clearly which data fields it returns, which query types it is for, and how it differs from the other tools.",
-         "D":"Add an intent classifier before Claude — it analyses the query and routes it to the right tool."},
- "expl":"""**Why C is correct:** The root cause is vague descriptions — all three tools follow the "retrieves X information" pattern and Claude cannot differentiate. Expanding the descriptions (which fields are returned, which queries they serve, how they differ) is a low-effort, high-leverage fix that targets the root cause directly.
+ "opts":{"A":"Merge the three tools into a single `get_customer_data` tool — Claude can't err with one tool.",
+         "B":"Add few-shot examples to the system prompt: \"use get_billing_info for billing questions, get_subscription_info for subscription questions\".",
+         "C":"Expand each tool's description — state explicitly which data fields it returns, which query types it serves, and how it differs from the other tools; sharpen the names if needed (`get_billing_history`, `get_subscription_plan`).",
+         "D":"Add an intent classifier before Claude — it analyzes the query and routes to the right tool."},
+ "expl":"""**Why C is correct:** The root cause is vague descriptions — all three follow the "retrieves X information" format, and Claude can't differentiate. Expanding the descriptions (which fields it returns, which queries it serves, how it differs) and renaming if needed is a low-effort, high-leverage fix; it applies two exam-guide Skills together ("writing descriptions that clearly differentiate" + "renaming tools and updating descriptions").
 
-**Why A is wrong:** Merging breaks separation of concerns. Combining three data sources in one tool loses tool focus and needlessly inflates the data returned. It also takes far more effort.
+**Why A is wrong:** Merging doesn't remove the ambiguity, it moves it into the tool — now the tool has to guess which data to return. Three different output contracts don't fit one tool; separation of concerns breaks.
 
-**Why B is wrong:** Few-shot examples add token cost and treat the symptom, not the root cause. While descriptions are vague, examples are not a reliable fix. Prompt-based guidance is probabilistic.
+**Why B is wrong:** Few-shot examples add token cost and treat the symptom, not the root cause. Prompt-based guidance is probabilistic; while descriptions are vague it won't provide a reliable fix.
 
-**Why D is wrong:** An intent classifier is over-engineering for a first step. You haven't tried the simple fix (better descriptions) yet. A classifier adds complexity and maintenance cost."""},
-("base",2,2):{"body":"""An agent has an `analyze_document` tool. In a single call it summarises the document, extracts key data and verifies claims. The agent sometimes runs unnecessary verification when only a summary was requested, and sometimes returns only a summary when verification was requested.
+**Why D is wrong:** An intent classifier is over-engineering for a first step. You haven't tried the simple fix (improving descriptions). A classifier adds complexity and maintenance cost."""},
+("base",2,2):{"body":"""An agent has an `analyze_document` tool. In a single call it summarizes the document (output: plain text), extracts key data (output: list of JSON records) and verifies claims (output: supported/unsupported + evidence per claim). The three operations also have different input requirements: verification needs a list of claims, summarization doesn't. The agent sometimes runs unnecessary verification when only a summary is wanted, and sometimes returns only a summary when verification is wanted.
 
 **What are the root cause and the fix?**""",
- "opts":{"A":"The tool's description is inadequate — write a more detailed description.",
-         "B":"The tool is too broad — split it into three purpose-specific tools: `summarize_content`, `extract_data_points` and `verify_claim_against_source`.",
+ "opts":{"A":"The tool's description is insufficient — write a more detailed description.",
+         "B":"The tool combines three different purposes and three different input/output contracts in one interface — split it into purpose-specific tools: `summarize_content`, `extract_data_points` and `verify_claim_against_source`.",
          "C":"Add \"only perform the requested operation\" to the system prompt.",
          "D":"Add an `operation_type` field to the tool's input parameters — Claude specifies which operation it wants."},
- "expl":"""**Why B is correct:** The tool does three different jobs — summarising, extraction, verification. Claude triggers all three with one call and cannot control which output it wants. Splitting into purpose-specific tools defines each precisely for one job. Claude can select exactly the operation it needs.
+ "expl":"""**Why B is correct:** The splitting criterion is not "how many operations" but "how many distinct purposes and output contracts". Here there are three different output schemas and different input requirements — one tool can't offer them under a coherent contract. Splitting into purpose-specific tools defines each tool precisely for one job with a defined input/output contract. Exam-guide Skill: "Splitting generic tools into purpose-specific tools with defined input/output contracts."
 
-**Why A is wrong:** A better description clarifies what a single tool does, but does not fix the structural problem — the tool still does three jobs at once. A better description improves when Claude calls the tool, not what the tool does.
+**Why A is wrong:** Improving the description clarifies *when* Claude calls the tool, but doesn't change *what the tool returns* — it still does all three jobs and the output schema stays ambiguous.
 
-**Why C is wrong:** A prompt instruction is probabilistic. Saying "only do the requested operation" does not change the tool's three-in-one structure — this is an architectural problem, not a prompt problem.
+**Why C is wrong:** A prompt instruction is probabilistic. "Only perform the requested operation" doesn't change the tool's do-all-three structure — this is an interface problem, not a prompt problem.
 
-**Why D is wrong:** An `operation_type` parameter is a workaround — it moves the complexity inside the tool. The tool still contains three separate logics; you've just added a switch. Clean architecture: each tool does one job."""},
-("base",2,3):{"body":"""An agent is attempting an international money transfer. The tool returns:
+**Why D is wrong:** An `operation_type` parameter selects the operation but doesn't fix the output contract — the tool returns three different schemas depending on `operation_type`, and Claude can't infer from the description which schema to expect; the `claims` parameter needed for verification is meaningless for the other operations. If these were steps of one workflow (see the `schedule_event` consolidation example) a single tool would be defensible; here there are three separate purposes."""},
+("base",2,3):{"body":"""An agent is attempting an international money transfer. The MCP tool returns:
 
 ```json
 {
   "isError": true,
-  "errorCategory": "business",
-  "isRetryable": false,
-  "description": "Transfer amount ($15,000) exceeds the daily limit ($10,000).",
-  "customerMessage": "Your daily transfer limit is $10,000. Contact your account manager for higher limits."
+  "content": [{ "type": "text", "text": "{\\"errorCategory\\":\\"business\\",\\"isRetryable\\":false,\\"description\\":\\"Transfer amount ($15,000) exceeds the daily limit ($10,000).\\",\\"customerMessage\\":\\"Your daily transfer limit is $10,000. Contact your account manager for higher limits.\\"}" }]
 }
 ```
 
 **What should the agent do?**""",
  "opts":{"A":"Wait 5 seconds and retry — it may be a transient error.",
          "B":"Automatically reduce the transfer amount to $10,000 and retry.",
-         "C":"Do not retry. Relay the information in `customerMessage` to the customer and offer an alternative path (referral to the account manager).",
+         "C":"Not retry. Relay the `customerMessage` information to the customer and offer an alternative path (referral to the account manager).",
          "D":"Fix the input and retry — it may be a validation error."},
- "expl":"""**Why C is correct:** `errorCategory: "business"` and `isRetryable: false` — this is a business-rule violation; retrying is WRONG. Until the policy changes the same operation will fail every time. The agent should relay the `customerMessage` to the customer and offer the alternative path (account manager).
+ "expl":"""**Why C is correct:** `errorCategory: "business"` and `isRetryable: false` — this is a business-rule violation; retrying is WRONG. Until the policy changes, the same operation fails every time. The agent should relay the `customerMessage` to the customer and offer an alternative path.
 
-**Why A is wrong:** This is not a transient error — it is a business-rule error. Waiting does not change the policy. The same error returns after 5 seconds or 5 minutes. `isRetryable: false` explicitly rules out retrying.
+**Why A is wrong:** This is not a transient error — it's a business-rule error. Waiting doesn't change policy. `isRetryable: false` explicitly rejects a retry.
 
-**Why B is wrong:** Changing the amount automatically overrides the customer's request. The customer wants to transfer $15,000 — the agent must not unilaterally reduce it to $10,000. That business decision belongs to the customer.
+**Why B is wrong:** Changing the amount automatically overrides the customer's request. That business decision belongs to the customer; the agent must not reduce it to $10,000 on its own.
 
-**Why D is wrong:** This is not a validation error — the format is correct and the amount is a valid number. The problem is a business rule: the daily limit is exceeded. `errorCategory: "business"` states it explicitly. Validation errors are about input format (wrong type, missing field)."""},
-("base",2,4):{"body":"""In a multi-agent system the web search subagent gets a timeout on an API call. The subagent retries twice more but fails.
+**Why D is wrong:** This is not a validation error — the format is right, the amount is a valid number. The problem is a business rule: the daily limit is exceeded. `errorCategory: "business"` states this explicitly."""},
+("base",2,4):{"body":"""You are writing your own MCP server. The `lookup_order` tool throws a `-32602 Invalid params` JSON-RPC protocol error when the order number isn't in the database, and returns an empty result with `content: []` when the database connection drops. In production, the agent keeps saying "an error occurred" for non-existent order numbers, and during a database outage tells the customer "your order was not found".
 
-**What should the subagent do?**""",
- "opts":{"A":"Swallow the error silently and return an empty result — don't bother the coordinator with unnecessary information.",
-         "B":"Propagate to the coordinator immediately at the first timeout — local retries are a waste of time.",
-         "C":"Propagate the error to the coordinator — including partial results (what it obtained before the timeout) and the recovery steps attempted (2 retries).",
-         "D":"Retry in an infinite loop — transient errors eventually resolve."},
- "expl":"""**Why C is correct:** The subagent attempted local recovery (2 retries) and failed. Now it has an error it cannot resolve locally. Correct behaviour: propagate to the coordinator, but in an informed way — include partial results and the recovery steps attempted. The coordinator can then decide: try a different subagent, use a different source, or route to a human.
+**What are the root cause and the correct design?**""",
+ "opts":{"A":"Increase the retry count — database outages are solved by retries.",
+         "B":"Both situations are reported through the wrong channel. \"Order not found\" is a valid empty result → `isError: false` + `resultCount: 0`. A dropped database connection is a tool execution error → `isError: true` + `errorCategory: \"transient\"`, `isRetryable: true`. Protocol errors should be used only for unknown tools / arguments that violate the schema.",
+         "C":"Throw a protocol error in both cases — so the client behaves consistently.",
+         "D":"Add \"say 'order not found' instead of 'an error occurred'\" to the system prompt."},
+ "expl":"""**Why B is correct:** MCP defines two error mechanisms: a protocol error (JSON-RPC `error`) does **not** reach the model — it stays in the client layer; a tool execution error (`isError: true`) reaches the model, which can self-correct. A non-existent order isn't even an error — a successful query with zero matches (`isError: false`). A dropped database connection is a real access failure; `isError: true` + transient/retryable metadata lets the agent make a retry decision. The current design encodes both situations backwards.
 
-**Why A is wrong:** Swallowing the error silently is the most dangerous approach. The coordinator stays unaware of the problem and may interpret the empty result as "no data" (the access-failure vs empty-result confusion). Information loss and wrong decisions.
+**Why A is wrong:** Retries don't change an empty result (non-existent order), and the agent won't recognize an outage returned as an empty array as an error in the first place, so it won't retry. The problem isn't the retry count; it's the signal structure.
 
-**Why B is wrong:** Propagating at the first timeout skips the local recovery opportunity. Transient errors are usually fixed by retrying — the subagent should try first. Propagating every transient error to the coordinator creates needless load and latency.
+**Why C is wrong:** A protocol error doesn't reach the model — Claude can't see what went wrong, can't fix the input, can't look for an alternative path. Business/API/validation errors must be returned *as results* with `isError: true`.
 
-**Why D is wrong:** An infinite retry loop locks the system. The assumption that transient errors "eventually resolve" is not always true — a service can be down for a long time. After a reasonable number of retries (2–3), if unresolved, propagate upward."""},
-("base",2,5):{"body":"""A research agent has been given 16 tools: 5 web search tools, 4 document analysis tools, 3 database query tools, 2 email tools and 2 calendar tools. The agent frequently picks the wrong tool and struggles to complete tasks.
+**Why D is wrong:** The prompt doesn't know what the tool returns in which situation; it can't tell the two apart. A structural problem needs a structural fix."""},
+("base",2,5):{"body":"""A research agent has been given 16 tools: 5 web-search tools, 4 document-analysis tools, 3 database-query tools, 2 email tools and 2 calendar tools. The agent frequently picks the wrong tool and struggles to complete tasks.
 
 At the same time, although metadata extraction is a mandatory first step, the agent sometimes skips it and goes straight to analysis.
 
-**Which approach solves both problems?**""",
+**Which approach fixes both problems at once?**""",
  "opts":{"A":"Expand all tool descriptions and add \"always extract metadata first\" to the system prompt.",
-         "B":"Distribute the tools across role-specific agents (4–5 tools per agent) and enforce the mandatory first step with `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}`.",
-         "C":"Reduce the tool count to 8 — remove the least used tools.",
+         "B":"Distribute the tools across role-specific agents (4–5 tools each) and enforce the mandatory first step with `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}` on the first request; switch `tool_choice` back to `auto` on subsequent turns.",
+         "C":"Distribute the tools across role-specific agents and use `tool_choice: {\"type\": \"tool\", \"name\": \"extract_metadata\"}` on all turns — so the step is never skipped.",
          "D":"Create a single \"do_everything\" tool and run all operations through it."},
- "expl":"""**Why B is correct:** It solves both problems:
-1. **Tool overload:** 16 tools → distribute across role-specific agents (4–5 tools each). Selection reliability improves.
-2. **Mandatory first step:** `tool_choice: {"type": "tool", "name": "extract_metadata"}` forces metadata extraction deterministically. The model cannot skip it — it is physically required to call this tool.
+ "expl":"""**Why B is correct:** It fixes both problems:
+1. **Tool overload:** 16 tools → distribute across role-specific agents (4–5 each). Selection reliability rises.
+2. **Mandatory first step:** forced `tool_choice` on the first request makes metadata extraction deterministic; the model can't skip it. Switching to `auto` on later turns lets the model proceed to analysis — exam guide: "ensure a specific tool is called first, then processing subsequent steps in follow-up turns."
 
-**Why A is wrong:** A two-part fix, but both parts are probabilistic. Expanding descriptions partially improves the 16-tool selection problem but does not fix the root cause (too many tools). The system prompt instruction "always extract metadata" is probabilistic — no 100% guarantee. Mandatory steps need a deterministic mechanism (tool_choice).
+**Why A is wrong:** Two-part, but both parts probabilistic. Expanding descriptions partially improves a 16-tool selection problem but doesn't fix the root cause (too many tools). The system-prompt instruction "always extract metadata" isn't a 100% guarantee. Mandatory steps need a deterministic mechanism (tool_choice).
 
-**Why C is wrong:** Reducing the tool count loses functionality. And choosing which tools to remove by "least used" is wrong — a rarely used tool may be critical. The real fix is not removing tools but distributing them to the right agents.
+**Why C is wrong:** The distribution part is right, but `tool_choice` is per request; left forced on every turn, the model is forced to call `extract_metadata` **on every turn** and never reaches analysis — an infinite metadata loop. Forced selection only on the first turn; then `auto`.
 
-**Why D is wrong:** A single "do_everything" tool is the exact opposite of tool splitting. Piling all complexity into one tool makes it impossible for Claude to specify what it wants. A bigger version of the `analyze_document` problem in question 2."""},
-("base",2,6):{"body":"""A team is starting a new project. An MCP server will be configured for the GitHub integration. A developer proposes this `.mcp.json`:
+**Why D is wrong:** A single "do_everything" tool is the exact opposite of tool splitting. Piling all complexity into one tool makes it impossible for Claude to specify what it wants."""},
+("base",2,6):{"body":"""In a document-processing pipeline Claude has three tools: `classify_invoice`, `classify_receipt`, `classify_contract` — each returns a different JSON schema. The pipeline parses Claude's response directly with `json.loads`. In production Claude sometimes returns text like "This document looks like an invoice, would you like me to classify it?" instead of calling a tool, and the pipeline crashes. For some documents Claude also calls two classification tools in a single response.
+
+**Which configuration fixes both problems?**""",
+ "opts":{"A":"`tool_choice: {\"type\": \"auto\"}` + \"always call a tool\" in the system prompt.",
+         "B":"`tool_choice: {\"type\": \"any\"}` + `disable_parallel_tool_use: true` — the model must call one of the three tools, exactly one.",
+         "C":"`tool_choice: {\"type\": \"tool\", \"name\": \"classify_invoice\"}` — most documents are invoices.",
+         "D":"`tool_choice: {\"type\": \"none\"}` + parse the output with a regex."},
+ "expl":"""**Why B is correct:** `any` guarantees the model **must** call a tool instead of returning text; which one is left to the model — one of the three schemas is certain to arrive. Exam-guide Skill: "Setting tool_choice: 'any' to guarantee the model calls a tool rather than returning conversational text." `disable_parallel_tool_use: true` prevents multiple `tool_use` blocks in one response; with `any` it yields the guarantee of "exactly one tool call".
+
+**Why A is wrong:** `auto` leaves the model free to return text; a prompt instruction is probabilistic. A guarantee of "always call a tool" needs deterministic `tool_choice`.
+
+**Why C is wrong:** Forcing one tool classifies receipts and contracts with the invoice schema too — wrong schema, wrong data. The choice should be left to the model while the obligation to call is enforced: that is the definition of `any`.
+
+**Why D is wrong:** `none` switches tool use off entirely — the opposite direction. Parsing free text with a regex throws away the structured-output guarantee."""},
+("base",2,7):{"body":"""A team is starting a new project. An MCP server will be configured for GitHub integration. A developer proposes this `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "github": {
+      "type": "stdio",
       "command": "github-mcp-server",
       "env": {
         "GITHUB_TOKEN": "ghp_abc123def456ghi789"
@@ -509,38 +521,63 @@ At the same time, although metadata extraction is a mandatory first step, the ag
 ```
 
 **What is the security problem in this configuration?**""",
- "opts":{"A":"The `github-mcp-server` command is wrong — the correct command should be `mcp-github`.",
-         "B":"The GitHub token is written directly into `.mcp.json`. Because this file is under version control the token will enter the repo. The token should be referenced as the `${GITHUB_TOKEN}` environment variable.",
+ "opts":{"A":"Move the token to `.claude/settings.json` — MCP credentials belong in the settings file.",
+         "B":"The GitHub token is written directly into `.mcp.json`. Since this file is under version control, the token will enter the repo. The token should be referenced as the `${GITHUB_TOKEN}` environment variable; each developer defines their own token in their local environment.",
          "C":"`~/.claude.json` should be used instead of `.mcp.json` — MCP configuration should always be at user level.",
-         "D":"The token is too short — a stronger token should be generated."},
- "expl":"""**Why B is correct:** `.mcp.json` is under version control — tracked by Git and pushed to the repo. If the token is written directly into the file, everyone can see it once it is pushed. A security breach. Fix: use the `${GITHUB_TOKEN}` environment variable syntax. Each developer sets their own token locally; tokens never enter the repo.
+         "D":"The token is too short — generate a stronger one."},
+ "expl":"""**Why B is correct:** `.mcp.json` is under version control — tracked by Git and pushed to the repo. A token written directly into it is visible to everyone. Fix: the `${GITHUB_TOKEN}` environment-variable syntax (with a default via `${GITHUB_TOKEN:-}` if needed). Each developer sets their own token locally; tokens never enter the repo. Exam guide: "Environment variable expansion in .mcp.json for credential management without committing secrets."
 
-**Why A is wrong:** The command name is not the configuration's security problem. The question asks about the security issue — the correct command name is a separate matter.
+**Why A is wrong:** `.claude/settings.json` is also a shared, version-controlled project file (Domain 3.1) — the token still enters the repo. Changing files relocates the problem rather than solving it; settings.json also isn't the right place for MCP server definitions.
 
-**Why C is wrong:** `.mcp.json` (project level) and `~/.claude.json` (user level) exist for different purposes. Project-level tool configuration is information that should be shared with the team — `.mcp.json` is the right place. The problem is not the file's location but the hard-coded token.
+**Why C is wrong:** `.mcp.json` (project) and `~/.claude.json` (user/local) serve different purposes. The team's shared tool configuration is information that should be shared — `.mcp.json` is the right place. The problem isn't the file's location; it's the hardcoded token.
 
-**Why D is wrong:** The token's length or strength is not the security problem here. The issue is where the token is stored — in plain text in a version-controlled file. Even the strongest token is compromised once it enters the repo."""},
-("base",2,7):{"body":"""A developer is working in a large codebase and needs to complete two tasks:
+**Why D is wrong:** The token's length or strength isn't the security problem here. Even the strongest token is compromised once it enters the repo."""},
+("base",2,8):{"body":"""The team set up an MCP server that performs semantic search over the codebase (`mcp__codesearch__search`). The server does language-aware symbol resolution, cross-repo search and relevance ranking. The tool's description: "Searches code." Observation: Claude Code almost never calls this tool; it always uses the built-in `Grep` for code search and finds nothing on multi-repo queries.
+
+**What is the most effective first step?**""",
+ "opts":{"A":"Disable `Grep` via `disallowedTools` — so Claude is forced to use the MCP tool.",
+         "B":"Enrich the MCP tool's description: state its capabilities (symbol resolution, cross-repo, relevance ranking), what it returns (file + line + symbol kind + score), and when it should be preferred over the built-in `Grep`.",
+         "C":"Move the server to `~/.claude.json` — user-scope servers take precedence.",
+         "D":"Write \"always use mcp__codesearch__search for code search\" in CLAUDE.md."},
+ "expl":"""**Why B is correct:** The built-in `Grep`'s description is long, detailed and familiar; if the MCP tool says "Searches code", Claude picks the built-in tool that looks richer — even though the MCP tool is actually more capable. Exam-guide Skill: "Enhancing MCP tool descriptions to explain capabilities and outputs in detail, preventing the agent from preferring built-in tools over more capable MCP tools." Domain 2.1's description principles applied to MCP; low effort, root cause.
+
+**Why A is wrong:** Disabling Grep forces Claude onto the heavy MCP tool even for single-repo, simple pattern searches; it suppresses the symptom by force without improving selection quality. And if the MCP server goes down, search capability is lost entirely.
+
+**Why C is wrong:** Scope precedence (local > project > user) applies to conflicts between servers with the same *name*; it does not affect tool *selection*. Where the server is defined has nothing to do with which tool Claude prefers.
+
+**Why D is wrong:** A CLAUDE.md instruction is probabilistic, and "always" forces MCP even for simple searches. The root cause is the weak description; fix that first. (After the description is fixed, a hint like "prefer codesearch for multi-repo searches" in CLAUDE.md could be considered as a supplement — not the first step.)"""},
+("base",2,9):{"body":"""A developer is working in a large codebase. They need to:
 
 1. Find all files that call the `fetchUserData` function
 2. Find all `.config.yml` files in the project
+3. Run the test suite after changing the found files
 
 **Which tool is correct for each task?**""",
- "opts":{"A":"Use Grep for both — Grep does every kind of search.",
-         "B":"Glob for task 1 (`**/*fetchUserData*`), Grep for task 2 (`fetchUserData` pattern).",
-         "C":"Grep for task 1 (`fetchUserData` pattern — searches file contents), Glob for task 2 (`**/*.config.yml` — matches file paths).",
-         "D":"Use Read for both — read all files and filter manually."},
- "expl":"""**Why C is correct:** Each tool is used where it is strong:
-1. **Grep** for the function name `fetchUserData` in file **contents** → finds the files that call this function
-2. **Glob** to match the `**/*.config.yml` pattern against file **paths** → finds the config files
+ "opts":{"A":"1: Grep, 2: Grep, 3: Grep — Grep handles every kind of search; check test output with Grep.",
+         "B":"1: Glob (`**/*fetchUserData*`), 2: Grep (`.config.yml` pattern), 3: Bash.",
+         "C":"1: Grep (`fetchUserData` — searches file contents), 2: Glob (`**/*.config.yml` — matches file paths), 3: Bash (`npm test`).",
+         "D":"1: Read (read all files, filter), 2: Glob, 3: Edit."},
+ "expl":"""**Why C is correct:** Each tool in its area of strength: Grep for content search (function calls live *inside* files), Glob for path matching (the extension is in the file *name*), Bash for running commands (the test suite — the one job no built-in tool can do).
 
-Grep = content search. Glob = path matching. Each in the right place.
+**Why A is wrong:** Grep searches file contents — finding `.config.yml` files requires path matching (Glob). And Grep can't run commands; tests need Bash.
 
-**Why A is wrong:** Grep searches file contents — finding `.config.yml` files requires matching file paths, which is Glob's job. You cannot search by file extension with Grep (searching for the string ".config.yml" inside file contents is a different thing).
+**Why B is wrong:** 1 and 2 are mapped backwards. Glob searches file paths — if `fetchUserData` isn't in a file name it returns nothing. Function calls are in file contents: Grep. The Bash part is right.
 
-**Why B is wrong:** The mapping is reversed. Glob searches file **paths** — if the function name `fetchUserData` does not appear in a file name (and it usually doesn't) Glob returns nothing. Function calls live in file **contents** — that is Grep's job.
+**Why D is wrong:** Reading all files with Read is a context-budget killer; Grep does the job in one pass. Edit changes files, it doesn't run tests — step 3 needs Bash."""},
+("base",2,10):{"body":"""In Claude Code you want to change the line `timeout: 30` to `timeout: 60` in `config.ts`. The Edit tool returns: "old_string `timeout: 30` appears in 4 places in the file — match is not unique." All four are in different service blocks and you want to change only the one in the `paymentService` block.
 
-**Why D is wrong:** Reading all files with Read is the worst approach — very slow, a context-budget killer. Grep and Glob do these jobs in one efficient step. Reading all files upfront is never the right approach."""},
+**Which approach is correct?**""",
+ "opts":{"A":"Re-run Edit with `replace_all: true` — all four lines get updated.",
+         "B":"Widen `old_string` with surrounding lines (`paymentService: {\\n  retries: 3,\\n  timeout: 30`) so it matches only that block; if that still fails, load the file with Read and write the modified version with Write.",
+         "C":"Run `sed -i 's/timeout: 30/timeout: 60/' config.ts` with Bash.",
+         "D":"Write the file from scratch with Write — no need for Read, the content is already known."},
+ "expl":"""**Why B is correct:** On Edit's uniqueness error the first step is the cheapest: add context to `old_string` so it matches one place. If that doesn't work, the exam guide's fallback kicks in: "When Edit fails due to non-unique text matches, using Read + Write as a fallback." The Read → Write order is mandatory — Claude Code refuses Write to an existing file that hasn't been read.
+
+**Why A is wrong:** `replace_all` changes all four lines; the scenario wants only the `paymentService` block. `replace_all` is for "when you want every occurrence changed" (like renaming a variable), not for selective edits.
+
+**Why C is wrong:** `sed` also changes all four lines (the same selectivity problem) and throws away Edit's uniqueness guarantee and readable diff; permission stays at the `Bash` level. Falling back to Bash when a built-in tool exists is wrong.
+
+**Why D is wrong:** Write clobbers the whole file; without a Read, Claude Code refuses to write to an existing file, and Claude could lose content it hasn't seen. "The content is already known" is a dangerous assumption made without knowing the file's latest state."""},
 ("extra",2,0):{"body":"""An order management agent's `create_shipment` tool returns this on error:
 
 ```json
@@ -613,157 +650,171 @@ The security team objects to the token being exposed in the repo. But the team w
 })
 
 Q_EN.update({
-("base",3,1):{"body":"""Four developers on a team work on the same repo. Developer A has defined rules that make Claude Code always use the `vitest` framework and follow the `describe/it` structure when writing tests. The other 3 developers get inconsistent test output from Claude Code — sometimes it uses `jest`, sometimes `mocha`.
+("base",3,1):{"body":"""A developer wants Claude Code to know, in every session on the e-commerce project they work on, their local sandbox URL (`http://localhost:4010`) and their personal test-customer ID. This is personal — it must not enter the repo. The developer also works on two other projects and wants this information **absent** from context there.
 
-Developer A's rules are defined in `~/.claude/CLAUDE.md`.
+**What is the most appropriate location?**""",
+ "opts":{"A":"`~/.claude/CLAUDE.md` — personal, not in Git.",
+         "B":"`CLAUDE.local.md` at the project root, added to `.gitignore`.",
+         "C":"`.claude/CLAUDE.md` — project level, loaded every session.",
+         "D":"`.claude/rules/sandbox.md` with `paths: [\"**/*\"]` in the frontmatter."},
+ "expl":"""**Why B is correct:** Two constraints: personal (must not enter the repo) **and** project-specific (must not leak into other projects). `CLAUDE.local.md` exists for exactly that intersection — it sits at the project root, loads alongside `CLAUDE.md`, and goes into `.gitignore`.
 
-**What are the root cause and the fix?**""",
- "opts":{"A":"The other developers' Claude Code versions differ — everyone should update to the same version.",
-         "B":"The rules are at user level (`~/.claude/CLAUDE.md`) — they apply only to Developer A. They should move to project level (`.claude/CLAUDE.md`) so the whole team gets them.",
-         "C":"Each developer should copy the same rules into their own `~/.claude/CLAUDE.md`.",
-         "D":"Developer A should synchronise memories with the `/memory` command."},
- "expl":"""**Why B is correct:** `~/.claude/CLAUDE.md` is user level — not in Git, not shared. Only Developer A gets these rules. Fix: move them to `.claude/CLAUDE.md` (project level). Under version control, everyone who clones the repo gets the rules.
+**Why A is wrong:** `~/.claude/CLAUDE.md` is personal but loads in **every project** on the machine — the sandbox URL would be in context in the other two projects.
 
-**Why A is wrong:** a version difference doesn't explain the test-framework preference. The problem is the missing instructions, not the software version.
+**Why C is wrong:** A project-level file goes into Git; the personal test ID would be shared with the team.
 
-**Why C is wrong:** manual copying isn't sustainable — when the rules change everyone has to update. The project-level file reaches everyone automatically.
+**Why D is wrong:** `.claude/rules/` is project scope and goes into Git; and `**/*` means "every file" — equivalent to an unconditional rule, providing no personal scoping."""},
+("base",3,2):{"body":"""A monorepo's root `.claude/CLAUDE.md` has reached 600 lines: general standards + React rules for `web/` + Go rules for `api/` + Terraform rules for `infra/`. The team has two complaints: (1) Claude ignores some rules, (2) even while working in `api/`, the React rules consume tokens.
 
-**Why D is wrong:** `/memory` is a diagnostic tool, not a synchronisation tool."""},
-("base",3,2):{"body":"""A project's root `.claude/CLAUDE.md` contains general coding standards. The project has this structure:
+A developer proposes: split the root file into four parts and import them with `@docs/react.md`, `@docs/go.md`, `@docs/terraform.md`.
 
-```
-/
-├── .claude/CLAUDE.md  (general standards)
-├── frontend/          (React)
-├── backend/           (Python/FastAPI)
-└── infrastructure/    (Terraform)
-```
+**Which of the two complaints does this proposal solve?**""",
+ "opts":{"A":"Both — imported files load only while working in the relevant directory.",
+         "B":"Only (1), partially — the file becomes organized, but imported files load **at launch** together; total context stays the same and the React rules are still spent in `api/`. For (2), directory-level `web/CLAUDE.md`, `api/CLAUDE.md`, `infra/CLAUDE.md` files (loaded on demand) are needed.",
+         "C":"Neither — import syntax only works in `~/.claude/CLAUDE.md`.",
+         "D":"Only (2) — imports are lazy-loaded but the file size doesn't change."},
+ "expl":"""**Why B is correct:** `@path` imports are an **organization** tool: the files enter context at launch together with CLAUDE.md, saving no tokens. The bloat that leads to ignored rules (complaint 1) improves partially because the file becomes readable; but the real fix is reducing the total loaded text. Only **on-demand** mechanisms do that: directory-level CLAUDE.md (when a file in that directory is read) or `paths` rules.
 
-The team wants to apply different language- and framework-specific rules per subdirectory. At the same time it doesn't want `.claude/CLAUDE.md` to grow too large.
+**Why A is wrong:** Imports are not lazy-loaded; this is the most common confusion between 3.1 and 3.3.
 
-**What is the right approach?**""",
- "opts":{"A":"Write all rules into the single `.claude/CLAUDE.md` — size isn't a problem.",
-         "B":"Create directory-level `CLAUDE.md` files in each subdirectory (`frontend/CLAUDE.md`, `backend/CLAUDE.md`, `infrastructure/CLAUDE.md`) and/or reference modular files from `.claude/CLAUDE.md` with the `@import` syntax.",
-         "C":"Each developer writes the rules for their area in their own `~/.claude/CLAUDE.md`.",
-         "D":"Move all rules into skill files — invoke the relevant skill each time."},
- "expl":"""**Why B is correct:** two mechanisms work together: directory-level CLAUDE.md files apply rules specific to that directory (React rules in frontend, Python rules in backend). The `@import` syntax provides modular organisation — reference external files instead of one big file. Both approaches are version-controlled and shared.
+**Why C is wrong:** Imports work in every CLAUDE.md (relative paths resolve relative to the importing file).
 
-**Why A is wrong:** cramming everything into one file wastes tokens. There's no point loading React rules while working in the backend.
-
-**Why C is wrong:** user level isn't shared. New members don't get the rules. No standardisation.
-
-**Why D is wrong:** skills are invoked on demand — universal standards must always be loaded. Skills are for task-specific procedures, CLAUDE.md for universal standards."""},
+**Why D is wrong:** The opposite — imports load at launch; (2) is not solved."""},
 ("base",3,3):{"body":"""A team has these requirements:
 
-1. A `/deploy-checklist` command the whole team will use — a pre-deployment checklist
-2. One developer wants a personal `/deep-analyze` skill that performs large codebase analyses — it produces very detailed output and must not pollute the main conversation
-3. The `/deep-analyze` skill must use only read tools — no file writes or deletes
+1. A `/deploy-checklist` command for the whole team — a pre-deployment checklist
+2. One developer wants a personal `/deep-analyze` skill that performs large codebase analyses — it produces very verbose output and must not pollute the main conversation
+3. The `/deep-analyze` skill must only use read tools — no file writes or deletes
 
 **Which configuration is correct?**""",
  "opts":{"A":"Both go in `.claude/commands/`.",
-         "B":"`/deploy-checklist` → `.claude/commands/` (project-scoped). `/deep-analyze` → a `SKILL.md` in `~/.claude/skills/` with the `context: fork` and `allowed-tools: [Read, Grep, Glob]` frontmatter.",
+         "B":"`/deploy-checklist` → `.claude/commands/` (project-scoped). `/deep-analyze` → `~/.claude/skills/deep-analyze/SKILL.md` with `context: fork`, `agent: Explore` and `allowed-tools: Read Grep Glob` in the frontmatter.",
          "C":"Both should be written as procedures in CLAUDE.md.",
          "D":"`/deploy-checklist` → `~/.claude/commands/`. `/deep-analyze` → `.claude/skills/`."},
- "expl":"""**Why B is correct:** it meets all three requirements:
-1. `/deploy-checklist` is team-wide → `.claude/commands/` (project-scoped, in Git, shared)
-2. `/deep-analyze` is personal with detailed output → `~/.claude/skills/` (personal) + `context: fork` (isolated context, main conversation clean)
-3. Read tools only → `allowed-tools: [Read, Grep, Glob]` (destructive actions blocked)
+ "expl":"""**Why B is correct:** It meets all three requirements:
+1. `/deploy-checklist` is team-wide → `.claude/commands/` (project-scoped, in Git, shared — exam guide Q4)
+2. `/deep-analyze` is personal and verbose → `~/.claude/skills/` (personal) + `context: fork` (isolated context, main conversation clean)
+3. Read tools only → in exam wording, `allowed-tools: Read Grep Glob`. **Note:** in real behavior `allowed-tools` *pre-approves* rather than restricts; a real restriction comes from `disallowed-tools: Write, Edit, Bash` or `agent: Explore` (which already denies Write/Edit). This option's `agent: Explore` provides that guarantee too.
 
-**Why A is wrong:** `/deep-analyze` is a personal request — putting it in team commands affects everyone. `context: fork` and `allowed-tools` are also configured in skill frontmatter.
+**Why A is wrong:** `/deep-analyze` is a personal request — putting it in the team repo distributes it to everyone. The `context: fork` / tool-restriction frontmatter is also defined in the skill directory structure.
 
-**Why C is wrong:** these are task-specific procedures — CLAUDE.md is for universal standards. CLAUDE.md is always loaded, no on-demand invocation.
+**Why C is wrong:** These are task-specific procedures — CLAUDE.md is for universal standards and is always loaded.
 
-**Why D is wrong:** the placement is reversed. `/deploy-checklist` must be team-wide (`.claude/commands/`); the personal directory isn't shared. `/deep-analyze` must be personal (`~/.claude/skills/`); the team directory affects everyone."""},
-("base",3,4):{"body":"""In a codebase the API endpoint files are scattered across `src/api/`, `src/routes/` and `modules/*/api/`. The team wants the same rules in all API files: rate-limiting checks, input validation, standardised error responses.
+**Why D is wrong:** The placement is reversed. `/deploy-checklist` must be team-wide; `/deep-analyze` must be personal."""},
+("base",3,4):{"body":"""A team created a skill at `.claude/skills/release/SKILL.md`: it tags a release, generates a changelog and runs `git push --tags`. The skill's `description` is "Publishes a new release". While a developer is chatting "I'm wondering whether these changes will make it into the next release", Claude loads the skill on its own and starts the release steps.
 
-**What is the right approach?**""",
+**What is the correct fix?**""",
+ "opts":{"A":"Move the skill to `~/.claude/skills/` — personal skills aren't auto-triggered.",
+         "B":"Add `disable-model-invocation: true` to the frontmatter — the skill loads only when the user types `/release`; Claude can't invoke it via description matching.",
+         "C":"Add `context: fork` — the skill runs in an isolated context.",
+         "D":"Remove `allowed-tools: Bash(git push *)` — so Claude can't push."},
+ "expl":"""**Why B is correct:** Skills are triggered two ways: the user types `/name` **or** Claude decides the `description` matches the conversation. For side-effect workflows (deploy, release, commit) the second path is dangerous. `disable-model-invocation: true` exists for exactly this: "Only you can invoke it manually." The official best-practices example uses it too (the `fix-issue` skill).
+
+**Why A is wrong:** Personal skills are also auto-triggered by description; location doesn't change the trigger path.
+
+**Why C is wrong:** Fork isolates output; it doesn't stop the skill from *starting* by mistake — it keeps releasing in the background.
+
+**Why D is wrong:** Removing `allowed-tools` only brings back the permission prompt; the skill still triggers, starts the steps, and asks permission to push. The root cause is triggering, not permissions."""},
+("base",3,5):{"body":"""In a codebase, API endpoint files are scattered across `src/api/`, `src/routes/` and `modules/*/api/`. The team wants the same rules applied to all API files: rate-limiting checks, input validation, standardized error responses. The rules must be applied **automatically, without leaving it to Claude's discretion**.
+
+**Which approach is correct?**""",
  "opts":{"A":"Copy the same rules into `src/api/CLAUDE.md`, `src/routes/CLAUDE.md` and every `modules/*/api/CLAUDE.md`.",
-         "B":"Create `.claude/rules/api-conventions.md` — with the frontmatter `paths: [\"src/api/**/*\", \"src/routes/**/*\", \"modules/*/api/**/*\"]`.",
-         "C":"Write all API rules into the root CLAUDE.md.",
-         "D":"Create an `/api-rules` skill — invoked whenever an API file is touched."},
- "expl":"""**Why B is correct:** path-specific rules catch API files across the whole codebase via glob patterns — whatever directory they're in. One rule file applies to all the scattered API files. Token-efficient — loaded only while editing an API file.
+         "B":"Create `.claude/rules/api-conventions.md` — with `paths: [\"src/api/**/*\", \"src/routes/**/*\", \"modules/*/api/**/*\"]` in the frontmatter.",
+         "C":"Write all API rules in the root CLAUDE.md.",
+         "D":"Create an `/api-rules` skill — put \"use when editing API files\" in its description so Claude loads it when needed."},
+ "expl":"""**Why B is correct:** Path-specific rules catch every API file in the codebase via glob patterns — whatever the directory. One rule file applies to all the scattered API files; it loads **deterministically** when a matching file is read. Token-efficient — in context only while working with an API file.
 
-**Why A is wrong:** copying the same rules into every directory is a maintenance nightmare. When a rule changes, every copy must be updated. Path-specific rules solve this with one file.
+**Why A is wrong:** Copying the same rules into every directory is a maintenance nightmare. Change one rule and you update every copy. CLAUDE.md files are directory-bound.
 
-**Why C is wrong:** the root CLAUDE.md is always loaded. Even while editing a frontend CSS file the API rules occupy context — token waste.
+**Why C is wrong:** The root CLAUDE.md is always loaded. Even while editing a frontend CSS file the API rules take up context — wasted tokens and file bloat.
 
-**Why D is wrong:** skills are invoked on demand — you'd have to remember to invoke it every time an API file is touched. Path-specific rules load automatically."""},
-("base",3,5):{"body":"""A developer has been given three tasks:
+**Why D is wrong:** The most tempting distractor. Claude *may* load the skill based on the description — but that is a **probabilistic** decision; it contradicts the "without leaving it to Claude's discretion" requirement. Exam guide Q6's rationale for option C: "relies on Claude choosing to load them, contradicting the need for deterministic automatic application based on file paths.\""""},
+("base",3,6):{"body":"""A developer is assigned "convert the existing REST API to GraphQL": 40+ endpoints are affected, and decisions about schema design and resolver structure are needed. The developer thinks: "Plan mode adds overhead. I'll convert the first few endpoints in direct execution; if unexpected complexity comes up I'll switch to plan mode."
 
-1. Convert the existing REST API to GraphQL — 40+ endpoints affected
-2. Fix an off-by-one error in a single function — error message and stack trace available
-3. Understand a large legacy module — 30 files, unclear dependencies — very detailed output expected in the exploration phase
+**How should this approach be assessed?**""",
+ "opts":{"A":"Correct — starting with small steps reduces risk; planning once complexity appears is efficient.",
+         "B":"Wrong — the complexity is not \"unexpected\"; it's already stated in the requirements (40+ endpoints, schema decisions). Exploration and design in plan mode come first, implementation after approval.",
+         "C":"Wrong — the task should be handed entirely to the Explore subagent.",
+         "D":"Correct — but the context should be cleared with `/clear` first."},
+ "expl":"""**Why B is correct:** The exact counterpart of exam guide Q5's option D: "Begin in direct execution mode and only switch to plan mode if you encounter unexpected complexity" → official rationale: "ignores that the complexity is already stated in the requirements, not something that might emerge later." Many files + architectural decisions + multiple approaches → plan mode. Converting the first endpoints with the wrong schema design and then planning is costly rework.
 
-**Which mode is correct for each task?**""",
- "opts":{"A":"1: Plan mode, 2: Direct execution, 3: Explore sub-agent + plan mode",
-         "B":"1: Direct execution, 2: Direct execution, 3: Plan mode",
-         "C":"1: Plan mode, 2: Plan mode, 3: Direct execution",
-         "D":"All plan mode — stay on the safe side."},
- "expl":"""**Why A is correct:**
-1. **REST → GraphQL = plan mode.** 40+ endpoints, architectural decision, multi-file change. Analyse first, design the schema, then implement.
-2. **Off-by-one error = direct execution.** Stack trace available, single file, clear bug. Planning unnecessary.
-3. **Legacy module exploration = Explore sub-agent + plan mode.** 30 files, unclear dependencies — the Explore sub-agent isolates the detailed exploration (main conversation stays clean), then plan mode designs the restructuring.
+**Why A is wrong:** The "plan mode is overhead" heuristic is for tasks whose diff fits in one sentence; a 40-endpoint conversion is not in that class.
 
-**Why B is wrong:** doing a 40+ endpoint migration with direct execution is far too risky. Impact analysis and schema design come first.
+**Why C is wrong:** Explore is read-only; it only discovers, makes no design decisions and doesn't implement.
 
-**Why C is wrong:** plan mode is unnecessary for an off-by-one error. Direct execution is dangerous for the legacy module — changing without exploring.
+**Why D is wrong:** `/clear` resets context; it doesn't fix a wrong mode choice."""},
+("base",3,7):{"body":"""A developer wants to replace lodash with native JavaScript functions in 30 files. Their approach:
 
-**Why D is wrong:** plan mode for simple bug fixes wastes time. Matching the right mode to the right task matters."""},
-("base",3,6):{"body":"""A developer wants to replace the lodash library with native JavaScript functions in 30 files. They planned this approach:
+1. In plan mode, discover the affected files and decide the migration strategy
+2. Approve the plan and implement with direct execution
 
-1. First, in plan mode, discover the affected files and determine the migration strategy
-2. Then implement the plan with direct execution
+A teammate objects: "Discovery will read too many files and fill the main context. Hand discovery **and implementation** to the Explore subagent."
 
-**Is this approach correct?**""",
- "opts":{"A":"No — the whole process should stay in plan mode, never switching to direct execution.",
-         "B":"Yes — the hybrid approach is correct. Research and design in plan mode, implement with direct execution.",
-         "C":"No — the whole process should be direct execution; 30 files is a small number.",
-         "D":"No — the Explore sub-agent should be used instead of plan mode."},
- "expl":"""**Why B is correct:** the hybrid approach (plan → direct execution) is a common and expected pattern. Discover the lodash usages across 30 files in plan mode, determine which native functions replace them, then implement with direct execution. The most efficient approach.
+**Which assessment is correct?**""",
+ "opts":{"A":"The teammate is right — Explore both isolates discovery and makes the changes.",
+         "B":"The developer's approach is correct (hybrid: plan → approve → direct execution). Discovery is already delegated to the Plan/Explore subagents in plan mode, preserving the main context; but Explore is **read-only** (Write/Edit denied) — it can't implement.",
+         "C":"Both are wrong — 30 files is few; the whole thing should be direct execution.",
+         "D":"Both are wrong — the whole thing should stay in plan mode, no approval needed."},
+ "expl":"""**Why B is correct:** The hybrid approach is plan mode's normal lifecycle: discovery (in subagents) → plan → approve → implement. The teammate's concern (context filling) is already covered by plan mode's built-in Explore/Plan delegation. But the second half of the suggestion is wrong: Explore's tool set is read-only; the built-in subagent that makes changes is `general-purpose`, and implementation happens in the main session after plan approval anyway.
 
-**Why A is wrong:** implementing in plan mode is needlessly slow. Once the plan is complete, direct execution is faster.
+**Why A is wrong:** Explore denies Write/Edit — it can't implement.
 
-**Why C is wrong:** a 30-file migration requires exploration and planning. Starting with direct execution leads to problems.
+**Why C is wrong:** A 30-file migration needs discovery and planning; starting directly creates rework.
 
-**Why D is wrong:** the Explore sub-agent can be part of the exploration phase but isn't enough on its own. Plan mode covers exploration + design. Explore is used additionally when very detailed exploration output needs isolating."""},
-("base",3,7):{"body":"""A developer gives Claude Code this instruction:
+**Why D is wrong:** Plan mode can't edit files; approval and a mode switch are required to implement."""},
+("base",3,8):{"body":"""A developer reviews a payment function Claude Code wrote. Two findings:
 
-*"Make the error messages more user-friendly — remove technical jargon and write descriptive messages."*
+1. Currency conversion rounds incorrectly (cents are lost)
+2. The amount the function returns is logged and written to the invoice record based on the rounding result — when the rounding changes, the log format and the invoice field must change too
 
-Claude Code produces a different result every time — sometimes very formal, sometimes very informal, sometimes mixing languages. Inconsistent.
+The developer first had only the rounding fixed; Claude did it, but the log and invoice code stayed on the old behavior. When the log/invoice was fixed in a second message, Claude rewrote the rounding function.
 
-**Which technique should be tried first?**""",
- "opts":{"A":"Add a \"be consistent\" instruction to the prompt.",
-         "B":"Give 2–3 concrete input/output examples — before/after examples of the form old error message → new error message.",
-         "C":"Create a separate command for each error message.",
-         "D":"Run Claude Code in a test mode and check each output manually."},
- "expl":"""**Why B is correct:** the prose instruction is interpreted inconsistently — "user-friendly" means something different to everyone. Concrete examples are precise — 2–3 before/after examples of the form "given this old message, produce this new message" let the model extract the pattern and apply it consistently.
+**What should the developer have done?**""",
+ "opts":{"A":"Given both findings in one detailed message — the fixes interact; Claude can't make a consistent change without seeing the whole picture.",
+         "B":"Fixed the log/invoice first, then the rounding — the order was wrong.",
+         "C":"Created a separate skill for each finding.",
+         "D":"Given 2–3 concrete input/output examples — the prose was interpreted inconsistently."},
+ "expl":"""**Why A is correct:** The findings **interact**: the rounding decision determines the log format and the invoice field. Given sequentially, each round breaks the other — exactly a violation of the exam guide's "single detailed message when fixes interact" rule. One message saying "fix the rounding like this **and** update the log/invoice code to the new result" lets Claude produce a consistent design.
 
-**Why A is wrong:** "be consistent" is also a prose instruction — ambiguous. Claude is already trying to be consistent; the problem is the instruction's ambiguity.
+**Why B is wrong:** It's not an ordering problem but an interaction problem; in either order, two separate messages make the second round rewrite the first.
 
-**Why C is wrong:** over-engineering. Creating hundreds of commands for hundreds of error messages isn't practical. 2–3 examples are far simpler and more effective.
+**Why C is wrong:** Skills are for repeated procedures; over-engineering for one-off fixes.
 
-**Why D is wrong:** manual checking isn't sustainable. Checking every output instead of improving automatically throws away Claude Code's advantage."""},
-("base",3,8):{"body":"""A team generates tests automatically with Claude Code in its CI pipeline. The generated tests:
+**Why D is wrong:** The problem isn't ambiguous prose (Claude did each fix correctly); the problem is the fixes being given separately."""},
+("base",3,9):{"body":"""A CI job runs:
 
-- Consist of empty test scaffolds — they don't test real business logic
-- Don't use the existing fixtures — they create mocks from scratch in every test
-- Use inconsistent frameworks — sometimes jest, sometimes vitest
+```bash
+claude -p "Add missing null checks in src/services/" --output-format json
+```
 
-Pipeline command: `claude -p "Generate tests for the changed files"`
+The job doesn't hang; exit code 0. But the `result` field says "I need permission to edit src/services/user.ts…" and no file has changed.
 
 **What are the root cause and the fix?**""",
- "opts":{"A":"The `-p` flag lowers test quality — it should run in interactive mode.",
-         "B":"Test standards, valuable-test criteria and existing fixtures aren't documented in CLAUDE.md. Adding this information to CLAUDE.md lets Claude Code generate high-quality, standards-compliant tests.",
-         "C":"Claude Code isn't suited to test generation — another tool should be used.",
-         "D":"A separate prompt should be written for each test file."},
- "expl":"""**Why B is correct:** Claude Code gets project context from CLAUDE.md. If test standards, the framework preference (vitest), fixtures and valuable-test criteria aren't documented in CLAUDE.md, Claude Code produces generic boilerplate tests. Once added: the right framework, existing fixtures, meaningful tests that exercise business logic.
+ "opts":{"A":"`-p` blocks editing — remove `-p` in CI.",
+         "B":"A `-p` session starts in Manual permission mode; since nobody in CI can answer the permission prompt, the edits are denied. Add `--allowedTools \"Edit\"` (or `--permission-mode acceptEdits`).",
+         "C":"`--output-format json` disables editing — use `text`.",
+         "D":"Wrap the command in `timeout 600`."},
+ "expl":"""**Why B is correct:** `-p` only removes the interactive UI; the permission system keeps working and `-p` starts in Manual mode. When an edit permission is requested and no answer arrives, the action is denied, Claude reports it in text, and the process exits "successfully". In CI, pre-define the work: tools/commands via `--allowedTools`, or the `acceptEdits` / `dontAsk` / `auto` mode.
 
-**Why A is wrong:** the `-p` flag doesn't affect test quality — it only turns off waiting for interactive input. It's mandatory in CI. The quality problem comes from missing context.
+**Why A is wrong:** Without `-p` the pipeline hangs. `-p` doesn't block editing; permissions do.
 
-**Why C is wrong:** Claude Code can generate tests — given the right context. The problem isn't the tool's ability but the missing configuration.
+**Why C is wrong:** The output format is only how the result is printed; nothing to do with permissions.
 
-**Why D is wrong:** a separate prompt per file isn't sustainable. Define the standards once in CLAUDE.md and they're applied automatically on every run."""},
+**Why D is wrong:** It's not a time issue; the job already finishes. A timeout doesn't approve a denied permission."""},
+("base",3,10):{"body":"""A team generates tests automatically in CI with `claude -p "Generate tests for the changed files"`. CLAUDE.md documents the testing standards (vitest, describe/it), valuable test criteria and fixtures; the generated tests are correct in framework and style. But developers complain: "On every PR, Claude re-proposes the very scenarios that already exist in `tests/auth.test.ts` (invalid token, expired session)."
+
+**What are the root cause and the fix?**""",
+ "opts":{"A":"Add a \"don't write duplicate tests\" rule to CLAUDE.md.",
+         "B":"Claude doesn't see the existing test files — **provide the existing test files in context** (e.g. `@tests/auth.test.ts`, or include the test files of the changed modules in the prompt) so it doesn't propose scenarios already covered.",
+         "C":"Use interactive mode instead of `-p`.",
+         "D":"Structure the output with `--json-schema`."},
+ "expl":"""**Why B is correct:** The Skills bullet the exam guide counts **separately** from CLAUDE.md: "Providing existing test files in context so test generation avoids suggesting duplicate scenarios already covered by the test suite." CLAUDE.md provides the *rules* (already working here: framework and style are right); only the existing test files show *what's already tested*.
+
+**Why A is wrong:** A "don't write duplicate tests" rule can't be applied if Claude can't see what exists — missing information isn't fixed by a rule.
+
+**Why C is wrong:** Interactive mode hangs in CI; the problem is context, not mode.
+
+**Why D is wrong:** Structured output shapes the *format* of the output; it doesn't prevent duplicate *content*."""},
 ("extra",3,0):{"body":"""In a large monorepo, test files (`*.test.ts`, `*.spec.ts`) are spread across more than 60 different directories. The team wants to define special rules (fixture usage, mock standards) that load only while test files are being edited, and doesn't want those rules bloating the context while working on other files.
 
 **Which mechanism fits best?**""",
@@ -823,182 +874,182 @@ Pipeline command: `claude -p "Generate tests for the changed files"`
 })
 
 Q_EN.update({
-("base",4,1):{"body":"""A code review agent running in a CI/CD pipeline reports three categories: security vulnerabilities, logic errors and code-style issues. Developers noticed the "code style" category has a 60% false-positive rate. This has started to shake their trust in the security findings too.
+("base",4,1):{"body":"""A CI/CD code review agent reports three categories: security, logic errors, code style. The code style category has a 60% false-positive rate. A team lead says: *"False positives are harmless — the developer filters them out at a glance. The real risk is a missed bug; let's not turn off any category, in fact let's loosen the thresholds."* Another engineer proposes temporarily disabling the code style category.
 
-**What is the best short-term action?**""",
- "opts":{"A":"Raise the confidence thresholds of the security and logic categories to 95%, make all categories more conservative",
-         "B":"Use a bigger model for all three categories",
-         "C":"Temporarily disable the code-style category; keep security and logic running, improve the code-style prompt",
-         "D":"Restructure the agent completely; merge the categories"},
+**Which assessment is correct?**""",
+ "opts":{"A":"The team lead is right; a false negative is always more expensive than a false positive, all categories should stay on",
+         "B":"The engineer is right; a high false positive category erodes developer trust, and this leads to correctly functioning security findings being ignored as well — the category should be disabled, its criteria clarified, measured, and then re-enabled",
+         "C":"Both are wrong; the correct solution is to add a \"don't report if unsure\" instruction for all categories",
+         "D":"Both are wrong; the code style category should be moved to a larger model"},
  "expl":"""**Explanation:**
 
-A trust problem requires isolation. The code-style category is poisoning the reliability of the other categories with its high false-positive rate. Fix: temporarily remove the badly performing category, keep the good ones running, improve the bad one separately.
+The exam guide's 4.1 Knowledge item: high false-positive categories also erode trust in the *accurate* categories ("undermine confidence in accurate categories"). Trust is holistic; the noise from the code style category leads to security findings being ignored too — which indirectly means missed bugs. Fix: isolation + criteria clarification + measurement on a labeled set + re-enabling.
 
-- **(A) Wrong:** raising thresholds misses real problems; the issue is criteria, not thresholds.
-- **(B) Wrong:** a bigger model doesn't fix a prompt-calibration problem.
-- **(D) Wrong:** a complete restructure is disproportionate and slow.
+- **(A) Wrong:** the "false positives are harmless" thesis is exactly what 4.1 refutes; loosening thresholds increases noise.
+- **(C) Wrong:** "don't report if unsure" is confidence-based filtering; it filters out both false positives and real findings uncontrollably.
+- **(D) Wrong:** the problem is criteria, not capacity.
 
-**Concept covered:** Task 4.1 — the false-positive trust problem and the isolation fix"""},
-("base",4,2):{"body":"""An agent was given this severity definition: *"Critical: issues that threaten the system. Minor: small issues."*
+**Concept covered:** Task 4.1 — False positive / trust relationship and isolation"""},
+("base",4,2):{"body":"""An agent was given the following severity definition: *"Critical: Issues that threaten the system. Minor: Small issues."*
 
-Which of the following is the fundamental problem caused by this definition?""",
- "opts":{"A":"\"Critical\" and \"minor\" aren't technical jargon; the agent can't understand them",
-         "B":"The definitions are prose-based; because \"threaten the system\" is subjective, the agent calibrates differently on every run",
-         "C":"Two levels aren't enough; at least five are needed",
-         "D":"These definitions can only be used in the security domain, not for general code review"},
+Which of the following is the fundamental problem arising from this definition?""",
+ "opts":{"A":"The terms \"critical\" and \"minor\" are not technical jargon; the agent cannot understand them",
+         "B":"The definitions are prose-based; because \"threatens the system\" is a subjective expression, the agent calibrates differently on every run",
+         "C":"Two levels are not enough; at least five levels are required",
+         "D":"These definitions can only be used in the security domain and are not suitable for general code review"},
  "expl":"""**Explanation:**
 
-"Issues that threaten the system" is open to interpretation. Claude can calibrate this threshold differently on every run — the same code looks critical one time and minor the next. Fix: define severity with real code examples.
+The expression "issues that threaten the system" is open to interpretation. Claude may calibrate this threshold differently on every run — the same code sometimes looks critical, sometimes minor. Solution: define severity with real code examples (with `<example>` tags).
 
-- **(A) Wrong:** the terms are understood; the problem is that they're subjective.
-- **(C) Wrong:** the number of levels isn't the problem; concreteness is.
-- **(D) Wrong:** these definitions have a general validity problem.
+- **(A) Wrong:** the terms are understood; the problem is that they are subjective.
+- **(C) Wrong:** the number of levels is not the problem; concreteness is the problem.
+- **(D) Wrong:** these definitions carry the same ambiguity problem in every domain.
 
-**Concept covered:** Task 4.1 — prose definitions vs calibration with code examples"""},
-("base",4,3):{"body":"""An extraction pipeline processes different document formats: some invoices are tables, some plain text, some nested lists. The model sometimes returns "null" for fields even though the information is present.
+**Concept covered:** Task 4.1 — Prose definition vs. calibration with code examples"""},
+("base",4,3):{"body":"""In an invoice extraction pipeline, the `invoice_date` field returns null for some documents. Investigation: the date *is present* in these documents, but in free-form formats such as "15 Ocak 2024" or "Jan 15, '24"; in table-formatted invoices (date in a separate cell) the field always comes out correctly.
 
-**What is the most effective fix?**""",
- "opts":{"A":"Make all fields \"required\" in the JSON schema — prevents returning null",
-         "B":"Instruct the model \"if the information exists you must extract it, never return null\"",
-         "C":"Add 2–4 few-shot examples showing successful extraction from each format type; one should cover the \"null if no information\" scenario",
-         "D":"Deploy a separate model per document format"},
+**What is the most effective solution?**""",
+ "opts":{"A":"Make the `invoice_date` field nullable — the information cannot be reliably extracted",
+         "B":"Add a retry loop with an error message: \"invoice_date is null, the document contains a date, try again\"",
+         "C":"Add 2-4 few-shot examples showing successful extraction from documents containing free-form dates (with `<example>` tags, with reasoning)",
+         "D":"Route these documents directly to human review"},
  "expl":"""**Explanation:**
 
-The model can't find the information in the document — a format-variety problem. Few-shot examples teach the map "the information is here" for each format. The "null if no information" example ensures returning null instead of inventing.
+The first case of the "null triad": the information **is present** in the document, the model does not recognize the different format. This is 4.2's job — few-shot teaches the "in this format, the date is here" mapping. Working in table format but not in free text confirms that the problem is *format diversity* (the typical finding of the document type × field accuracy table).
 
-- **(A) Wrong:** required fields lead to fabrication — the model is forced to invent a value for the required field.
-- **(B) Wrong:** this instruction was already tried; it doesn't fix the format problem.
-- **(D) Wrong:** a separate model is over-engineering.
+- **(A) Wrong:** nullable prevents fabrication when the information is *absent*; accepting null when the information is present is data loss (not 4.3's territory).
+- **(B) Wrong:** retry fixes a format *mismatch* (a date extracted in the wrong format); but a format the model does not recognize at all is missed by retry the same way every time — it needs to be taught.
+- **(D) Wrong:** handing an automatically solvable problem to humans does not scale.
 
-**Concept covered:** Task 4.2 — reducing hallucination in document extraction"""},
-("base",4,4):{"body":"""A code review agent classifies certain cases inconsistently: to the question "does this comment misdescribe the code's behaviour, or is it an old note?" it gives different answers on different runs. You've rewritten the instructions three times — the problem persists.
+**Concept covered:** Task 4.2 — null triad (few-shot vs nullable vs retry)"""},
+("base",4,4):{"body":"""A code review agent classifies certain cases inconsistently: it gives different answers on different runs to the question "Does this comment misdescribe the code's behavior, or is it an outdated note?" You have rewritten the instructions three times — the problem persists.
 
 **What should you do in this situation?**""",
  "opts":{"A":"Make the instructions more detailed; explain every possible scenario separately",
-         "B":"Add few-shot examples for the 2–4 ambiguous cases; in each example show the reasoning for why a decision was made",
-         "C":"Add a confidence threshold as a parameter: \"don't flag if unsure\"",
-         "D":"Use a bigger model — inconsistency is a capacity problem"},
+         "B":"Add few-shot examples for the 2-4 ambiguous cases; in each example, show the reasoning for why a decision was made",
+         "C":"Add a \"don't flag if unsure\" instruction (confidence-based filtering)",
+         "D":"Use a larger model — inconsistency is a capacity problem"},
  "expl":"""**Explanation:**
 
-Instruction rewriting was tried repeatedly — it didn't work. That shows the volume of instructions isn't the problem. The fix for inconsistency in ambiguous cases: show examples of those ambiguous cases + their reasoning.
+Rewriting the instructions was tried repeatedly — it didn't work. This shows that the amount of instruction is not the problem. The solution for inconsistency in ambiguous cases: show examples of those ambiguous cases + their reasoning (exam guide: "*show reasoning for why one action was chosen over plausible alternatives*").
 
 - **(A) Wrong:** lengthening the instructions was already tried and failed.
-- **(C) Wrong:** a confidence threshold "skip if unsure" — but the real problem is when the decision should be made.
-- **(D) Wrong:** the problem isn't model capacity but how ambiguous cases are handled.
+- **(C) Wrong:** confidence-based filtering; the real problem is *when* the decision is made, not confidence.
+- **(D) Wrong:** the problem is not model capacity, but how ambiguous cases are handled.
 
-**Concept covered:** Task 4.2 — few-shot + reasoning for ambiguous cases"""},
-("base",4,5):{"body":"""An invoice extraction system uses tool_use. All JSON output is syntactically valid. However the downstream system reports invoice total mismatches: the sum of line items doesn't equal the stated total.
+**Concept covered:** Task 4.2 — Few-shot + reasoning for ambiguous cases"""},
+("base",4,5):{"body":"""An invoice extraction system uses `strict: true` tool_use. All JSON outputs conform to the schema. However, in the downstream system, for some invoices the sum of the line items does not equal the stated total.
 
-**What is the most appropriate approach to fix this?**""",
- "opts":{"A":"Remove tool_use, switch to prompt-based JSON",
-         "B":"Add a `calculated_total` field to the schema; in the validation step check `stated_total == calculated_total`; send a retry on mismatch",
-         "C":"Use a bigger model — the small model makes arithmetic errors",
-         "D":"Make all fields \"required\" — so no value is missing"},
+**What is the most appropriate design to solve this problem?**""",
+ "opts":{"A":"Remove tool_use, switch to prompt-based JSON — strict mode is breaking the arithmetic",
+         "B":"Add `calculated_total` to the schema; have the backend cross-check with its own sum; on mismatch, send a retry with an error message; if it still doesn't match after the retry, the document is probably internally contradictory → route to human review with `conflict_detected: true`",
+         "C":"Use a larger model — the small model is making arithmetic errors",
+         "D":"Make all fields \"required\" — so no value is left missing"},
  "expl":"""**Explanation:**
 
-Tool_use fixes syntax problems — the JSON is valid. But it doesn't prevent semantic errors (wrong total). Once `calculated_total` is added to the schema, the model fills it by summing each line; the validation step detects the mismatch and a retry gives a chance to fix it.
+Strict tool_use eliminates schema/syntax errors — but a total mismatch is a **semantic** error (exam guide: "*strict JSON schemas … do not prevent semantic errors, e.g., line items that don't sum to total*"). The solution is layered: `calculated_total` + the backend's independent calculation → retry with error message (if a line was misread, it gets fixed) → if it still doesn't match, the document is internally contradictory, retry cannot solve this → `conflict_detected` + human. The option establishes 4.4's "retry effective / not effective" distinction in a single flow.
 
-- **(A) Wrong:** prompt-based JSON loses the syntax guarantee.
-- **(C) Wrong:** changing the model doesn't fix this kind of semantic inconsistency.
-- **(D) Wrong:** required fields raise the fabrication risk and don't verify the total.
+- **(A) Wrong:** prompt-based JSON loses the syntax guarantee; strict does not affect arithmetic.
+- **(C) Wrong:** changing the model does not replace the validation layer; no model can "correctly" sum a contradictory document.
+- **(D) Wrong:** required fields increase the fabrication risk and do not validate the total.
 
-**Concept covered:** Task 4.3 — limits of tool_use + semantic validation"""},
-("base",4,6):{"body":"""A pipeline receives documents in unknown formats (invoice, contract, receipt or other). Different extraction tools were defined per format. **Guaranteed structured output** is required.
+**Concept covered:** Task 4.3 + 4.4 — The limit of strict, semantic validation, retry → conflict flow"""},
+("base",4,6):{"body":"""A document pipeline has two stages: first the `extract_metadata` tool must extract the document's type and language, then depending on the type one of the `enrich_invoice` / `enrich_contract` tools must run. On the first call, the model must not jump directly to an enrichment tool.
 
-**Which `tool_choice` setting should be used?**""",
- "opts":{"A":"`\"auto\"` — the model picks the most suitable tool",
-         "B":"`{\"type\": \"tool\", \"name\": \"extract_invoice\"}` — every document is processed with the invoice tool",
-         "C":"`\"any\"` — the model must call a tool, and decides which one itself",
-         "D":"Don't specify `tool_choice` — the default behaviour gives guaranteed output"},
+**What is the correct `tool_choice` for the first call?**""",
+ "opts":{"A":"`{\"type\": \"auto\"}` — the model figures out the order itself",
+         "B":"`{\"type\": \"any\"}` — the model definitely calls a tool",
+         "C":"`{\"type\": \"tool\", \"name\": \"extract_metadata\"}` — this tool is forced; on the next call, `auto` or `any`",
+         "D":"`{\"type\": \"none\"}` — have the type determined as text on the first call"},
  "expl":"""**Explanation:**
 
-`"any"` forces the model to call a tool — guaranteed structured output. The model decides which tool to pick based on the document type.
+The exam guide's Skills item, verbatim: "*Forcing a specific tool with `tool_choice: {"type": "tool", "name": "extract_metadata"}` to ensure a particular extraction runs **before enrichment steps**.*" In a sequential flow, `disable_parallel_tool_use: true` is also added.
 
-- **(A) Wrong:** `"auto"` can return a text response — no guarantee.
-- **(B) Wrong:** forcing a specific tool treats every document as an invoice — misclassification.
-- **(D) Wrong:** the default is `"auto"` — no guarantee.
+- **(A) Wrong:** `auto` does not even guarantee a tool call; the order is left to the prompt (probabilistic).
+- **(B) Wrong:** `any` guarantees a tool call but not *which one* — the model may jump directly to `enrich_invoice`.
+- **(D) Wrong:** `none` prevents any tool call in this turn; the text output is unstructured and requires an extra call.
 
-**Concept covered:** Task 4.3 — tool_choice modes"""},
-("base",4,7):{"body":"""An extraction system keeps returning null for the `payment_terms` field. A retry message was sent: *"payment_terms cannot be null, required field."* The second attempt also returned null.
+**Concept covered:** Task 4.3 — tool_choice modes, forcing a specific tool"""},
+("base",4,7):{"body":"""A contract extraction system returns null for the `penalty_rate` field. Two retries were sent ("penalty_rate must be in the document, look again") — still null. The document contains the following line: *"See Appendix B for the penalty rate."* Appendix B was not provided to the pipeline.
 
-**What is the correct diagnosis and fix?**""",
- "opts":{"A":"Increase the retry count — the model eventually finds the right value",
-         "B":"Use a stronger model — the small model doesn't see the field",
-         "C":"The information is probably not in the document; retry is ineffective. Make `payment_terms` nullable/optional",
-         "D":"Add a few-shot example: show \"how to extract payment_terms\""},
+**What is the correct diagnosis and solution?**""",
+ "opts":{"A":"The information is not in the document → make the `penalty_rate` field nullable, accept null",
+         "B":"The information is in an external document → retry won't work; add Appendix B to the context and re-run the extraction",
+         "C":"Increase the retry count to 5 — the model will eventually find it",
+         "D":"Add a few-shot example for `penalty_rate` — the model doesn't recognize the field"},
  "expl":"""**Explanation:**
 
-Still null after two retries — the problem is that the information isn't in the document. The model is looking at the same document; if the information isn't there, retry doesn't help. The right fix: make the field nullable.
+The exam guide's retry-ineffective example: "*information exists only in an external document not provided*". The document explicitly references Appendix B — the information is *reachable* but not in the context. Retry looks at the same document, null again. The solution is not nullable, but **adding the missing document**; then the extraction (with retry if needed) works.
 
-- **(A) Wrong:** retry doesn't fix a source problem — it only spends time and money.
-- **(B) Wrong:** a bigger model will look at the same document.
-- **(D) Wrong:** few-shot teaches "how to extract", but if the information isn't there no example helps.
+- **(A) Wrong:** nullable is correct when the information is *nowhere*; here there is a reference — accepting null is data loss.
+- **(C) Wrong:** the retry count does not produce information the model does not have.
+- **(D) Wrong:** few-shot teaches "how to extract"; as long as the information is not in the context, examples won't help.
 
-**Concept covered:** Task 4.4 — the limit of retry effectiveness"""},
-("base",4,8):{"body":"""An engineering team runs two tasks: (a) a weekly analysis of 200 documents archived every night, (b) a security scan that runs when a pull request is opened. To cut costs they plan to move both to the Batch API.
+**Concept covered:** Task 4.4 — Retry effectiveness limit (external document)"""},
+("base",4,8):{"body":"""A company promises its customers that "an uploaded document is processed within 30 hours at most." Documents arrive irregularly throughout the day. For cost reasons, the Message Batches API will be used (processing upper bound 24 hours, no latency SLA).
 
-**Is this plan correct? Explain.**""",
- "opts":{"A":"Yes, both tasks are suitable for batch",
-         "B":"Yes, but only the weekly analysis should use batch; the security scan must stay synchronous",
-         "C":"No, the Batch API can only be used for fewer than 10 documents",
-         "D":"Yes, but batch jobs only run between 00:00 and 06:00"},
+**Which is the correct plan?**""",
+ "opts":{"A":"Batch cannot be used — since the Batch API has no SLA, it is never used for any job with an SLA",
+         "B":"One batch per day (at 02:00 at night) — most batches finish within 1 hour anyway",
+         "C":"Send a batch at least every 6 hours (4 hours is safer): worst-case latency = wait + 24 hours ≤ 30 hours",
+         "D":"Send documents one by one as individual batches as they arrive — each document finishes within 24 hours at most"},
  "expl":"""**Explanation:**
 
-The weekly archive analysis is latency-tolerant — batch is suitable. The PR security scan is a blocking workflow — developers wait for the result before merging; synchronous is required.
+Exam guide Skills: "*4-hour windows to guarantee 30-hour SLA with 24-hour batch processing*". Formula: worst-case latency = waiting for the next submission (P) + 24 hours processing ≤ SLA → P ≤ 30 − 24 = **6 hours**. The guide's 4-hour window leaves a 2-hour margin.
 
-- **(A) Wrong:** the PR security scan can't wait.
-- **(C) Wrong:** the Batch API isn't limited by document count.
-- **(D) Wrong:** the Batch API doesn't run on a time window.
+- **(A) Wrong:** "no latency SLA" ≠ "no SLA can be given"; the 24-hour upper bound is enough to do the calculation. If the SLA were ≤ 24 hours, A would be correct.
+- **(B) Wrong:** with one submission per day, a document arriving at 02:05 waits 24 hours + 24 hours processing = 48 > 30. "Most finish within 1 hour" is an average, not a guarantee.
+- **(D) Wrong:** a batch per document defeats the purpose of batching (bulk submission) and creates rate limit / management overhead; also "finishes within 24 hours" is again an upper bound — technically it meets the SLA, but it is not the *planning* the question asks for.
 
-**Concept covered:** Task 4.5 — the synchronous vs batch decision rule"""},
-("base",4,9):{"body":"""A code review system analyses each file in a separate instance (50 files = 50 calls). Per-file findings are collected. However some cross-file problems are missed: for example, data sanitised in file A being used unsafely in file B.
+**Concept covered:** Task 4.5 — Calculating submission frequency from the SLA"""},
+("base",4,9):{"body":"""In an extraction pipeline, the model misses subtle errors (values placed in the wrong field, overlooked line items). There are three proposals: (1) add a "review your output carefully, fix errors" instruction to the extraction prompt; (2) enable extended thinking and increase the budget; (3) have the extraction validated by a separate Claude call that does not see the producer's reasoning.
 
-**What should you do to fix this?**""",
- "opts":{"A":"Give all 50 files to a single instance — it sees the cross-file context",
-         "B":"In addition to the per-file analyses, run an independent cross-file integration pass that sees all file findings",
-         "C":"Split the files into groups of 5, use a single instance per group",
-         "D":"Leave cross-file problems to human review; automation only works per file"},
+**Which is the most effective?**""",
+ "opts":{"A":"(1) — the cheapest; the model knows its own output best",
+         "B":"(2) — more thinking budget provides more validation",
+         "C":"(3) — the independent instance does not carry the production context; self-review instructions and thinking stay inside the same context",
+         "D":"(1) + (2) together are as effective as (3) and cheaper"},
  "expl":"""**Explanation:**
 
-Per-file analysis prevents attention dilution — that part works correctly. But to detect cross-file problems you need an independent integration pass that sees all file findings.
+Exam guide 4.6 Knowledge: "*Independent review instances (without prior reasoning context) are more effective at catching subtle issues than **self-review instructions or extended thinking**.*" A validation problem is not solved by *doing more* in the same session; it is solved by *changing the context*.
 
-- **(A) Wrong:** giving 50 files to a single instance causes attention dilution.
-- **(C) Wrong:** grouping is a partial fix; it doesn't provide a full cross-file view.
-- **(D) Wrong:** automation can detect cross-file problems too — before a human steps in.
+- **(A) Wrong:** "knows its own output best" is exactly the source of the problem — it inherits the production assumptions.
+- **(B) Wrong:** thinking makes it think longer, not *from a different angle*; it operates inside the production context.
+- **(D) Wrong:** the sum of two inadequate methods does not solve the context problem.
 
-**Concept covered:** Task 4.6 — multi-pass architecture"""},
+**Concept covered:** Task 4.6 — The limit of self-review; the instruction / thinking / independent instance triad"""},
 ("base",4,10):{"body":"""A team is building an invoice processing pipeline. Requirements:
 
 1. Invoices arrive in different formats (table, text, nested list)
-2. JSON must always be syntactically valid
+2. JSON must always conform to the schema
 3. Semantic validation (total mismatch) is required
-4. 2,000 invoices are processed per week, cost is critical
+4. 2,000 invoices per week; cost is critical; there is a 36-hour processing commitment to the customer
 5. Some invoices have no `payment_terms` information
-6. High-confidence findings go automatic, low-confidence findings to human review
+6. High-confidence fields are automatic, low-confidence fields go to human review
 
-**Which option describes this system correctly?**""",
- "opts":{"A":"Process all 2,000 invoices with the synchronous API; make all schema fields required; tool_choice: auto; no validation step",
-         "B":"Few-shot examples for invoice formats; JSON schema via tool_use (payment_terms nullable); validation with calculated_total; Batch API (latency-tolerant); confidence-based routing",
-         "C":"A multi-pass architecture per invoice (50 instances); all fields required; no retry loop; synchronous API",
-         "D":"Prompt-based JSON (no tool_use); leave all validation to humans; Batch API; no few-shot"},
+**Which option correctly describes this system?**""",
+ "opts":{"A":"Synchronous API (no batch because there is an SLA); all fields required; `tool_choice: auto`; no validation",
+         "B":"Few-shot with `<example>` tags for format diversity; `strict: true` tool_use (payment_terms nullable); `calculated_total` + backend validation + retry with error message; Batch API, submission at least every 12 hours (12 + 24 ≤ 36); routing by per-field enum confidence, calibrated with a document type × field accuracy table",
+         "C":"Multi-pass architecture with 50 instances per invoice; all fields required; no retry; synchronous API",
+         "D":"Prompt-based JSON; all validation to humans; Batch API with one submission per day; no few-shot"},
  "expl":"""**Explanation:**
 
 Each requirement maps to a technique:
 
 | Requirement | Technique |
 |---|---|
-| Format variety | Few-shot examples (Task 4.2) |
-| Valid JSON | Tool_use + JSON schema (Task 4.3) |
-| Semantic validation | calculated_total + validation (Task 4.4) |
-| Cost + latency tolerance | Batch API (Task 4.5) |
+| Format diversity | Few-shot with `<example>` tags (Task 4.2) |
+| Schema-conforming JSON | `strict: true` tool_use (Task 4.3) |
+| Semantic validation | `calculated_total` + backend calculation + retry with error message (Task 4.4) |
+| Cost + 36-hour commitment | Batch API; P ≤ 36 − 24 = 12 hours → submission at least every 12 hours (Task 4.5) |
 | payment_terms sometimes absent | Nullable field (Task 4.3) |
-| Confidence-based routing | confidence routing (Task 4.6) |
+| Confidence-based routing | Per-field enum confidence; calibration with the document type × field table (Task 4.6) |
 
-- **(A) Wrong:** required fields cause fabrication; auto tool_choice gives no guarantee; no validation.
-- **(C) Wrong:** 50 instances per invoice for 2,000 invoices is excessive; all-required is a fabrication risk.
-- **(D) Wrong:** prompt-based JSON is unreliable; leaving all validation to humans doesn't scale.
+- **(A) Wrong:** "no batch because there is an SLA" — 36 > 24, batch is possible; required fields create fabrication; `auto` gives no guarantee; no validation.
+- **(C) Wrong:** the number of passes depends on the number of files; "50 instances per invoice" is the absence of cost intuition; required-all fabrication risk; no retry.
+- **(D) Wrong:** prompt-based JSON is unreliable; one submission per day is 24 + 24 = 48 > 36 (SLA violation); leaving all validation to humans does not scale.
 
-**Concept covered:** Tasks 4.1–4.6 integrated application"""},
+**Concept covered:** Task 4.1–4.6 integrated application"""},
 ("extra",4,0):{"body":"""A company wants to classify 20,000 customer reviews every night; the results must make the 09:00 morning report, but minute-level precision doesn't matter. The same team also runs a synchronous review step on every PR in the code repository. An engineer wanting to cut cost proposes moving both workloads to the Batch API.
 
 **Which assessment is correct?**""",
@@ -1185,205 +1236,160 @@ Each requirement maps to a technique:
 })
 
 Q_EN.update({
-("base",5,1):{"body":"""A customer support agent works across long conversations. To manage the token budget the conversation history is summarised every 5 turns. In turn 3 the customer stated: "I want a $189.50 refund for order #7723, placed on 15 February."
+("base",5,1):{"body":"""A customer support agent's first-contact resolution rate is 55%; the target is 80%. Logs show the agent escalating simple cases such as standard damage replacements with photo evidence, while attempting to resolve complex situations requiring policy exceptions on its own.
 
-In turn 10 the agent says to the customer: "Which order can I help you with?"
+**What is the most effective way to improve escalation calibration?**""",
+ "opts":{"A":"Add explicit escalation criteria with few-shot examples to the system prompt showing when to escalate and when to resolve autonomously.",
+         "B":"Have the agent report a 1–10 confidence score before each response; if the score is below a threshold, automatically route the request to a human.",
+         "C":"Build a separate classifier model trained on historical tickets; have it predict which requests require escalation before the main agent begins processing.",
+         "D":"Measure customer frustration with sentiment analysis; auto-escalate when a negative sentiment threshold is exceeded."},
+ "expl":"""**Explanation:** The exam guide's own question and rationale: the root cause is **unclear decision boundaries**; explicit criteria with few-shot examples address this directly and are the **proportionate first intervention** before adding infrastructure. Calibration is broken in both directions (simple ones escalated, complex ones handled autonomously); but examples show both boundaries.
 
-At the same time, tool results are added to the context as-is — every order lookup returns 45 fields.
+- **(B) Wrong:** An LLM's self-reported confidence is not calibrated — the agent is already misplacing its confidence on hard cases. A threshold tries to solve a two-way problem with a one-way measure.
+- **(C) Wrong:** Over-engineering — requires labeled data and ML infrastructure; prompt optimization has not yet been tried.
+- **(D) Wrong:** Solves a different problem; sentiment does not correlate with case complexity.
 
-**Which approach fixes both problems?**""",
- "opts":{"A":"Enlarge the context window and reduce the summarisation frequency to every 10 turns",
-         "B":"Extract the transactional facts (order no, amount, date) into a persistent \"case facts\" block and never summarise it. Trim the tool results to the 5 relevant fields, then add them to the context.",
-         "C":"Add \"never forget customer details\" to the agent's system prompt and store tool results in JSON format",
-         "D":"Don't summarise — keep the whole conversation history as-is"},
- "expl":"""**Explanation:**
+**Concept covered:** Task 5.2 — Escalation criteria with few-shot examples, proportionality ladder"""},
+("base",5,2):{"body":"""A web search subagent times out while researching a complex topic. You need to design how this error information flows to the coordinator agent.
 
-Two problems at once: the progressive summarisation trap (order details lost during summarisation) and tool-result bloat (45 fields added to the context as-is). Fix: preserve the transactional facts with a case facts block + trim verbose results to the relevant fields with tool result trimming.
+**Which approach best enables intelligent recovery?**""",
+ "opts":{"A":"Return structured error context to the coordinator including the error type, the attempted query, any partial results, and possible alternative approaches.",
+         "B":"Implement automatic retry with exponential backoff inside the subagent; when all attempts are exhausted, return a generic \"search unavailable\" status to the coordinator.",
+         "C":"Catch the timeout inside the subagent and return an empty result set marked as successful.",
+         "D":"Propagate the timeout exception directly to a top-level handler and terminate the entire research workflow."},
+ "expl":"""**Explanation:** Structured error context gives the coordinator the information it needs to decide: retry with a modified query, an alternative approach, or continue with partial results.
 
-- **(A) Wrong:** a bigger context window and lower summarisation frequency delay the problem, they don't fix it. The same information loss happens at turn 10.
-- **(C) Wrong:** a prompt instruction is probabilistic. If the summarised information has been physically removed from the context, the instruction does nothing. JSON format doesn't fix tool-result bloat.
-- **(D) Wrong:** never summarising exhausts the token budget quickly — unsustainable in long conversations.
+- **(B) Wrong:** The most tempting wrong option. Local retry (layer 1) is correct; but the generic "search unavailable" (layer 2) hides context from the coordinator — which query, what kind of error, whether partial results exist remain unknown.
+- **(C) Wrong:** Silent suppression — marking the error as success blocks every form of recovery and creates the risk of incomplete research output.
+- **(D) Wrong:** Unnecessarily terminates the entire workflow when recovery strategies could have worked.
 
-**Concept covered:** Task 5.1 — case facts block + tool result trimming"""},
-("base",5,2):{"body":"""In a multi-agent research system the web search agent returns a 3-page detailed analysis, chain of thought and alternative hypotheses for every query. The downstream synthesis agent's context budget is 8K tokens. The budget is exhausted after 3 sources — but 7 sources must be analysed.
+**Concept covered:** Task 5.3 — Three anti-patterns, two-layer recovery"""},
+("base",5,3):{"body":"""A customer support agent using a case facts block works flawlessly in single-issue conversations. A customer opens returns for two different orders and an invoice dispute in the same conversation; at turn 7, the agent responds to the invoice dispute with the refund amount of the first order.
 
-**What is the most effective fix?**""",
- "opts":{"A":"Raise the synthesis agent's context budget to 64K",
-         "B":"Reduce the number of sources to 3 — it fits the budget",
-         "C":"Modify the web search agent to return structured data (key facts, citations, relevance score) — instead of verbose content and chains of thought",
-         "D":"Add \"write briefly\" to the synthesis agent"},
- "expl":"""**Explanation:**
+**What is the root cause and the solution?**""",
+ "opts":{"A":"The case facts block was corrupted during summarization; move the block outside the summarized history and include it in every prompt.",
+         "B":"Tool results have filled the context; trim order queries to the fields needed for the return before adding them to context.",
+         "C":"A single case facts block cannot represent multiple issues; build a separate context layer with a structured record per issue and an active-issue field.",
+         "D":"The conversation history is not being sent in full; include all previous turns in subsequent requests."},
+ "expl":"""**Explanation:** Case facts are for a single case; for multi-issue sessions the exam guide calls for "*structured issue data … into a separate context layer*". A record per issue + an active-issue field frees the agent from ambiguity about which issue it is on.
 
-Upstream agent optimisation. The problem isn't in the synthesis agent but in the web search agent's verbose output. Returning structured data (key facts, citations, relevance score) instead of a 3-page chain of thought uses the token budget efficiently.
+- **(A) Wrong:** The problem is not summarization of the block, it is its *structure*: a single `order_id` and a single `refund_amount` cannot represent three issues. The block is already kept outside.
+- **(B) Wrong:** Tool result bloat produces a different symptom (budget exhaustion); not the mixing of issues.
+- **(D) Wrong:** Even if the history is sent in full, the single-block structure cannot separate issues; a structural problem.
 
-- **(A) Wrong:** raising the budget is expensive and doesn't fix the structural problem — at 15 sources the same problem returns.
-- **(B) Wrong:** narrowing the scope lowers research quality.
-- **(D) Wrong:** the fix in the wrong place. The problem isn't the synthesis agent's output but its input.
+**Concept covered:** Task 5.1 — Multi-issue session context layer"""},
+("base",5,4):{"body":"""A coordinator concatenates the research output of 7 subagents and passes it to the synthesis agent. The synthesis report handles the findings of the first two and last two subagents in detail but barely uses the findings of subagents 3–5. Each subagent output is structured and short.
 
-**Concept covered:** Task 5.1 — upstream agent optimisation"""},
-("base",5,3):{"body":"""A customer writes to a support agent: "This order hasn't arrived for 3 days, I'm getting really angry now!" The agent checks the order status and sees it will be delivered today.
+**Which is the most effective fix?**""",
+ "opts":{"A":"Add an instruction to the synthesis agent: \"weigh all subagent findings equally.\"",
+         "B":"Redesign the subagents to return structured data instead of verbose content.",
+         "C":"Reduce the number of subagents to 4; fewer inputs are processed more evenly.",
+         "D":"Have the coordinator place a key-findings summary at the top of the merged input and separate each subagent output with explicit section headers."},
+ "expl":"""**Explanation:** Lost-in-the-middle appears, in the exam guide's language, in "*aggregated inputs*"; the problem is in the format of the coordinator *doing the merging*. Solution: key-findings summary at the top + explicit section headers.
 
-**What should the agent do?**""",
- "opts":{"A":"The customer is angry → escalate to a human representative immediately",
-         "B":"Acknowledge the frustration and offer the resolution: \"I'm sorry for the delay. Your order will be delivered today — your tracking number is X.\"",
-         "C":"Check the customer's confidence score — escalate if low",
-         "D":"Tell the customer \"calm down\" and to keep waiting"},
- "expl":"""**Explanation:**
+- **(A) Wrong:** An instruction does not change the attention mechanism; the content in the middle is still in the middle.
+- **(B) Wrong:** The question already says the outputs are structured and short — upstream optimization has been done; the problem is the merge layout.
+- **(C) Wrong:** Narrows the scope; with 4 subagents, the 2nd and 3rd still end up in the middle.
 
-The customer is angry but the problem is simple — the order is delivered today. Sentiment-based escalation is an unreliable trigger. Correct: acknowledge the frustration, offer the resolution.
+**Concept covered:** Task 5.1 — Lost in the middle (aggregated inputs)"""},
+("base",5,5):{"body":"""A research coordinator receives `{"status": "success", "results": []}` from the document analysis subagent. Logs show the same query returned 9 results an hour earlier and that the document store was under maintenance at the time. The coordinator reported "no documents on this topic."
 
-- **(A) Wrong:** sentiment-based escalation — anger isn't proportional to case complexity.
-- **(C) Wrong:** the model confidence score is an unreliable escalation trigger.
-- **(D) Wrong:** "calm down" damages the customer experience and doesn't solve the problem.
+**What is the root cause?**""",
+ "opts":{"A":"The coordinator should have retried the query once more upon seeing the empty result; empty results are always retried.",
+         "B":"The subagent's response schema does not distinguish an access failure from a valid empty result; the maintenance outage propagated as \"success + empty array.\"",
+         "C":"The coordinator should have sent the same query to a second subagent to verify the result.",
+         "D":"The document store's maintenance is an external event; there is nothing the coordinator can do."},
+ "expl":"""**Explanation:** If the same JSON shape describes two different realities (unreachable / no match), the schema is broken. The exam guide wants the distinction "*in error reporting*": `source_reached` / `failure_type` fields. The maintenance outage propagated as silent suppression.
 
-**Concept covered:** Task 5.2 — unreliable triggers + the frustration nuance"""},
-("base",5,4):{"body":"""A customer says "This product is $20 cheaper on a competitor's site, I want a price match." The agent checks the policy document: "We refund the difference on price drops on our own site." The policy has no information about competitor price matching.
+- **(A) Wrong:** "Always retry empty results" is the reverse mistake: it re-queries valid empty results over and over. The retry decision requires *knowing* the access status; the schema doesn't provide it.
+- **(C) Wrong:** A second subagent returns the same answer with the same broken schema.
+- **(D) Wrong:** The outage is an external event, but its *staying silent* is the system's fault; had a structured error arrived, the coordinator could have waited and retried or added a coverage note.
 
-At the same time, a customer search for the name "Ahmet Yılmaz" returns 4 different "Ahmet Yılmaz" matches.
+**Concept covered:** Task 5.3 — Access failure vs valid empty result, distinction in the response schema"""},
+("base",5,6):{"body":"""An architect notices that an agent doing codebase exploration drifts toward "typical patterns" in long sessions and explains to the team: "When the context window fills up, the oldest messages get dropped, so we should switch to a model with a larger window."
 
-**Which approach handles both situations correctly?**""",
- "opts":{"A":"Accept the competitor price match by interpreting the policy broadly. Of the 4 matches pick the one with the most recent order.",
-         "B":"Refuse the competitor price match — it's not in the policy. Pick the most active customer account.",
-         "C":"Competitor price matching is a policy gap — escalate. For the customer match, ask for additional identifying information (email, phone, order no).",
-         "D":"Decide by the customer's mood — escalate if angry, refuse if calm. Pick one of the 4 matches at random."},
- "expl":"""**Explanation:**
+**What is the assessment of this explanation and recommendation?**""",
+ "opts":{"A":"Explanation correct, recommendation correct: as the window grows, fewer messages are dropped and degradation is delayed.",
+         "B":"Explanation wrong: the API does not drop messages; it returns an error if the limit is exceeded, and Claude Code summarizes. Degradation arises from attention budget dilution before the limit (context rot) and from summary loss after compaction; enlarging the window does not fix attention quality.",
+         "C":"Explanation correct, recommendation wrong: messages do get dropped, but the solution is to run `/compact` more often.",
+         "D":"Explanation wrong: the cause of degradation is the model forgetting the instruction; adding \"be specific\" to the system prompt is enough."},
+ "expl":"""**Explanation:** The Messages API does not drop messages; it returns an error if the limit is exceeded; Claude Code auto-compacts as it nears the limit. Degradation arises through two mechanisms: context rot (attention budget) before the limit, summary loss after compaction. In the rationale for Q12: "*larger context windows don't solve attention quality issues*".
 
-Two separate problems: (1) competitor price matching isn't defined in the policy — a policy gap, escalation is needed. (2) 4 customer matches — no heuristic pick, ask for additional identifying information.
+- **(A) Wrong:** Both the explanation and the recommendation are wrong; enlarging the window makes you experience the same context pollution over a wider area.
+- **(C) Wrong:** The explanation is still wrong; more frequent compaction without a focus instruction and a scratchpad increases summary loss.
+- **(D) Wrong:** The problem is not the instruction, it is attention and summarization; "be specific" does not bring back inaccessible information.
 
-- **(A) Wrong:** no authority to interpret the policy broadly. A heuristic customer pick risks a wrong match.
-- **(B) Wrong:** refusing outright isn't appropriate for a policy gap — a human should decide. A heuristic customer pick is wrong.
-- **(D) Wrong:** a sentiment-based decision is unreliable. A random customer pick is unacceptable.
+**Concept covered:** Task 5.4 — Context degradation mechanism, the large-window distractor"""},
+("base",5,7):{"body":"""In a 3-hour exploration session with Claude Code, a context-full warning appears. The findings exist only inside the conversation. The developer will continue the same work. The team is debating two proposals: (1) write the findings to CLAUDE.md and run `/clear`, (2) have the findings written to NOTES.md and run `/compact` with a focus instruction.
 
-**Concept covered:** Task 5.2 — policy gap + ambiguous customer matching"""},
-("base",5,5):{"body":"""A research pipeline collects data from 6 academic databases. 5 databases returned results successfully. The 6th (PubMed) gave a network timeout error. The agent's current behaviour: when an error occurs it returns an empty result array with `"status": "success"`.
+**Which is correct and why?**""",
+ "opts":{"A":"(1): CLAUDE.md is loaded automatically in every session, the findings are never lost; `/clear` gives the cleanest context.",
+         "B":"Both are wrong: the correct solution is to disable auto-compact and continue until the window is full.",
+         "C":"(2): NOTES.md is the session's working memory, whereas CLAUDE.md is the persistent instruction file — writing findings there bloats every session; `/compact <focus>` summarizes the narrative while preserving critical findings, whereas `/clear` resets without summarizing.",
+         "D":"Both are correct: the file choice and the command choice are matters of preference."},
+ "expl":"""**Explanation:** The scratchpad (NOTES.md) is the session's working memory, CLAUDE.md is the project's persistent instruction file (Domain 3.1); if exploration findings are written to CLAUDE.md, they bloat every session and pollute unrelated sessions. `/compact <focus>` summarizes the narrative while continuing the same work and preserves critical findings; `/clear` does not summarize, it resets — used when switching to unrelated work.
 
-**What is the problem with this behaviour and the correct fix?**""",
- "opts":{"A":"No problem — an empty result is a valid result",
-         "B":"The silent suppression anti-pattern. Marking an access failure as successful blocks the recovery mechanism. Correct: report the failure type (transient), what was attempted and the partial results in a structured way.",
-         "C":"Stop the pipeline entirely — continuing with incomplete data is dangerous",
-         "D":"Retry PubMed in an infinite loop — eventually it works"},
- "expl":"""**Explanation:**
+- **(A) Wrong:** CLAUDE.md's "never lost" property is precisely the problem; `/clear` throws away the context entirely for work that will continue.
+- **(B) Wrong:** Disabling auto-compact means getting an error when you hit the limit.
+- **(D) Wrong:** The file choice (session memory vs persistent instruction) and the command choice (summarize vs reset) are not preferences but semantic differences.
 
-The silent suppression anti-pattern. Marking an access failure as `"success"` blocks every recovery mechanism. Correct: report the failure type (transient/network timeout), what was attempted (the PubMed query, parameters) and the partial results in a structured way.
+**Concept covered:** Task 5.4 — Scratchpad vs CLAUDE.md, `/compact` vs `/clear`"""},
+("base",5,8):{"body":"""An extraction system running with calibrated field-level confidence auto-accepts fields above 92%, and the quality team manually checks a plain random sample of 50 extractions per week. After two months, two problems surface: (1) on a new vendor's invoice template, the model extracts a wrong due date with high confidence; because its volume is low, it never appeared in the 50-item sample; (2) invoices where the line-item sum does not match the grand total on the document passed with 95% model confidence.
 
-- **(A) Wrong:** this is an access failure, not a valid empty result. Network timeout = the source couldn't be reached.
-- **(C) Wrong:** the workflow termination anti-pattern. Throws away the results of 5 successful sources.
-- **(D) Wrong:** infinite retry locks the system.
+**Which design solves both problems together?**""",
+ "opts":{"A":"Split sampling into document type × field × confidence band strata (a minimum number of samples per stratum, including from high confidence); add a second signal to routing: if document validation finds a conflict (`conflict_detected`), send to human review regardless of confidence.",
+         "B":"Raise the weekly sample to 200 and raise the auto-accept threshold to 98%.",
+         "C":"Route the new vendor's invoices to human review and add a \"check the totals\" instruction to the model.",
+         "D":"Ask for the confidence score as an enum and send everything other than `high` to a human."},
+ "expl":"""**Explanation:** Two problems, two mechanisms. (1) Plain random sampling does not represent the low-volume type — the aggregate metrics trap repeats itself in sampling; stratified sampling (document type × field × confidence band, including from high confidence) catches the novel error pattern. (2) The model can pick a value with high confidence without noticing the contradictory document; the exam guide sends low confidence **or** a contradictory/ambiguous source document to a human — `conflict_detected` is the second door.
 
-**Concept covered:** Task 5.3 — silent suppression + structured error context"""},
-("base",5,6):{"body":"""A customer support agent searches for an order by the customer's phone number. The tool returns:
+- **(B) Wrong:** A larger plain sample still sees the low-volume type rarely; raising the threshold does not measure document inconsistency.
+- **(C) Wrong:** Vendor-specific routing patches the symptom (it won't catch the next new template); the sum check is deterministic validation, not left to the model.
+- **(D) Wrong:** A change in representation does not change calibration; sending everything other than `high` to humans chokes capacity, and the contradictory document still passes with `high`.
 
-```json
-{
-  "status": "success",
-  "results": [],
-  "message": "No orders found for this phone number"
-}
-```
+**Concept covered:** Task 5.5 — Stratified sampling, two routing signals"""},
+("base",5,9):{"body":"""The document analysis subagent finds different growth rates in two reliable reports (45% and 38%, different methodologies). The system designer is debating three options.
 
-The agent takes this result and retries 3 more times with the same phone number.
+**Which one conforms to the exam guide's role distribution?**""",
+ "opts":{"A":"Have the subagent evaluate the methodology and return the single value it finds more reliable; the coordinator and synthesis proceed with that value.",
+         "B":"Have the subagent return the mean and standard deviation of the two values; have the report write it as a range.",
+         "C":"Have the subagent return both values; have the synthesis agent pick the more recent one and write a single figure, noting the other in a footnote.",
+         "D":"Have the subagent annotate both values with source, date, characterization and methodology note and complete the analysis; have the coordinator make the reconciliation decision; have synthesis show both in the \"contested findings\" section of the report with their sources."},
+ "expl":"""**Explanation:** The exam guide's role distribution: the document analysis subagent annotates the conflicting values and *completes* the analysis; the **coordinator** makes the reconciliation decision before synthesis; synthesis shows both with their sources in the report under the "well-established / contested" distinction.
 
-**What is the problem with this behaviour?**""",
- "opts":{"A":"Too few retries — it should try 10 times",
-         "B":"It should retry with different parameters — try email instead of phone",
-         "C":"The agent is confusing a valid empty result with an access failure. Status \"success\" — the tool reached the source and found no match. That is the answer itself; retry is unnecessary.",
-         "D":"The tool is faulty — it should always return at least one result"},
- "expl":"""**Explanation:**
+- **(A) Wrong:** The subagent returning a single value based on its "more reliable" judgment is an arbitrary choice; it hides information from the upper layers.
+- **(B) Wrong:** A mean/range produces a number no source has stated; it makes the methodology difference invisible.
+- **(C) Wrong:** "More recent" is also an arbitrary rule (valid only for revisions), and the synthesis agent is not the reconciliation layer.
 
-The access failure vs valid empty result distinction. Status `"success"` → the tool reached the source successfully. `results: []` → no match found. This isn't an access failure but a valid empty result. Retrying gives the same result.
+**Concept covered:** Task 5.6 — Conflict handling, role distribution, report skeleton"""},
+("base",5,10):{"body":"""A company operates a multi-agent system that includes customer support + research + document extraction. Five problems are reported:
 
-- **(A) Wrong:** more retries return the same valid empty result.
-- **(B) Wrong:** changing parameters arbitrarily risks reaching the wrong customer. Ask the customer for additional information first.
-- **(D) Wrong:** the tool works correctly — "no match" is a valid answer.
+1. When escalated to a representative, the customer has to explain the order number and their request from scratch
+2. Simple damage replacements are escalated, while requests past the warranty period are approved by the agent
+3. The research subagent retries with backoff on timeout, then returns "source unavailable"; the coordinator cannot try an alternative source
+4. The synthesis report writes the figure the IEA called a "preliminary estimate" as if it were a definitive measurement
+5. In an extraction system reporting 97% aggregate accuracy, a low-volume document type never appears in the weekly plain random sample
 
-**Concept covered:** Task 5.3 — access failure vs valid empty result"""},
-("base",5,7):{"body":"""A developer has been analysing a large codebase with an agent session for 4 hours. At the start the agent reported specific class names, line numbers and method signatures. Now it uses generic phrases like "dependency injection is generally used in these modules".
+**Which option matches the five problems with the correct concept?**""",
+ "opts":{"A":"1. Summarize the conversation history; 2. Lower the sentiment threshold; 3. Increase the retry count; 4. A \"cite sources\" instruction to the synthesis agent; 5. Increase the sample size",
+         "B":"1. Case facts handoff context in the `escalate_to_human` call; 2. Explicit escalation criteria with few-shot examples (two-way calibration); 3. Structured error context instead of a generic status (retry is right, the message is wrong); 4. Preserve the source's characterization in the claim-source mapping; 5. Document type × field × confidence band stratified sampling",
+         "C":"1. Larger context window; 2. Train a separate escalation classifier; 3. Halt the workflow on timeout, request human intervention; 4. Have a post-synthesis verification agent search for sources; 5. Raise the auto-accept threshold to 99%",
+         "D":"1. Remove escalation, let the agent resolve everything; 2. Escalation based on the model's confidence score; 3. Have the subagent catch the error and return an empty result; 4. Remove the figure from the report; 5. Remove the low-volume type from the pipeline"},
+ "expl":"""**Explanation:** Each problem matches a different Domain 5 concept:
 
-At the same time, the team complains that when these agent sessions crash they have to start from scratch.
-
-**Which approach fixes both problems?**""",
- "opts":{"A":"Use a model with a bigger context window and never close the session",
-         "B":"Write the key findings to a scratchpad file. Delegate deep investigations to subagents. Have each agent write its state to a manifest file — after a crash the coordinator recovers by loading the manifests.",
-         "C":"Add \"be specific\" to the agent and store the full conversation history in a database in case of a crash",
-         "D":"Restart the session every hour — so there's no context degradation"},
- "expl":"""**Explanation:**
-
-Two problems: (1) context degradation — the shift from specific findings to generic phrases. Fix: scratchpad + subagent delegation. (2) missing crash recovery. Fix: each agent writes its state to a manifest file, the coordinator loads it during recovery.
-
-- **(A) Wrong:** a bigger model delays context degradation, doesn't fix it. "Never close" ignores the crash scenario.
-- **(C) Wrong:** a prompt instruction doesn't fix context degradation — the information has physically dropped. Storing the full history in a database restores verbose data — it exhausts the context budget immediately.
-- **(D) Wrong:** restarting every hour loses the earlier findings — unsustainable.
-
-**Concept covered:** Task 5.4 — context degradation + crash recovery"""},
-("base",5,8):{"body":"""A document extraction system reports 96% overall accuracy. Management plans to move to full automation. Field-level confidence thresholds were set at 80% — intuitively, without any validation data.
-
-Internal audit reports two findings:
-1. There's a 35% error rate on handwritten documents
-2. In fields where the model says 85% confidence, real accuracy is 58%
-
-**Which approach addresses both problems?**""",
- "opts":{"A":"Raise the confidence threshold to 95% and remove handwritten documents from the pipeline",
-         "B":"Evaluate accuracy separately by document type and field segment — route handwritten documents to human review. Calibrate the confidence thresholds with labelled validation sets (ground truth data).",
-         "C":"Use a bigger model — both accuracy and confidence scores improve",
-         "D":"Keep 100% human review for all document types — automation is unreliable"},
- "expl":"""**Explanation:**
-
-Two problems: (1) the aggregate metrics trap — 96% overall accuracy hides the 35% error on handwritten documents. Fix: evaluate separately by document type, route low-performing types to human review. (2) uncalibrated confidence — 85% confidence = 58% accuracy. Fix: calibrate with labelled validation sets.
-
-- **(A) Wrong:** raising the threshold doesn't fix the calibration problem. Removing handwritten documents is data loss.
-- **(C) Wrong:** a bigger model guarantees neither calibration nor per-document-type performance.
-- **(D) Wrong:** 100% human review is a needless resource cost — unnecessary for standard invoices at 99.5% accuracy.
-
-**Concept covered:** Task 5.5 — aggregate metrics trap + confidence calibration"""},
-("base",5,9):{"body":"""In a research report two sources report different values for the same metric:
-- IEA (March 2024): "Global wind capacity 1,021 GW"
-- GWEC (June 2024): "Global wind capacity 1,089 GW"
-
-The synthesis agent flags this as "conflicting data" and removes both sources from the report.
-
-**What is the right approach?**""",
- "opts":{"A":"Use the more recent GWEC value — the latest data is correct",
-         "B":"Take the average of the two — 1,055 GW",
-         "C":"Present both values with source citations and dates. Note that the difference may stem from different measurement periods — temporal context.",
-         "D":"Removing both sources from the report is correct — conflicting data is unreliable"},
- "expl":"""**Explanation:**
-
-Temporal awareness + conflict handling. IEA March 2024 and GWEC June 2024 — different measurement periods give different values. This isn't a conflict but change over time. Present both values with dates, state the temporal context.
-
-- **(A) Wrong:** the assumption "the latest data is correct" doesn't always hold — they measure different periods.
-- **(B) Wrong:** the average is meaningless — a mix of different periods.
-- **(D) Wrong:** removing both sources is information loss — explainable by temporal context.
-
-**Concept covered:** Task 5.6 — temporal awareness + conflict handling"""},
-("base",5,10):{"body":"""A company is building a comprehensive multi-agent system covering customer support + research + document extraction. The system has these problems:
-1. The customer support agent asks for the customer's order number again in turn 8
-2. Angry customers are automatically routed to a human representative — 60% of cases were simple requests the agent could have resolved
-3. When one source times out in the research pipeline, the whole research is cancelled
-4. The synthesis report contains vague phrases like "significant developments occurred in the sector" — no specific values or sources
-5. Document extraction reports 95% overall accuracy but performance per document type hasn't been tested
-
-**Which option correctly maps these 5 problems?**""",
- "opts":{"A":"All problems are solved with a bigger model",
-         "B":"1. Case facts block → preserve transactional facts; 2. Remove sentiment-based escalation → three valid triggers; 3. Continue with partial results → structured error report + coverage annotation; 4. Structured claim-source mappings → preserve claim-source links; 5. Validation by document type → stratified performance analysis",
-         "C":"1. Reduce summarisation frequency; 2. Lower the escalation threshold; 3. Increase the retry count; 4. Write a more detailed system prompt; 5. Raise the confidence threshold to 99%",
-         "D":"1. Keep the full conversation history — never summarise; 2. Route all customers to a human representative; 3. Remove the faulty source from the pipeline; 4. Add \"be specific\" to the synthesis agent; 5. 100% human review for all document types"},
- "expl":"""**Explanation:**
-
-Each problem maps to a different Domain 5 concept:
-
-| Problem | Concept | Fix |
+| Problem | Concept | Solution |
 |---|---|---|
-| 1. Order no asked again | Task 5.1 — progressive summarisation | Case facts block |
-| 2. Angry customers needlessly escalated | Task 5.2 — unreliable trigger | Sentiment-based → three valid triggers |
-| 3. One error cancels all research | Task 5.3 — workflow termination | Continue with partial results + report the error |
-| 4. Vague phrases in the synthesis report | Task 5.6 — citation death | Claim-source mappings |
-| 5. Not tested by document type | Task 5.5 — aggregate metrics trap | Stratified validation |
+| 1. Explaining from scratch on escalation | Task 5.2 + 5.1 — Handoff context | `escalate_to_human` + case facts |
+| 2. Simple ones escalated, exceptions approved | Task 5.2 — Two-way calibration (Q3) | Explicit criteria with few-shot examples |
+| 3. Generic status after retry | Task 5.3 — Anti-pattern 3 (Q8-B) | Structured error context |
+| 4. "Preliminary estimate" → definitive measurement | Task 5.6 — Source characterization | `source_characterization` in the claim-source mapping |
+| 5. Low-volume type absent from the sample | Task 5.5 — Stratified sampling | Document type × field × confidence band |
 
-- **(A) Wrong:** a bigger model doesn't fix structural problems — each needs a different architectural fix.
-- **(C) Wrong:** every fix is superficial — none addresses the root cause (summarisation frequency, escalation threshold, retry count, prompt instruction, confidence threshold).
-- **(D) Wrong:** extreme fixes — never summarising, routing all customers, removing the source, 100% human review are all resource waste and data loss.
+- **(A) Wrong:** Every solution is superficial: summarization does not provide handoff context; a sentiment threshold does not fix calibration; the retry count does not solve the generic message; an instruction does not create the characterization; a larger plain sample still misses the low-volume type.
+- **(C) Wrong:** Disproportionate/wrong: a large window is unrelated to handoff; a classifier is over-engineering before the prompt has been tried; halting the workflow is an anti-pattern; searching for sources afterward does not bring back the characterization; a 99% threshold does not solve the stratum problem.
+- **(D) Wrong:** Extreme solutions: removing escalation is a policy violation; the confidence score is an unreliable trigger; returning an empty result is silent suppression; removing the figure is information loss; removing the type is data loss.
 
-**Concept covered:** Tasks 5.1–5.6 integrated application"""},
+**Concept covered:** Task 5.1–5.6 integrated application"""},
 ("extra2",9):{"body":"""An extraction system writes fields with a confidence score above 90% directly into the ERP without human review. For six months nobody has checked these "high-confidence" outputs. A new supplier started using a different layout on its invoices, and errors flowed into the system unnoticed.
 
 **What mechanism is missing?**""",

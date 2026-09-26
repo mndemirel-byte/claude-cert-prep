@@ -1,0 +1,230 @@
+# Task Statement 3.5: Iterative Refinement
+
+## Domain 3 — Claude Code Configuration & Workflows (20% of the exam)
+
+---
+
+## Core Idea
+
+You gave Claude Code a task and the result isn't what you expected. How do you improve it? This task statement teaches the techniques for improving Claude Code's output **systematically**.
+
+The exam doesn't ask "which technique is best?"; it asks "which technique **for this problem**?". So instead of ranking techniques, learn them as a **problem → technique** mapping.
+
+---
+
+## Problem → Technique Mapping
+
+| Symptom | Technique | Exam guide wording |
+|---|---|---|
+| A prose instruction is **interpreted inconsistently** — different result every time | **Concrete input/output examples** (2–3 before/after) | "the most effective way to communicate expected transformations **when prose descriptions are interpreted inconsistently**" |
+| Behavior is **verifiable**; edge cases slip through | **Test-driven iteration** | "writing test suites first, then iterating by sharing test failures" |
+| **Unfamiliar domain**; there are requirement gaps you don't know about | **Interview pattern** | "having Claude ask questions to surface considerations the developer may not have anticipated **before implementing**" |
+| Several fixes are needed | **Batch vs sequential** feedback | "single message (interacting problems) versus sequentially (independent problems)" |
+| Still wrong **after two corrections** on the same issue | **`/clear` + a better initial prompt** | (best practices: the "correcting over and over" anti-pattern) |
+
+---
+
+## Technique 1: Concrete Input/Output Examples
+
+Show 2–3 examples — "given this input, produce this output." When prose descriptions are interpreted inconsistently, this is the most effective technique.
+
+**Why it works:** Prose is ambiguous — what does "more descriptive" mean? What does "cleaner" mean? Everyone reads it differently. Examples are precise. Claude Code is far better at generalizing from examples than at inferring from prose. (Same principle as Domain 4.2 — few-shot prompting, different context.)
+
+**Rule:** If prose is being interpreted inconsistently, switch to concrete input/output examples. Writing longer prose doesn't fix it.
+
+#### Poor Approach (Prose)
+```
+"Make the function names more descriptive and use camelCase."
+```
+
+#### Good Approach (Concrete Examples)
+```
+Example 1:
+  Input:  function proc(d) { ... }
+  Output: function processUserData(userData) { ... }
+
+Example 2:
+  Input:  function calc(a, b) { ... }
+  Output: function calculateTotalPrice(basePrice, taxRate) { ... }
+
+Example 3:
+  Input:  function chk(u) { ... }
+  Output: function checkUserPermissions(userId) { ... }
+```
+
+The model extracts the pattern from the examples and applies it consistently.
+
+**Same technique for edge cases:** The exam guide's example — "providing specific test cases with example input and expected output to fix edge case handling (e.g., **null values in migration scripts**)". If a migration script crashes on nulls, don't say "handle nulls properly"; give a concrete case: `input: {email: null} → expected: row skipped, warning logged`.
+
+---
+
+## Technique 2: Test-Driven Iteration
+
+Write the tests first, share the failing tests with Claude Code, steer the improvement.
+
+**How it works:**
+1. Write tests that define the expected behavior — per the exam guide they should cover three things: **expected behavior, edge cases, and performance requirements**
+2. **Confirm the tests fail first** (best practices: tell Claude not to write mock implementations)
+3. Run Claude Code's code against the tests
+4. Show Claude Code the failing tests
+5. Claude Code iterates until the tests pass
+
+**Advantage:** The success criterion is clear and objective. No "is it good or bad" debate — tests pass or they don't. Claude stops on a "tests pass" signal instead of "looks done" ("give Claude a way to verify its work").
+
+**Lightweight version:** Without a separate test file, put verification criteria in the prompt: *"Write a validateEmail function. Test cases: user@example.com → true, invalid → false, user@.com → false. Run the tests after implementing."* (Link to Domain 4.1 — explicit criteria.)
+
+**Variant:** Have one Claude session write the tests and another make them pass (the Writer/Reviewer pattern — Task 3.6 and Domain 4.6).
+
+---
+
+## Technique 3: The Interview Pattern
+
+Ask Claude Code to **ask you questions** before implementing.
+
+**When to use it:** When working in a domain you're unfamiliar with, **before starting implementation**. Claude Code's questions surface points you'd miss thinking alone. The exam guide's examples: **cache invalidation strategies, failure modes**.
+
+**How it works (official prompt pattern):**
+```
+"I want to build [brief description]. Interview me in detail using the AskUserQuestion tool.
+Ask about technical implementation, edge cases, concerns, and tradeoffs. Don't ask obvious
+questions; dig into the hard parts I might not have considered.
+Keep interviewing until we've covered everything, then write a complete spec to SPEC.md."
+```
+
+Claude Code asks things like:
+- "When should the cache be invalidated — on write, or by TTL?"
+- "If the provider times out, which failure mode: retry or degrade?"
+- "Is a many-to-many relationship needed? Will you use soft deletes?"
+
+These questions surface missing requirements before you start designing. Once the spec is complete, implement it **in a fresh session** — clean context. (Link to Domain 5.2 — escalation on ambiguity: Claude asking instead of guessing.)
+
+---
+
+## Feedback Timing Strategy
+
+### Batch Feedback — One Detailed Message
+
+**When:** The fixes **interact** — changing one affects the others. Claude must see the whole picture at once; otherwise the first fix breaks the second, and the second undoes the first.
+
+Example: "Rename the function, update the parameters and fix the call sites" — these are coupled, give them in one message. Or: "Add error handling **and** change the response format accordingly" — the error handling determines the response format; give them separately and the second message rewrites the first.
+
+### Sequential Feedback — Separate Messages
+
+**When:** The problems are **independent** — fixing one doesn't affect the other. You can verify each fix separately.
+
+Example: "Fix the indentation in file 1" and "Update the error message in file 2" — independent problems, separate messages.
+
+> **One criterion:** *Does fixing one change the solution to the other?* Yes → batch. No → sequential. Which file it's in, or which one is "more important", is not the criterion.
+
+### The Third Case: The Correction Loop Is Stuck → `/clear`
+
+If it's still wrong **after two corrections** on the same issue, the context is polluted with failed approaches. Instead of a third correction: `/clear` for a clean session + a **better initial prompt** that incorporates what you learned. Official wording: "A clean session with a better prompt almost always outperforms a long session with accumulated corrections."
+
+Early-correction tools (course module: *Steering Long Sessions*):
+- `Esc` — stop Claude mid-action, context preserved, redirect
+- `Esc Esc` / `/rewind` — restore conversation and/or code to a previous checkpoint
+- "Undo that" — have Claude revert its changes
+- `/clear` — reset context between unrelated tasks
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| Concrete input/output examples | Most effective **when prose is interpreted inconsistently** — 2–3 before/after; longer prose is not the fix |
+| Edge case fixes | A concrete test case: input + expected output (the null-value example) |
+| Test-driven iteration | Write tests **first** (behavior + edge cases + performance), see them fail, share the failures |
+| Interview pattern | **Before implementing**, in unfamiliar domains; cache invalidation, failure modes; `AskUserQuestion` → SPEC.md |
+| Batch feedback | Interacting fixes → one detailed message |
+| Sequential feedback | Independent fixes → separate messages |
+| After two corrections | `/clear` + a better prompt; `Esc`, `/rewind` for early intervention |
+| Verification | Give Claude a check it can run (tests, build, screenshot) |
+| Exam trap | "The prose description is interpreted inconsistently" → answer: concrete examples (not more detailed prose) |
+
+---
+
+## Practice Scenario 1
+
+> A developer gives Claude Code this instruction:
+>
+> *"Make the functions more readable and convert them to modern JavaScript syntax."*
+>
+> Claude Code produces a different result each time — sometimes arrow functions, sometimes not; sometimes destructuring, sometimes not. Inconsistent.
+>
+> **Which technique should be tried first?**
+>
+> **A)** Add a more detailed prose explanation to CLAUDE.md — describe at length what "modern" means.
+>
+> **B)** Give 2–3 concrete input/output examples — before/after pairs of "this old code → this modern code".
+>
+> **C)** Run Claude Code with a different model — a smarter model will be consistent.
+>
+> **D)** Create a separate skill for each transformation — an arrow-function skill, a destructuring skill.
+
+### Correct Answer: B
+
+**Why B is correct:** The prose is being interpreted inconsistently — that is exactly the signal to switch to concrete examples. 2–3 before/after examples let the model extract the pattern and apply it consistently. "Modern" is ambiguous — examples are precise.
+
+**Why A is wrong:** More prose, more ambiguity. The prose is already being interpreted inconsistently — longer prose doesn't fix it, it adds complexity and bloats CLAUDE.md (Task 3.1).
+
+**Why C is wrong:** The problem is not the model's intelligence but the instruction's ambiguity. A different model also interprets an ambiguous instruction differently.
+
+**Why D is wrong:** Over-engineering. A separate skill per transformation type creates complexity. 2–3 examples are far simpler and more effective.
+
+---
+
+## Practice Scenario 2
+
+> A developer wants to improve an API endpoint Claude Code generated. Code review found two issues:
+>
+> 1. Error handling is missing — errors aren't caught
+> 2. The response format is inconsistent — success and error cases return different JSON shapes
+>
+> The developer realizes that how the error handling is added also determines the response format in the error case.
+>
+> **How should the feedback be given?**
+>
+> **A)** Give both issues in one detailed message — batch feedback.
+>
+> **B)** Fix the error handling first (one message), then update the response format (separate message) — sequential feedback.
+>
+> **C)** Describe both in prose and let Claude Code decide the priority itself.
+>
+> **D)** Fix the response format first, then add error handling — the format matters more.
+
+### Correct Answer: A
+
+**Why A is correct:** The two fixes **interact**: how error handling is done (throw vs a result object) determines the JSON shape of the error response. Given in separate messages, the first fix produces one response shape and the second fix rewrites it — two rounds and a contradictory intermediate result. One detailed message lets Claude see the whole picture and produce a consistent design. Exam guide: "addressing multiple interacting issues in a single detailed message when fixes interact."
+
+**Why B is wrong:** Sequential feedback is for **independent** problems. These two touch the same code path and the same data shape; giving them sequentially creates rework.
+
+**Why C is wrong:** Leaving prioritization to Claude can produce inconsistent results. As the developer, you can see the interaction; state it explicitly in the prompt.
+
+**Why D is wrong:** It's not a question of order but of interaction. Whatever the order, two separate messages make the second round rewrite the first.
+
+---
+
+## Practice Scenario 3
+
+> A developer is designing a distributed cache layer with Claude Code. They have no experience in this area. When they simply said "write a Redis-based cache layer", Claude produced working code; but in production, stale values keep coming back after data updates, and when Redis goes down the application stops entirely.
+>
+> **Which technique should have been used to catch these problems BEFORE implementation?**
+>
+> **A)** Test-driven iteration — write the Redis tests first.
+>
+> **B)** The interview pattern — have Claude ask questions about cache invalidation strategy, failure modes and tradeoffs before implementing, and produce a spec.
+>
+> **C)** Concrete input/output examples — give 2–3 example cache calls.
+>
+> **D)** Plan mode — let Claude explore the codebase.
+
+### Correct Answer: B
+
+**Why B is correct:** The two problems (stale data → cache invalidation, crash when Redis is down → failure mode) are precisely the exam guide's examples for the interview pattern: "surface design considerations (e.g., **cache invalidation strategies, failure modes**) before implementing solutions in **unfamiliar domains**." Because the developer doesn't know the domain, they can't ask the right questions themselves; Claude asking closes the requirement gaps before implementation.
+
+**Why A is wrong:** To write tests you need to know what to test; the developer isn't even aware that invalidation and failure-mode requirements exist. Tests are derived from the spec, *after* the interview.
+
+**Why C is wrong:** Examples resolve transformation/format ambiguity; here the problem is missing design requirements.
+
+**Why D is wrong:** Plan mode explores the codebase but doesn't on its own ask about requirements the developer *doesn't know*; the interview pattern exists for exactly that gap.

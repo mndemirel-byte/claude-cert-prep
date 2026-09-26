@@ -1,0 +1,234 @@
+# Task Statement 3.3: Path-Specific Rules
+
+## Domain 3 — Claude Code Configuration & Workflows (20% of the exam)
+
+---
+
+## Core Idea
+
+Sometimes rules must apply to specific **file types** — all test files, all API files, all Terraform files. Those files may be scattered across the codebase. Directory-level CLAUDE.md files fall short here because they are bound to a **subtree**. Path-specific rules solve exactly that: the rule is tied not to a directory but to a **file-path pattern**.
+
+---
+
+## `.claude/rules/` Files and YAML Frontmatter
+
+Put rule files in `.claude/rules/`. At the top of the file, a YAML frontmatter **`paths`** field holds glob patterns:
+
+```yaml
+---
+paths: ["terraform/**/*"]
+---
+
+In all Terraform files:
+- Use a descriptive name for every resource
+- Organize modules in separate directories
+- Keep state in a remote backend
+```
+
+```yaml
+---
+paths:
+  - "**/*.test.tsx"
+  - "**/*.test.ts"
+---
+
+In all test files:
+- Use describe/it structure
+- Each test checks a single behavior
+- Define mocks at the top of the file
+- Test names start with "should"
+```
+
+**The rule loads only while Claude works with a file matching the glob pattern.** If you're not touching a Terraform file, the Terraform rules never enter context.
+
+### Frontmatter rules you need to know
+
+| Rule | Detail |
+|---|---|
+| No `paths` | The file loads **unconditionally**, at launch, with the same priority as `.claude/CLAUDE.md`. So `.claude/rules/` is not only for path rules; it also holds topic-split general rules (Task 3.1) |
+| `paths` format | A YAML list **or** a comma-separated string; **brace expansion** is supported: `src/**/*.{ts,tsx}` |
+| Trigger | Loads when Claude **reads** a matching file ("trigger when Claude reads files matching the pattern") — not only on edit. The exam guide says "when editing"; both are accepted on the exam |
+| Only field | `paths` is the **only** frontmatter field Claude Code reads; others are silently ignored; the frontmatter is stripped before entering context |
+| Broken YAML | If the frontmatter doesn't parse, the file loads **unconditionally** → the answer to "why is this rule loading everywhere?". `claude --debug` shows the parse error |
+| Discovery | `.md` files under `.claude/rules/` are found **recursively** in subfolders (`rules/frontend/`, `rules/backend/`) |
+| Personal rules | `~/.claude/rules/` — every project on the machine; loaded *before* project rules, neither overrides the other |
+| Sharing | A shared rule set can be symlinked into several projects |
+| Nature | Rules, like CLAUDE.md, are **context, not enforcement** — for a guarantee use a hook (Domain 1.4) |
+
+### Glob Cheat-Sheet (official table)
+
+| Pattern | Matches |
+|---|---|
+| `**/*.ts` | All TypeScript files in any directory |
+| `src/**/*` | Everything under `src/` |
+| `*.md` | Markdown files **in the project root only** (subdirectories excluded!) |
+| `src/components/*.tsx` | React components in one specific directory (subdirectories excluded) |
+| `src/**/*.{ts,tsx}` | Brace expansion — two extensions in one pattern |
+
+> **Exam trap:** `*.md` and `**/*.md` are not the same. If the wording says "across the codebase", you need `**/`.
+
+---
+
+## Directory-Level CLAUDE.md vs Path-Specific Rules
+
+This is the exam's favorite question. Learn it precisely — and **watch for the commonly mistaught point**:
+
+| Property | Directory-level CLAUDE.md | Path-specific rules (`.claude/rules/` + `paths`) | Root `.claude/rules/*.md` (no `paths`) |
+|---|---|---|---|
+| Scope | **One subtree** (that directory and below) | **The whole codebase** — via glob pattern | The whole codebase |
+| Matching | The file's directory | File-path pattern (extension, directory, combination) | — |
+| When loaded | **On demand** — when a file in that directory is read | **On demand** — when a file matching the pattern is read | At launch, always |
+| Test files across 50 directories | 50 CLAUDE.md files needed | One file with `**/*.test.tsx` | Always loaded (waste) |
+
+### The Critical Difference — Shape of Scope, Not Tokens
+
+Both mechanisms are **lazy-loaded**: a subdirectory CLAUDE.md and a path rule both enter context only when relevant files are read. In terms of token efficiency they are in the **same class**. The real difference is **how the scope is defined**:
+
+- **Directory CLAUDE.md** → "everything under this directory" — ideal when the technology/package boundary coincides with a directory boundary (frontend/, backend/)
+- **Path rule** → "every file matching this pattern, wherever it is" — the only solution when a file *type* is spread across directories (test files, `.tf` files, `*/api/*`)
+
+**Glob patterns match files across the entire codebase.** `**/*.test.tsx` catches ALL test files regardless of directory. A directory-level CLAUDE.md applies only to its own subtree: if test files are spread across 50 directories you'd need 50 CLAUDE.md files — unmaintainable.
+
+> **Exam rule:** "Spread across the codebase / co-located / in many directories" → path-specific rule. "This folder is a different technology" → directory CLAUDE.md. Neither is "always loaded"; what is always loaded is the root CLAUDE.md and rules files without `paths`.
+
+---
+
+## Token Efficiency
+
+The key advantage of path-specific rules: **loaded only while working with matching files.**
+
+- Not touching a Terraform file → Terraform rules don't load
+- Not reading a test file → test rules don't load
+- Compared with the always-loaded root CLAUDE.md and `paths`-less rules: **less irrelevant context, less token consumption**
+
+This is the same principle as Domain 5.1 (context preservation): only what is needed right now enters context.
+
+---
+
+## Use Cases
+
+### Test Rules
+```yaml
+---
+paths: ["**/*.test.tsx", "**/*.test.ts", "**/*.spec.ts"]
+---
+```
+Rules applied to all test files — directory doesn't matter. (Exam guide Preparation Exercise 2: `paths: ["**/*.test.*"]`)
+
+### API Rules
+```yaml
+---
+paths: ["src/api/**/*", "src/routes/**/*"]
+---
+```
+Rules specific to API and route files. (Exam guide: `paths: ["src/api/**/*"]`)
+
+### Infrastructure Rules
+```yaml
+---
+paths: ["**/*.tf", "**/*.tfvars"]
+---
+```
+All Terraform files by extension, regardless of directory.
+
+> **Current note (does not change the exam answer):** skills can also carry a `paths` frontmatter — it ties the skill's *auto-activation* to a file pattern. On the exam, "conventions automatically applied by file type" is still answered with `.claude/rules/`; `paths` on a skill only limits when a procedure is *suggested*.
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| `.claude/rules/` + `paths` frontmatter | Define path-specific rules with glob patterns |
+| No `paths` | The file loads at launch every session (like CLAUDE.md) |
+| Glob pattern | `**/*.test.tsx` — all test files in the codebase; `*.md` root only |
+| Trigger | When a matching file is **read** (edits included) — no discretion by Claude, **deterministic** |
+| Directory CLAUDE.md limitation | Bound to a subtree — insufficient for scattered file types |
+| Directory CLAUDE.md is lazy too | The difference is not tokens but the **shape of scope** (subtree vs pattern) |
+| Broken YAML | The rule loads unconditionally → `claude --debug` |
+| `~/.claude/rules/` | Personal rules, all projects |
+| Exam trap | "Apply a rule to test files in 50 directories" → path-specific rules, not directory CLAUDE.md, not a skill |
+
+---
+
+## Practice Scenario 1
+
+> In a codebase, test files are co-located with source files (`Button.test.tsx` next to `Button.tsx`). There are test files in more than 50 directories. The team wants all tests to follow the same conventions: describe/it structure, one behavior per test, mocks at the top of the file.
+>
+> **Which approach is correct?**
+>
+> **A)** Create a path-specific rule file in `.claude/rules/` with the glob pattern `paths: ["**/*.test.tsx"]`.
+>
+> **B)** Put a separate `CLAUDE.md` in each of the 50 directories — with the test rules in each.
+>
+> **C)** Write all test rules under headers in a single root `CLAUDE.md` — let Claude infer which section applies.
+>
+> **D)** Create a `/test-rules` skill — to be invoked when writing tests.
+
+### Correct Answer: A
+
+**Why A is correct:** The `**/*.test.tsx` glob pattern catches every test file in the codebase — whatever the directory. One rule file applies to all test files across 50+ directories. Easy to maintain, token-efficient (loads only while working with a test file), and **deterministic** — the rule arrives automatically when the file path matches. (The correct answer of exam guide Q6.)
+
+**Why B is wrong:** 50 separate CLAUDE.md files in 50 directories is a maintenance nightmare. To change one rule you update 50 files. That is exactly the problem path-specific rules solve — CLAUDE.md files are "directory-bound".
+
+**Why C is wrong:** The root CLAUDE.md is always loaded — test rules take up context even when you're not working on a test file. And "let Claude infer which section applies" relies on **inference** rather than explicit matching — unreliable (the exam guide's rationale for option B).
+
+**Why D is wrong:** Skills load on demand — either the user remembers to invoke one, or Claude *decides* to load it based on the description. Both are **probabilistic**; that contradicts the requirement of "deterministic automatic application based on file paths" (the exam guide's rationale for option C). Path-specific rules don't leave it to Claude's discretion.
+
+---
+
+## Practice Scenario 2
+
+> A team's Terraform configuration files live in `infrastructure/terraform/`. There are also Terraform modules in `modules/`. The team wants the same naming and organization rules applied to all Terraform files.
+>
+> **Which approach is most appropriate?**
+>
+> **A)** Create a directory-level `infrastructure/terraform/CLAUDE.md`.
+>
+> **B)** Create `.claude/rules/terraform.md` — with `paths: ["**/*.tf", "**/*.tfvars"]` in the frontmatter.
+>
+> **C)** Add the Terraform rules to the root CLAUDE.md.
+>
+> **D)** Create `.claude/rules/terraform.md` — with `paths: ["*.tf"]` in the frontmatter.
+
+### Correct Answer: B
+
+**Why B is correct:** The Terraform files are in two different directories (`infrastructure/terraform/` and `modules/`). The glob `**/*.tf` catches files in both (and in any directory added later). One rule file applies to all Terraform files. Token-efficient — loads only while working with a `.tf` file.
+
+**Why A is wrong:** A directory-level CLAUDE.md applies only to files in the `infrastructure/terraform/` subtree. The Terraform files in `modules/` don't get the rules. You'd need a second CLAUDE.md — path-specific rules solve this with one file.
+
+**Why C is wrong:** The root CLAUDE.md is always loaded. The Terraform rules would be in context even while editing a Python file — wasted tokens; the file bloats and rules start being ignored.
+
+**Why D is wrong:** The glob trap. `*.tf` matches `.tf` files **in the project root only**; it catches nothing in subdirectories. The rule would never load. For "the whole codebase" you need `**/`.
+
+---
+
+## Practice Scenario 3
+
+> A team created `.claude/rules/api.md` with `paths: ["src/api/**/*"]`. But developers notice the API rules appear in context even while editing frontend CSS files. `/context` shows the rule loading at launch in every session. The top of the file looks like this:
+>
+> ```
+> --
+> paths: ["src/api/**/*"]
+> ---
+> ```
+>
+> **What is the root cause?**
+>
+> **A)** The `src/api/**/*` pattern is too broad — it should be `src/api/*.ts`.
+>
+> **B)** The frontmatter is broken (the opening `---` is incomplete) — when the YAML doesn't parse, Claude Code ignores the frontmatter and loads the rule **unconditionally**.
+>
+> **C)** `.claude/rules/` files always load at launch; for conditional loading the file must be `src/api/CLAUDE.md`.
+>
+> **D)** Path rules trigger only on edits; editing CSS is an edit, so the rule loads.
+
+### Correct Answer: B
+
+**Why B is correct:** Official behavior: "If the YAML between the markers doesn't parse, Claude Code ignores the frontmatter and loads the rule as if it had no `paths`." The opening marker is `--` (two dashes), so the frontmatter isn't recognized; the file loads at launch like a `paths`-less rule. `claude --debug` shows the parse error. Fix: `---`.
+
+**Why A is wrong:** Even a broad pattern wouldn't match CSS files (`src/styles/...`); the problem is not the pattern but the pattern never being read.
+
+**Why C is wrong:** Rules files with `paths` load conditionally; moving to a directory CLAUDE.md is unnecessary and would miss API files outside `src/api`.
+
+**Why D is wrong:** The rule loads only when a file *matching the pattern* is read/edited; a CSS file doesn't match. And `/context` shows it loading at launch — this is unconditional loading, not triggering.

@@ -1,0 +1,277 @@
+# Task Statement 5.5: Human Review and Confidence Calibration
+
+## Domain 5 — Context Management and Reliability (15% of the Exam)
+
+---
+
+## Core Idea
+
+You are running a structured data extraction pipeline. The model extracts fields from invoices, reads dates from contracts, pulls amounts from documents. The system reports 97% overall accuracy. Everything looks fine — until you discover a 40% error rate on one specific document type.
+
+This task statement teaches how aggregate metrics can mislead, how confidence calibration works, and how to direct limited human review capacity.
+
+Exam scenario: **Structured Data Extraction** — the scenario where Domain 4 (extraction schema, validation) intersects with Domain 5; the exam guide lists both in this scenario's "primary domains". Exercise 3, step 15 is the implementation order for this statement: *"have the model output field-level confidence scores, route low-confidence extractions to human review, and analyze accuracy by document type and field"*.
+
+---
+
+## The Aggregate Metrics Trap
+
+### Problem
+
+**97% accuracy** system-wide looks great. But that number is the average across all document types:
+
+| Document Type | Volume | Accuracy |
+|---|---|---|
+| Standard invoices | 70% | 99.5% |
+| Contracts | 20% | 98% |
+| Handwritten notes | 10% | 60% |
+
+Handwritten notes are only 10% of total volume but have a **40% error rate**. That error is masked by the 99.5% accuracy of high-volume standard invoices.
+
+### Solution
+
+Before moving to automation, validate accuracy along **two dimensions**:
+
+1. **By document type:** Compute a separate accuracy rate for each document type
+2. **By field segment:** Compute a separate accuracy rate for each extracted field
+
+```
+Accuracy Analysis:
+├── By document type:
+│   ├── Standard invoices: 99.5% ✅ Suitable for automation
+│   ├── Contracts: 98% ✅ Suitable for automation
+│   └── Handwritten notes: 60% ❌ Human review required
+│
+└── By field segment:
+    ├── Total amount: 99% ✅
+    ├── Date: 97% ✅
+    ├── Tax ID: 94% ⚠️ Monitor
+    └── Payment terms: 78% ❌ Human review required
+```
+
+**Rule:** 97% overall accuracy can hide a 40% error rate on a specific document type. Always validate by document type AND by field segment before moving to automation. (The "document type × field accuracy matrix" in Domain 4.6 is the same table.)
+
+---
+
+## Stratified Random Sampling
+
+### Problem
+
+The system runs with high confidence — 95% of extractions come back with a high confidence score. But when a new document format appears (e.g., a new vendor's invoice template), the model can produce **wrong** extractions with high confidence.
+
+These "novel error patterns" cannot be detected with the existing confidence thresholds — because the threshold only sends *low*-confidence items to humans.
+
+### Why "plain" random sampling isn't enough
+
+If you draw 50 random samples from 1,000 extractions, handwritten notes (10% of volume) are represented by about 5 samples on average — you cannot statistically see a 40% error rate. The aggregate metrics trap repeats itself in sampling.
+
+### Solution: Three-dimensional strata
+
+Sampling is divided into **strata**, and a sufficient number of samples is drawn from each stratum:
+
+```
+Strata = document type × field × confidence band
+
+Each week:
+├── Per document type (invoice / contract / handwritten / NEW format): min. 30 samples
+│   └── Distribution per field within each type (amount / date / tax ID / payment terms)
+│       └── Confidence band:
+│           ├── Low confidence:    already at 100% human review
+│           ├── Medium confidence: 30% sampling
+│           └── High confidence:   5% sampling  ← THIS IS CRITICAL
+```
+
+**Why sample high-confidence extractions too?**
+
+- The model can be wrong with high confidence on new document formats (uncalibrated confidence)
+- Slowly changing document formats (drift) can invalidate confidence thresholds
+- Reviewing only low-confidence items misses novel error patterns
+
+**Why is the document-type stratum mandatory?** A low-volume but error-prone type is invisible in plain sampling; the stratum forces it to be represented. On the exam, "plain random sampling" is a distractor; "**stratified** random sampling of high-confidence extractions" is the correct answer.
+
+---
+
+## Field-Level Confidence Calibration
+
+### Concept
+
+The model gives a separate confidence score for each extracted field:
+
+```json
+{
+  "invoice_number": {"value": "INV-2024-001", "confidence": 0.99},
+  "total_amount": {"value": 1547.83, "confidence": 0.95},
+  "tax_id": {"value": "TR1234567890", "confidence": 0.72},
+  "payment_terms": {"value": "Net 30", "confidence": 0.45}
+}
+```
+
+> **Representation note:** Both a numeric score (0.72) and a `high/medium/low` enum are used. The number gives "false precision" — 0.72 is *not* a probability, it is the model's own estimate; calibration reduces it to bands anyway. Domain 4.6 preferred the enum; whichever you choose, **the raw score does not decide, the calibrated band decides.**
+
+### Calibration Process
+
+1. **Build a labeled validation set (ground truth data):** A test set of documents with known true values, covering the document type × field strata
+2. **Produce a calibration table:** Measure how accurate the model *actually* is in each confidence band
+3. **Choose the threshold based on capacity** and set up routing
+
+### Calibration table — Scenario 2's data
+
+| Model-reported confidence band | Sample count | Actual accuracy on labeled set | Interpretation |
+|---|---|---|---|
+| 0.95–1.00 | 620 | 98% | Calibrated — auto-accept candidate |
+| 0.85–0.95 | 210 | **62%** | **Not calibrated** — model is overconfident here |
+| 0.70–0.85 | 120 | 55% | Human review |
+| < 0.70 | 50 | 31% | Priority human review |
+
+The row "0.85 band is 62% accurate" shows why the intuitive 80% threshold fails: when the model says "I'm 85% sure", it is wrong one time in three. Calibration converts the table to **actual accuracy**; the threshold is placed on that column, not on the raw score.
+
+### Deriving the threshold from capacity
+
+Human review capacity is limited — if 200 documents can be reviewed per day, the threshold is chosen by asking: *"Which threshold sends the ~200 documents with the lowest actual accuracy to the queue?"*
+
+```
+if calibrated_accuracy(band) >= 0.97:            → auto-accept (+ 5% stratified sampling)
+elif queue_capacity not full:                     → human review (lowest actual accuracy first)
+else:                                             → enqueue; review when capacity frees up
+```
+
+The exam guide's wording: "*routing … to human review, **prioritizing limited reviewer capacity***" — capacity determines the threshold, not the threshold the capacity.
+
+### Two routing signals — confidence alone is not enough
+
+The exam guide's Skills item: "*Routing extractions with **low model confidence or ambiguous/contradictory source documents** to human review*". So there are two doors into the human queue:
+
+| Signal | Source | Example | Note |
+|---|---|---|---|
+| **Low calibrated confidence** | Model (calibration table) | `payment_terms` 0.45 | The process above |
+| **Ambiguous / contradictory source document** | Document validation (Domain 4.4 `conflict_detected`, 4.3 `"unclear"` enum) | Line-item sum ≠ stated total on the document; document contains two different due dates | Goes to a human **even if model confidence is high** |
+
+Without the second signal, the system misses the "consistently confident but the document contradicts itself" case — the model can pick one value with high confidence without noticing the contradiction.
+
+### Review Capacity Prioritization
+
+```
+Prioritization:
+1. Contradictory/ambiguous source documents (conflict_detected)     → REVIEW FIRST
+2. Fields with low calibrated confidence                            → SECOND
+3. Middle band                                                      → THIRD
+4. Stratified sampling of high confidence (5%)                      → LAST (but NOT skipped)
+```
+
+---
+
+## Raw Confidence vs Calibrated Confidence — The Rule That Reconciles Three Domains
+
+"Confidence" appears in three places, and the three seem to say different things:
+
+| Location | Usage | Verdict | Why |
+|---|---|---|---|
+| **Domain 4.1** | Using raw confidence to *filter output* ("don't report if unsure") | ❌ Trap (confidence-based filtering) | The model sets its own bar; you can control neither FP nor FN |
+| **5.2** | Using raw confidence for *escalation decisions* | ❌ Trap | Misplaced confidence on hard cases |
+| **5.5** | Using **calibrated** confidence + stratified sampling to *direct review attention* | ✅ Correct | The labeled set converts the score to actual accuracy; sampling catches calibration breakdown |
+
+**Common thread:** Raw confidence **never decides on its own.** In 5.5 too, what decides is not the raw score but the calibration table + capacity + the second signal.
+
+### Drift and the closed loop
+
+A new vendor template = distribution shift. Stratified sampling from high confidence catches this as an **early warning**; the newly caught error pattern → (a) is added to the labeled set, recalibration; (b) a format-specific few-shot example for Domain 4.2; (c) a criteria fix for Domain 4.1. Domain 4's "closed improvement loop" closes here: `detected_pattern` (4.4) and stratified sampling (5.5) are the loop's two data sources.
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| Aggregate metrics trap | 97% overall accuracy can hide a 40% error rate on a specific type |
+| Two-dimensional validation | By document type AND by field segment — before automation |
+| Stratified sampling | Document type × field × confidence band; sample from high confidence too — plain random isn't enough |
+| Field-level confidence | Separate score per field; the raw score doesn't decide, the calibrated band does |
+| Calibration table | Confidence band → actual accuracy on labeled set; the threshold goes on this column |
+| Capacity | The threshold is derived from daily review capacity |
+| Two signals | Low calibrated confidence **or** contradictory/ambiguous source document → human |
+| 4.1 / 5.2 / 5.5 | Raw confidence is a trap for filtering/escalation; calibrated confidence is correct for routing |
+| Drift | Sampling is the early warning; finding → recalibration + few-shot/criteria update |
+
+---
+
+## Practice Scenario 1
+
+> A document extraction system reports 97% overall accuracy. Management plans to move the system to full automation — removing all human review.
+>
+> Internal audit finds a 40% error rate on extractions from handwritten notes.
+>
+> **Which is the correct approach?**
+>
+> **A)** 97% overall accuracy is sufficient — move to full automation and monitor with a weekly plain random sample of 50.
+>
+> **B)** Keep human review for all document types — even 97% is not trustworthy.
+>
+> **C)** Evaluate accuracy separately by document type and by field segment. Automate the high-accuracy types, keep the low-accuracy types (handwritten notes) under human review; monitor the automated types with stratified sampling.
+>
+> **D)** Remove handwritten notes from the pipeline entirely — problem solved.
+
+### Correct Answer: C
+
+**Why C is correct:** It avoids the aggregate metrics trap. It evaluates accuracy separately by document type and by field segment. Standard invoices (99.5%) are suitable for automation, handwritten notes (60%) require human review. Stratified sampling on the automated types catches drift.
+
+**Why A is wrong:** The aggregate metrics trap; moreover, a plain random sample of 50 represents the handwritten type with ~5 samples — the 40% error stays invisible, and the trap repeats itself in sampling.
+
+**Why B is wrong:** Human review for all types is a wasteful use of resources. Human review adds no value for high-accuracy types.
+
+**Why D is wrong:** Removing handwritten notes is data loss. The correct solution is to route this type to human review, not to remove it from the pipeline.
+
+---
+
+## Practice Scenario 2
+
+> An extraction system provides field-level confidence scores. The system designer applied this rule: "If the confidence score is above 80%, auto-accept."
+>
+> The 80% threshold was set intuitively, without any validation data.
+>
+> Analysis of the last 1,000 documents shows: on fields where the model says 85% confidence, actual accuracy is 62%.
+>
+> **What is the root cause of this situation and the solution?**
+>
+> **A)** Raise the threshold to 95% — be more conservative.
+>
+> **B)** The confidence threshold has not been calibrated against a labeled validation set (ground truth); the model's 85% actually corresponds to 62%. Solution: produce a confidence band → actual accuracy table, and set the threshold based on the actual accuracy column and review capacity.
+>
+> **C)** Use a larger model — confidence scores will be more accurate.
+>
+> **D)** Ask the model for the confidence score as a `high/medium/low` enum; numeric scores are unreliable.
+
+### Correct Answer: B
+
+**Why B is correct:** The raw confidence score is not calibrated. The model says 85% but actual accuracy is 62% — a serious calibration gap. Solution: a calibration table against the labeled set; the threshold is set on actual accuracy, not on the raw score, and is derived from capacity.
+
+**Why A is wrong:** Raising the threshold does not solve the calibration problem. The actual accuracy of the 95% band is also unknown; data-based calibration is needed instead of an intuitive threshold.
+
+**Why C is wrong:** A larger model does not guarantee confidence calibration. Calibration is a process independent of model size — it must be done separately for each model.
+
+**Why D is wrong:** Changing the representation does not change calibration; an uncalibrated `high` enum carries the same illusion as "85% → 62%". The enum may be preferable (no false precision) but it is not a *substitute* for calibration.
+
+---
+
+## Practice Scenario 3
+
+> An invoice extraction system runs with calibrated field-level confidence; fields with calibrated confidence above 92% are auto-accepted. On one vendor's invoices, the sum of line items is inconsistent with the "Grand Total" written on the document; the model extracts the `total_amount` field from the value on the document with 96% confidence and the invoice passes automatically. At month end, accounting finds 40 incorrect payments.
+>
+> **What is missing in the system?**
+>
+> **A)** Calibration has broken down; raise the threshold to 98%.
+>
+> **B)** Routing looks only at confidence; the second signal is missing. Document validation (`calculated_total` ≠ `stated_total` → `conflict_detected`) should send contradictory documents to human review regardless of model confidence — at the front of the queue.
+>
+> **C)** Add a "check the totals" instruction to the system prompt so the model is more careful.
+>
+> **D)** Remove this vendor's invoices from the pipeline.
+
+### Correct Answer: B
+
+**Why B is correct:** The exam guide's Skills item: low confidence **or** contradictory source document → human. The model picked the value on the document with high confidence without noticing the contradiction; even if calibration is correct, confidence cannot catch this error. Domain 4.4's `conflict_detected` flag is the second door of routing.
+
+**Why A is wrong:** Calibration has not broken down — the model may genuinely be 96% accurate on that field; the problem is that the document contradicts itself. No matter how high the threshold goes, it does not measure document inconsistency.
+
+**Why C is wrong:** An instruction is probabilistic; deterministic validation (summation) is done in code, not left to the model (Domain 4.4).
+
+**Why D is wrong:** Data loss; the problem is not the vendor but the missing contradictory-document signal — it will happen with other vendors too.

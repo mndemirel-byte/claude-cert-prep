@@ -1,0 +1,357 @@
+# Task Statement 4.3: Structured Output with Tool_Use
+
+## Domain 4 — Prompt Engineering and Structured Output (20% of the Exam)
+
+---
+
+## Core Idea
+
+There are two ways to extract structured data:
+
+1. **Prompt-based JSON:** Instructing the model to "respond in JSON format"
+2. **JSON schema via tool_use:** Defining a formal tool for Claude and forcing it to use it
+
+The difference between these two is a matter of **reliability**. The exam expects you to understand the limits of this difference correctly — what it solves, and what it does not.
+
+> **Current-state box (does not change the exam answer):** The exam guide says "JSON schema via tool_use is the **most reliable** approach for schema-compliant output" → on the exam the correct answer is **tool_use**. In the current API there are three tools for structured output: (a) **tool_use** (+ full schema guarantee with `strict: true`), (b) **structured outputs** — direct JSON response via `output_config.format: {"type": "json_schema", "schema": …}`, (c) **prefill / stop-sequence** (the course's *Structured data* lesson: starting the assistant message with `{`) — the least reliable, incompatible with structured outputs. In a real project (b) is usually the cleanest; on the exam, (a).
+
+---
+
+## Reliability Hierarchy
+
+### Syntax Reliability
+
+```
+Tool_use + JSON schema  →  Eliminates syntax errors (input is always parseable JSON)
+Tool_use + strict: true →  + full schema compliance guarantee (required fields, types, enum values)
+Prompt-based JSON       →  Model may produce invalid JSON (text like "Here is the result: {…" can get mixed in)
+```
+
+**When you use tool_use, the `input` field of the `tool_use` block is always valid JSON** — your downstream system does not crash with a parse error. This is the exam's "eliminates JSON syntax errors" statement.
+
+**But be careful:** syntax guarantee ≠ schema guarantee. Without `strict: true`, the model can, rarely, skip a required field or produce a value outside the enum. Official docs: *"Add `strict: true` to your custom tool definitions to ensure Claude's tool calls always match your schema exactly."* With strict, schema compliance is guaranteed via grammar-constrained sampling (exceptions: `refusal` and responses cut off by `max_tokens`).
+
+```json
+{
+  "name": "extract_invoice",
+  "strict": true,
+  "input_schema": { "...": "..." }
+}
+```
+
+### Errors Tool_use Cannot Prevent
+
+This is where the exam sets its trap. Tool_use does not solve everything — **not even strict does**, because these are not schema errors, they are *semantic* errors.
+
+```
+❌ Semantic errors: Line items say 500 + 300 = 900, but the line total is 750.
+   → JSON is valid, schema validated, but the numbers are wrong.
+
+❌ Field placement errors: The "unit price" value ended up in the "total price" field.
+   → JSON is valid, all fields populated, but values are in the wrong place.
+
+❌ Fabrication: The source document has no price, but the model makes up a plausible value.
+   → Risk is especially high for "required" fields.
+```
+
+**Summary:** Tool_use gives a **syntax** guarantee (a **schema** guarantee with strict). It does not give a **semantic** guarantee → Task 4.4.
+
+---
+
+## Tool_choice Modes — Critical Distinctions
+
+```json
+"tool_choice": {"type": "auto"}
+// Default (if tools are defined). The model may call a tool or return plain text.
+// Use when the document type is unknown and a text response is acceptable.
+
+"tool_choice": {"type": "any"}
+// The model MUST call a tool. It decides which one.
+// You want guaranteed structured output but the document type varies → use this.
+
+"tool_choice": {"type": "tool", "name": "extract_metadata"}
+// The model MUST call this specific tool.
+// To guarantee that a particular extraction (e.g. metadata) runs
+// BEFORE enrichment steps. The exam guide's example uses exactly this name.
+
+"tool_choice": {"type": "none"}
+// Keep tools defined but call NONE of them this turn; text only.
+// Default (if no tools are defined). May appear as the fourth option on the exam.
+```
+
+| Mode | Tool call | Which tool | Produces explanatory text before the tool? | With extended thinking (manual) |
+|-----|-------------|-----------|----------------------------------------|-------------------------------|
+| `auto` | optional | model chooses | yes | ✅ |
+| `any` | mandatory | model chooses | **no** | ❌ error |
+| `tool` | mandatory | the specified one | **no** | ❌ error |
+| `none` | forbidden | — | yes (text only) | ✅ |
+
+**Two side effects:**
+- `any` and `tool` work by having the API *prefill* the assistant message; therefore the model **does not produce a natural-language explanation before** the tool call (even if you ask for one). "I want both reasoning and the tool call" → `auto` + an instruction in the user message to "use tool X".
+- When manual extended thinking (`thinking: {"type": "enabled"}`) is on, `any` and `tool` **return an error**; only `auto`/`none`. In a "thinking + guaranteed structured output" scenario the answer is: turn thinking off, or `auto` + `strict: true`.
+- `disable_parallel_tool_use: true` (with `auto`/`any`): **at most one** tool call per turn. Used to turn off parallel calls in a sequential pipeline (metadata first, then enrichment).
+- Changing `tool_choice` invalidates the prompt cache (for message blocks).
+
+> **Current note:** On the newest models (Opus 5.5, Fable/Mythos 5.1) `any` and `tool` are not supported (returns 400); for a guaranteed schema use `auto` + `strict: true` or structured outputs. The exam guide's model is built on `any`/`tool`; **the exam answer is `any`**.
+
+### The Exam's Favorite Question
+
+> *"Documents arrive in unknown formats. Guaranteed structured output is needed. Which tool_choice?"*
+
+**Answer: `"any"`** — The model chooses which tool to use but MUST call a tool.
+
+---
+
+## Schema Design — Preventing Fabrication
+
+This is the exam's most detailed expectation. A good schema includes three things:
+
+### 1. Optional/Nullable Fields
+
+```json
+{
+  "name": "extract_invoice",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "invoice_number": {
+        "type": "string",
+        "description": "Invoice number"
+      },
+      "payment_due_date": {
+        "type": ["string", "null"],
+        "description": "Payment due date. Return null if not in the document."
+      },
+      "discount_rate": {
+        "type": ["number", "null"],
+        "description": "Discount rate. Return null if not specified."
+      }
+    },
+    "required": ["invoice_number"]
+  }
+}
+```
+
+**Why it matters:** If `payment_due_date` were required, the model would fabricate it when it is not in the document. Making it nullable offers the "return null" option.
+
+**Test it:** The last sentence of Preparation Exercise 3, step 11 — "*Process documents where some fields are absent and **verify** the model returns null rather than fabricating values*". Making it nullable is not enough; you verify that null is returned on a small set of documents with missing fields (the eval set from Task 4.1).
+
+### 2. An "unclear" Enum Value for Ambiguous Cases
+
+```json
+{
+  "severity": {
+    "type": "string",
+    "enum": ["critical", "major", "minor", "unclear"],
+    "description": "Use 'unclear' if it cannot be determined from the available information."
+  }
+}
+```
+
+Without this, the model always picks a value — even in ambiguous cases. The `"unclear"` option gives the model permission to say "I don't know". **Afterwards:** findings that come back `"unclear"` go to the human queue via confidence-based routing (Task 4.6) — schema design and routing logic complement each other.
+
+### 3. "other" + Free Text — Extensible Classification
+
+```json
+{
+  "document_type": {
+    "type": "string",
+    "enum": ["invoice", "receipt", "contract", "other"]
+  },
+  "document_type_detail": {
+    "type": ["string", "null"],
+    "description": "Explain if document_type is 'other'. Otherwise null."
+  }
+}
+```
+
+**Why it matters:** If you keep the enum closed, unknown documents get misclassified. "other" + a freeform field covers both worlds: structured classification + flexibility. The same pattern returns in Task 4.4 as `conflict_detected` (boolean) + `conflict_details` (text) — the **"closed value + explanation field"** pattern.
+
+### 4. Format Normalisation Rules
+
+The schema defines **what** to return (type, enum, nullable). The prompt says **how to normalize it**:
+
+```
+"Return all dates in YYYY-MM-DD format.
+Currency amounts as integers without decimals: '$1,250.50' → 125050 (cents)
+Phone numbers in +1XXXXXXXXXX format."
+```
+
+Why in the prompt rather than the schema? You can write a hint in the schema's `description` field (the example above does), but the schema **cannot enforce** a *transformation* rule: constraints like `pattern` (regex), `minimum`/`maximum`, `minLength` are not supported in structured outputs and are moved into the description by the SDK. The exam guide's sentence: "*format normalization rules in prompts **alongside** strict output schemas*". Rule: **the schema says what, the prompt says how.**
+
+---
+
+## Full Schema Example: Invoice Extraction
+
+```json
+{
+  "name": "extract_invoice_data",
+  "description": "Extract structured data from an invoice document",
+  "strict": true,
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "invoice_number": {
+        "type": "string",
+        "description": "Invoice number or reference code"
+      },
+      "invoice_date": {
+        "type": ["string", "null"],
+        "description": "Invoice date, in YYYY-MM-DD format. Null if absent."
+      },
+      "vendor_name": {
+        "type": "string",
+        "description": "Vendor/supplier name"
+      },
+      "total_amount": {
+        "type": ["number", "null"],
+        "description": "Total amount in cents. Null if it cannot be extracted."
+      },
+      "line_items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "description": {"type": "string"},
+            "unit_price": {"type": ["number", "null"]},
+            "quantity": {"type": ["number", "null"]},
+            "total": {"type": ["number", "null"]}
+          },
+          "required": ["description", "unit_price", "quantity", "total"],
+          "additionalProperties": false
+        }
+      },
+      "currency": {
+        "type": "string",
+        "enum": ["TRY", "USD", "EUR", "other"],
+        "description": "Currency. 'other' if unknown."
+      },
+      "extraction_confidence": {
+        "type": "string",
+        "enum": ["high", "medium", "low"],
+        "description": "The model's assessment of extraction quality"
+      }
+    },
+    "required": ["invoice_number", "vendor_name"],
+    "additionalProperties": false
+  }
+}
+```
+
+**Notes with strict:** `strict: true` allows optional (non-required) fields (a total of 24 optional parameters per request, a limit of 20 strict tools); `additionalProperties` is automatically set to `false`; constraints like `pattern`, `minimum`/`maximum`, `minLength` are not supported (the SDK moves them into the description). If you want to see the "field absent" case **explicitly**, keep the field required and make its type nullable (`["string", "null"]`) — that way the model deliberately writes `null` instead of *omitting* the field; the downstream system does not have to distinguish between "missing key" and "null".
+
+---
+
+## Exam Traps
+
+### Trap 1: "Tool_use solves everything"
+
+*"We added tool_use to solve the validation problems."*
+
+No. Tool_use solves **syntax** problems (schema problems with strict). Semantic problems (wrong total, wrong field) require a validation-retry loop.
+
+### Trap 2: "Required fields prevent hallucination"
+
+*"We should make no field null, so there is no missing data."*
+
+Quite the opposite. If you make all fields required, the model is forced to fabricate values for missing information. Optional/nullable fields prevent fabrication.
+
+### Trap 3: "Guaranteed output is obtained with `auto`"
+
+No. With `auto` the model can also return a text response. For guaranteed structured output, `any` or forcing a specific tool.
+
+### Trap 4: "If we turn on thinking, extraction gets more accurate — together with `any`"
+
+Manual extended thinking + `any`/`tool` → error. Pick one of the two; for a guaranteed schema, `auto` + `strict`.
+
+---
+
+## Key Takeaway List
+
+| # | Key Takeaway |
+|---|---------------|
+| 1 | **Tool_use eliminates syntax errors** — `input` is always valid JSON. For a full schema guarantee, **`strict: true`**. |
+| 2 | **Tool_use does not prevent semantic errors, wrong fields, fabrication** — not even strict. → 4.4. |
+| 3 | **`auto`:** text or tool. **`any`:** must call a tool. **`tool`:** must call that tool (e.g. `extract_metadata` → before enrichment). **`none`:** no tool. `any`/`tool` produce no explanatory text, do not work with manual thinking. |
+| 4 | **Optional/nullable fields prevent fabrication** — not required. In strict, "optional" = nullable. **Test** that null is returned. |
+| 5 | **The `"unclear"` enum value** gives the model permission to say "I don't know" → goes to 4.6 routing. |
+| 6 | **`"other"` + freeform field** extends the schema for unknown categories (the "closed value + explanation" pattern). |
+| 7 | **Schema says what, prompt says how:** format normalization rules go in the prompt; the schema cannot enforce transformation rules. |
+| 8 | **Current:** structured outputs (`output_config.format`) and `strict` exist; the exam answer is still tool_use. |
+
+---
+
+## Practice Questions and Answer Explanations
+
+### Question 1
+
+Which problem does using a JSON schema via tool_use definitely solve?
+
+**A)** The model does not fabricate values  
+**B)** The JSON is always syntactically valid  
+**C)** Fields always carry the correct value  
+**D)** Extraction quality is guaranteed  
+
+**✅ Answer: B**
+
+*Explanation:* Tool_use only provides a syntax guarantee. The model cannot produce malformed JSON. But fabrication (A), wrong field values (C), and overall quality (D) can still be problems — even `strict: true` only adds *schema* compliance, not meaning.
+
+---
+
+### Question 2
+
+Documents with different structures are arriving (invoice, contract, receipt). Different tools were defined per document type. Which tool_choice is correct?
+
+**A)** `"auto"` — the model chooses the most suitable tool, no guarantee of structured output  
+**B)** `"any"` — the model must call a tool, it decides which one  
+**C)** `{"type": "tool", "name": "extract_invoice"}` — force the invoice tool for every document  
+**D)** `"none"` — keep the tools defined, let the model classify with text, then extract in a second call  
+
+**✅ Answer: B**
+
+*Explanation:* `"any"` provides guaranteed structured output and the model chooses the most suitable tool based on the document type. `"auto"` (A) may return a text response. A specific tool (C) treats all documents as invoices. `"none"` (D) has no tool called at all this turn — two calls, unnecessary cost, and unstructured output in the first call.
+
+---
+
+### Question 3
+
+In the invoice extraction schema, the `payment_due_date` field was made mandatory (`required`). What happens when invoices without a date are processed?
+
+**A)** The model returns "null", which is safe  
+**B)** The model fails with a schema error  
+**C)** The model may fabricate a plausible date  
+**D)** The model returns an empty string  
+
+**✅ Answer: C**
+
+*Explanation:* When a field is required and the information is not in the source document, the model fabricates a value with the reasoning "I have to put something in the required field". This is wrong data generation — it affects downstream systems. Solution: make it nullable with `"type": ["string", "null"]`.
+
+---
+
+### Question 4
+
+A schema defines `"enum": ["invoice", "receipt", "contract"]` for the document type. What happens when a new document type (lease agreement) is encountered?
+
+**A)** The model returns an error and stops processing  
+**B)** The model assigns it to the closest existing category ("contract") — potential misclassification  
+**C)** The model returns a value outside the schema  
+**D)** The model refuses to process the document  
+
+**✅ Answer: B**
+
+*Explanation:* Because the model must conform to the schema, it forcibly maps the unknown type to existing categories. Solution: add an `"other"` enum value + a `document_type_detail` nullable field. (C) is impossible with `strict: true`; without strict it is theoretically possible but rare — the exam answer is still B, because the problem is the schema's *design*.
+
+---
+
+### Question 5
+
+A pipeline must first extract the document's metadata (type, language, page count), then run different enrichment tools based on that metadata. How do you guarantee that the first step is always done with the `extract_metadata` tool?
+
+**A)** `tool_choice: {"type": "any"}` — the model picks the metadata tool  
+**B)** `tool_choice: {"type": "tool", "name": "extract_metadata"}` — this tool is forced on the first call; `auto` on subsequent calls  
+**C)** Write "extract metadata first" in the system prompt, `tool_choice: auto`  
+**D)** Merge all tools into a single tool  
+
+**✅ Answer: B**
+
+*Explanation:* The exam guide's Skills item: "*Forcing a specific tool with `tool_choice: {"type": "tool", "name": "extract_metadata"}` to ensure a particular extraction runs before enrichment steps*". `any` (A) guarantees a tool call but not *which* tool — the model could jump straight to an enrichment tool. A prompt instruction (C) is probabilistic. (D) bloats the schemas and still does not guarantee ordering. In a sequential flow, `disable_parallel_tool_use: true` is added as well.

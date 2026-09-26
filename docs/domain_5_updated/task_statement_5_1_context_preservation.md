@@ -1,0 +1,328 @@
+# Task Statement 5.1: Context Preservation
+
+## Domain 5 — Context Management and Reliability (15% of the Exam)
+
+---
+
+## Core Idea
+
+Agents operate across long conversations, accumulate tool results, and make decisions based on information from earlier turns. Along the way, **losing critical information** is the most common and most dangerous failure. This task statement teaches you how to prevent context loss.
+
+On the exam, these concepts show up in three scenarios: **Customer Support Resolution Agent** (case facts, tool result trimming, multi-issue sessions), **Multi-Agent Research System** (lost in the middle, upstream agent optimisation, subagent metadata), and **Structured Data Extraction** (structured handoff).
+
+> **Order matters:** The exam guide's default is **sending the full conversation history**. Summarization is not a *design choice*; it is a *risk* you resort to when approaching the context limit, and the case facts block is the *protection* against that risk. In an exam scenario, the sentence "the history is summarized every 5 turns" is usually given as the **cause** of a symptom.
+
+---
+
+## What Do You Summarize, and What Never? — The Backbone of Domain 5
+
+This table is the shared rule across 5.1, 5.4, and 5.6. It appears under three different names in three documents ("case facts", "manifest", "claim-source mapping"), but the rule is one:
+
+| Content type | Can it be summarized? | Why |
+|---|---|---|
+| Narrative: the customer describing their situation, emotional flow, the agent's explanations | ✅ Yes | Low information value, high token cost |
+| Verbose tool output (a 40-field order record, raw grep results) | ✅ Yes — in fact, **trim it first** | Most fields are irrelevant |
+| Intermediate reasoning (chain of thought, alternative hypotheses) | ✅ Yes | The conclusion matters, not the path |
+| **Case facts** (order number, amount, date, status, customer expectation) | ❌ **Never** | A summary turns it into "a recent order" |
+| **Issue record** (structured status of each issue in a multi-issue session) | ❌ Never | Issues get mixed up with each other |
+| **Manifest** (agent state — 5.4) | ❌ Never | Recovery depends on it |
+| **Claim-source mapping** (5.6) | ❌ Never | Attribution dies |
+
+**One sentence:** *Narrative gets summarized; structured records never do.*
+
+---
+
+## The Progressive Summarization Trap
+
+In long conversations, the conversation history can be summarized to manage the token budget. This is exactly where the danger begins.
+
+### Problem
+
+During summarization, numeric values, dates, percentages, and customer expectations turn into **vague phrases**:
+
+| Original information | Summarized version |
+|---|---|
+| "Customer wants a $247.83 refund for order #8891, placed on March 3" | "customer wants a refund for a recent order" |
+| "Customer expects a 15% discount, has spent $1,200 total over the last 3 orders" | "customer wants a discount, regular customer" |
+
+Order number, amount, date — all gone. When the agent later has to work from this vague summary, it cannot take the correct action.
+
+### Solution: A Persistent "Case Facts" Block
+
+Extract transactional facts into a separate structured block. Include this block **in every prompt**, keep it **outside** the summarized history, and **never summarize it**.
+
+```json
+{
+  "case_facts": {
+    "customer_name": "Ahmet Yılmaz",
+    "order_id": "#8891",
+    "order_date": "2024-03-03",
+    "refund_amount": 247.83,
+    "refund_currency": "USD",
+    "customer_expectation": "full refund to original payment method",
+    "loyalty_tier": "Gold",
+    "total_spend_last_12m": 1200.00
+  }
+}
+```
+
+**Fundamental rule:** The conversation history may be summarized. Case facts are **NEVER** summarized.
+
+**Where does it go?** At the end of the system prompt, or as a fixed block at the start of every user message. Both positions benefit from the "beginning/end is processed reliably" rule (below), and as long as the block does not change, it is read from the **prompt cache** — and caching is what lowers the cost of sending the full history in the first place.
+
+---
+
+## Multi-Issue Sessions — An Issue-Level Context Layer
+
+Case facts are enough for a single case. When the customer opens **two refunds plus one billing dispute** in the same conversation, a single block is not enough: the agent cannot answer "which issue are we working on?" and carries the first refund's amount over into the second issue.
+
+### Solution: A structured record per issue
+
+The exam guide's wording: *"structured issue data (order IDs, amounts, statuses) into a separate context layer for multi-issue sessions"*.
+
+```json
+{
+  "issues": [
+    {"issue_id": "I-1", "type": "refund", "order_id": "#8891", "amount": 247.83, "status": "refund_initiated"},
+    {"issue_id": "I-2", "type": "refund", "order_id": "#8902", "amount": 59.90, "status": "awaiting_photo"},
+    {"issue_id": "I-3", "type": "billing_dispute", "invoice_id": "INV-2211", "amount": 120.00, "status": "open"}
+  ],
+  "active_issue": "I-2"
+}
+```
+
+The agent reads `active_issue` on every turn and updates the record when the issue changes. The layer is not summarized; the conversation narrative is.
+
+**Exam tip:** For the scenario "when the customer opened a second issue, the agent forgot the first one's amount / mixed up the two issues", the answer is not "case facts" but an **issue-level structured layer**.
+
+---
+
+## The "Lost in the Middle" Effect
+
+### Problem
+
+Models process the **beginning** and **end** of long inputs reliably. But findings **buried in the middle** can be overlooked.
+
+The exam guide's word is **"aggregated inputs"** — the problem shows up specifically in *combined* inputs: the coordinator appends the outputs of 7 subagents back to back and hands them to the synthesis agent; the 4th subagent's critical statistic ends up in the middle. So the source of the problem is usually **the coordinator's aggregation format**, not a single long document.
+
+### Solution
+
+Two methods are applied together — and both are the job of the agent *doing the aggregation*:
+
+1. **Put a summary of key findings at the TOP.** At the very top of the aggregated input, present a short summary of the most important findings.
+2. **Use explicit section headers.** Split the content into structured sections — the model can use section headers as reference points.
+
+```
+## KEY FINDINGS SUMMARY
+- Geothermal energy capacity grew 23% (Source: IEA 2024)
+- Wind energy investments reached $120B (Source: IRENA)
+- Solar panel costs fell 14% (Source: BloombergNEF)
+
+## DETAILED FINDINGS
+### 1. Geothermal Energy (subagent: web-search-01)
+[detailed content...]
+
+### 2. Wind Energy (subagent: doc-analysis-02)
+[detailed content...]
+```
+
+---
+
+## Tool Result Trimming
+
+### Problem
+
+An order lookup tool returns more than 40 fields: internal IDs, logistics codes, warehouse information, tax details... But the agent only needs 5 fields.
+
+Exam guide: tool results accumulate in context and consume tokens **disproportionate to their relevance**. The information that actually matters gets buried under accumulated irrelevant data.
+
+### Solution
+
+Trim tool results down to the relevant fields **BEFORE** adding them to context. There are three places to do this:
+
+| Where | How | When |
+|---|---|---|
+| **(a) In the tool itself** | `lookup_order` already returns only the fields needed for a refund | If you design the tool — Domain 2.1 (tool response design). The cleanest solution. |
+| **(b) In the agent loop** | The result is filtered before being added to context (code below) | If you cannot change the tool — **this is the exam's answer** |
+| **(c) On the API side** | Context editing: `clear_tool_uses_20250919` clears old tool results server-side | Current-state note — see the box below |
+
+```python
+# WRONG: Append the raw result to context as-is
+context.append(order_lookup_result)  # 40+ fields
+
+# RIGHT: Filter to only the required fields
+relevant_fields = {
+    "order_id": result["order_id"],
+    "status": result["status"],
+    "total": result["total"],
+    "date": result["order_date"],
+    "items": result["line_items"]
+}
+context.append(relevant_fields)  # 5 fields
+```
+
+---
+
+## The Full History Requirement
+
+### Rule
+
+Successive API requests must include the **full conversation history**. Dropping earlier messages breaks conversational coherence.
+
+### Why?
+
+The Messages API is stateless — every request is independent. If you do not send the previous messages, the model loses the context of the conversation:
+
+- If the user says "in addition to my previous question..." on turn 3, the model cannot know what was asked without the turn 1 and 2 messages
+- If decisions depend on tool results from earlier turns, those results must be in the history
+
+### When do you summarize?
+
+Only when approaching the context limit. Even then, it is the **narrative** of old turns that gets summarized; case facts / the issue record **stay intact** (see the table above).
+
+> **Agent SDK note:** The Agent SDK writes the session to disk and restores it with `resume` / `continue_conversation` — so *you* do not send the history, the SDK does. But the SDK also sends the **full history**; the context is still consumed. "We use the Agent SDK, so there is no history problem" is a trap: the rule does not change, only who does the work.
+
+> **Current state (does not change the exam answer):** "Summarization" exists in three forms today. (1) **Claude Code:** `/compact`, automatic compaction when approaching the limit, `/compact <focus instruction>`, and a `# Compact instructions` section in CLAUDE.md (see 5.4). (2) **Messages API server-side compaction** (beta): on demand or at a token threshold; a **custom summarization prompt** can be provided; the most recent turns can be preserved verbatim. (3) **Context editing:** clearing old tool results / thinking blocks. The lesson is the same in all three: unless the summarization prompt says "order number, amount, date, customer expectation are to be preserved **verbatim**", the progressive summarization trap happens on the server side too.
+
+---
+
+## Upstream Agent Optimisation
+
+### Problem
+
+A research agent returns 3 pages of detailed analysis and chain of thought. This result will be passed to a downstream agent with a limited context budget. The 3 pages of verbose content consume the downstream agent's context.
+
+### Solution
+
+Modify upstream agents to return **structured data** instead of verbose content and chains of thought. The exam guide's trio: **key facts, citations, relevance scores**.
+
+```json
+{
+  "key_facts": [
+    {
+      "claim": "Solar capacity grew 45%",
+      "source": "IEA Solar Market Report 2024",
+      "source_location": "p.12, Table 3",
+      "publication_date": "2024-06-15",
+      "methodology": "includes utility-scale and rooftop",
+      "relevance": 0.92
+    },
+    {
+      "claim": "Wind investments hit $120B",
+      "source": "IRENA Renewable Energy Finance 2024",
+      "source_location": "Executive summary",
+      "publication_date": "2024-03-20",
+      "methodology": "utility-scale only",
+      "relevance": 0.85
+    }
+  ],
+  "coverage_gaps": ["Geothermal data unavailable"]
+}
+```
+
+| Approach | Outcome |
+|---|---|
+| Return verbose content | The downstream agent exhausts its context budget |
+| Return structured data | Key information is preserved, the budget is used efficiently |
+
+### Mandatory metadata from subagents
+
+A separate Skills item in the exam guide: *"Requiring subagents to include metadata (dates, source locations, methodological context) in structured outputs to support accurate downstream synthesis"*. That is why the `publication_date`, `source_location`, and `methodology` fields exist in the JSON above. Without them, the synthesis agent mistakes data from two different dates for a contradiction (5.6 temporal awareness) or cannot produce citations (5.6 provenance). Metadata is an inseparable part of upstream optimisation — "less but structured" means "less but **labeled**".
+
+> **`relevance` ≠ `confidence`.** The field name is deliberately relevance. The model's self-reported confidence score is not calibrated (5.2: unreliable for escalation; 5.5: not used until calibrated against a labeled set). A relevance score is only for **ranking**, not for decisions.
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| Full history (the default) | Send the full conversation history on successive requests — the rule is the same even with the SDK |
+| Progressive summarization trap | Summarization turns numeric values, dates, percentages, and customer expectations into vague phrases |
+| Case facts block | Keep transactional facts in a separate block, outside the summarized history, NEVER summarize |
+| Issue-level layer | In multi-issue sessions, a structured record per issue + `active_issue` |
+| Narrative vs record | Narrative gets summarized; structured records (case facts / manifest / claim-source) never do |
+| Lost in the middle | In aggregated inputs, findings in the middle get missed → summary at the top + section headers (the coordinator's job) |
+| Tool result trimming | Trim verbose results to the relevant fields, THEN add to context (in the tool / in the loop / in the API) |
+| Upstream optimisation | Key facts + citations + relevance; no verbose content or chain of thought |
+| Subagent metadata | Date, source location, methodology are mandatory — synthesis misinterprets without them |
+
+---
+
+## Practice Scenario 1
+
+> A customer support agent is running a conversation of more than 15 turns. To manage the token budget, the conversation history is summarized regularly. On turn 12, the agent asks the customer "Which order would you like a refund for?" — even though the customer clearly stated the order number, amount, and date on turn 2.
+>
+> **What is the root cause and the solution?**
+>
+> **A)** The model's context window is too small — use a larger model.
+>
+> **B)** Transactional facts such as the order number, amount, and date were lost during summarization. Solution: extract this information into a persistent "case facts" block and never summarize it.
+>
+> **C)** Add the instruction "never forget customer information" to the agent's system prompt.
+>
+> **D)** Reduce the summarization frequency — summarize every 15 turns instead of every 5.
+
+### Correct Answer: B
+
+**Why B is correct:** The classic progressive summarization trap. During summarization, numeric values turned into vague phrases. Solution: extract transactional facts (order number, amount, date) into a separate case facts block, include it in every prompt, never summarize it.
+
+**Why A is wrong:** The problem is not the context window size; it is the summarization strategy. A larger window loses the same information under the same summarization strategy — and window size does not improve attention quality.
+
+**Why C is wrong:** A prompt instruction is probabilistic. If the summarized information is *no longer* in the context, a "don't forget" instruction cannot bring it back — a prompt solution for a structural problem.
+
+**Why D is wrong:** Reducing the summarization frequency delays the problem but does not solve it. The same information loss will happen on turn 15.
+
+---
+
+## Practice Scenario 2
+
+> In a multi-agent research system, a web search agent passes its results to a synthesis agent. For every query, the web search agent returns 3 pages of detailed analysis, chain of thought, and alternative interpretations. The synthesis agent's context budget is limited to 8K tokens.
+>
+> The synthesis agent produces an "insufficient context" error after 3 sources — it needs to analyze 5 sources.
+>
+> **What is the most effective solution?**
+>
+> **A)** Increase the synthesis agent's context budget to 32K tokens.
+>
+> **B)** Modify the web search agent to return structured data (key facts, citations, relevance score) — instead of verbose content and chains of thought.
+>
+> **C)** Add the instruction "write a summary, don't give details" to the synthesis agent.
+>
+> **D)** Reduce the number of sources to 3 — it fits the budget.
+
+### Correct Answer: B
+
+**Why B is correct:** Upstream agent optimisation. The problem is not in the synthesis agent but in the web search agent's verbose output. Modifying the agent to return structured data — key facts, citations, relevance score — uses the token budget efficiently and covers all 5 sources.
+
+**Why A is wrong:** Increasing the budget is expensive and does not solve the underlying problem. Verbose content still wastes tokens — at 10 sources, the same problem returns.
+
+**Why C is wrong:** It looks for the solution in the wrong place. The problem is not in the synthesis agent's output but in its input. The incoming data is already verbose — instructing the synthesis agent does not change that.
+
+**Why D is wrong:** Narrowing the scope lowers quality. If 5 sources are needed, dropping to 3 means incomplete research.
+
+---
+
+## Practice Scenario 3
+
+> A customer support agent uses a case facts block and works fine in single-issue conversations. In the same conversation, a customer first opens a $247.83 refund for order #8891, then a damaged-item replacement for #8902, then a billing dispute. On turn 9, the agent replies to the replacement request with "We are waiting for a photo for your $247.83 refund" — it has mixed up the two issues.
+>
+> **What is the root cause and the solution?**
+>
+> **A)** The case facts block was summarized; protect the block again with a "never summarize" rule.
+>
+> **B)** A single case facts block cannot carry more than one issue; set up an issue-level context layer with a separate structured record per issue and an `active_issue` field.
+>
+> **C)** Start a new conversation for every new issue; the agent should handle one issue at a time.
+>
+> **D)** Add the instruction "don't mix up issues" to the agent and reduce the summarization frequency.
+
+### Correct Answer: B
+
+**Why B is correct:** Case facts are for a single case. In a multi-issue session, what the exam guide asks for is **a separate context layer** that keeps a structured record per issue (order ID, amount, status); `active_issue` removes the ambiguity about which issue the agent is working on.
+
+**Why A is wrong:** The block was not summarized; the problem is the block's *structure* — a single `order_id` and a single `refund_amount` field cannot represent three issues.
+
+**Why C is wrong:** It degrades the customer experience and is unworkable in the real world; customers open issues within the same conversation. Solving an architectural problem with a product constraint.
+
+**Why D is wrong:** An instruction is probabilistic; the agent does not *want* to mix things up, it just has no data structure that separates the issues. Summarization frequency is not the cause of the problem in this scenario.

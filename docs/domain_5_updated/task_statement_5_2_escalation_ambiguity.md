@@ -1,0 +1,341 @@
+# Task Statement 5.2: Escalation and Ambiguity Resolution
+
+## Domain 5 — Context Management and Reliability (15% of the Exam)
+
+---
+
+## Core Idea
+
+A customer support agent cannot solve every problem. Sometimes handing off to a human (escalation) is required. But getting **when** to escalate wrong leads either to over-escalation (the agent becomes useless) or under-escalation (policy violations, customer dissatisfaction).
+
+The exam scenario (**Customer Support Resolution Agent**): the agent is built with the Agent SDK and reaches the backend through the `get_customer`, `lookup_order`, `process_refund`, and `escalate_to_human` MCP tools; the target is **80%+ first-contact resolution (FCR)** "*while knowing when to escalate*". Escalation calibration is measured against this metric: over-escalation lowers FCR, under-escalation produces wrong resolutions and policy violations.
+
+This task statement teaches three things: distinguishing **reliable** from **unreliable** escalation triggers, **how to teach** the criteria to the agent (few-shot), and how to act in ambiguous situations.
+
+---
+
+## The Three Valid Escalation Triggers
+
+On the exam, these are the "always escalate" scenarios:
+
+### 1. The Customer Explicitly Requests a Human
+
+When the customer says "I want to talk to a human" → **escalate immediately.**
+
+**CRITICAL:** Do NOT try to solve the problem first. Do NOT investigate first. Fulfill the customer's request right away.
+
+This is the most frequently tested trap on the exam:
+
+> Customer: "I want to talk to a human."
+> ❌ Agent: "I understand, but let me try to resolve your issue first..."
+> ✅ Agent: "I'm connecting you to a representative right away."
+
+### 2. Policy Exceptions or Gaps — not "complex cases"
+
+When the customer's request falls outside the scope of documented policy. For example:
+
+- The policy only covers price matching on its own site, and the customer wants **competitor price matching** (the exam guide's own example)
+- A refund scenario not defined in the policy (for example, an item received as a gift)
+- The customer makes a request that exceeds the standard warranty period
+
+The agent cannot step outside the policy — it has no authority to. Escalation is required.
+
+**The exam guide's parenthetical:** *"policy exceptions/gaps (**not just complex cases**)"*. In other words, **complexity alone is not a trigger.** A complex case that is *within* policy (a three-item partial refund, merging two orders) is the agent's job. The trigger is *being outside policy*, not difficulty.
+
+### 3. Inability to Make Meaningful Progress
+
+The agent has made an effort to resolve the issue but cannot move forward:
+
+- Tool results are contradictory
+- The required information cannot be accessed (access error — local retry first, see 5.3)
+- Additional information was requested from the customer and there is still no match (valid empty result — below)
+- All options within the agent's authority are exhausted
+
+This trigger sits on the same decision tree as 5.3's "access error vs valid empty result" distinction: access error → limited retry → still nothing, escalate; valid empty result → ask the customer for an additional identifier → still nothing, escalate. "I cannot make progress" is only true once these steps have been tried.
+
+---
+
+## Two Unreliable Triggers — EXAM TRAP
+
+These two triggers will appear on the exam as **wrong answer options**:
+
+### 1. Sentiment-Based Escalation
+
+**TRAP:** "The customer is angry → escalate."
+
+**Why it is wrong:** Frustration is **NOT** proportional to case complexity. The customer may be very angry, but the problem may be a simple refund — the agent can resolve it in 30 seconds. The exam guide's rationale: sentiment analysis "*solves a different problem entirely; sentiment doesn't correlate with case complexity*".
+
+Anger ≠ need for escalation.
+
+### 2. Model Confidence Score (Self-Reported Confidence)
+
+**TRAP:** "If the model's reported confidence score is below 40% → escalate."
+
+**Why it is wrong:** An LLM's self-reported confidence is **not calibrated** — the guide: "*the agent is already incorrectly confident on hard cases*". The model mistakenly reports high confidence on hard cases and shows needless uncertainty on easy ones. Its own confidence assessment is not a reliable escalation criterion.
+
+(In 5.5 you will see that calibrated, field-level confidence can be used for *review routing* — the difference is **calibration**. What is at issue here is the raw, uncalibrated score.)
+
+---
+
+## How Are the Criteria Taught? — Explicit Criteria with Few-Shot Examples
+
+Knowing the triggers is not enough; the agent has to **apply** them. The exam guide's Skills item: *"Adding explicit escalation criteria **with few-shot examples** to the system prompt demonstrating when to escalate versus resolve autonomously"*.
+
+### Official sample question (Exam Guide Q3)
+
+> The agent's FCR is 55%, the target is 80%. Logs show the agent escalating **simple** cases (standard damage replacements with photo evidence) while trying to resolve **complex** cases (those requiring policy exceptions) on its own. What is the most effective way to improve escalation calibration?
+>
+> **A)** Add **explicit escalation criteria with few-shot examples** to the system prompt showing when to escalate versus resolve autonomously.
+> **B)** Have the agent report a 1–10 confidence score before every response; automatically route to a human below the threshold.
+> **C)** Build **a separate classifier model** trained on historical tickets; have it predict which requests require escalation before the main agent starts.
+> **D)** Detect frustration with sentiment analysis; escalate automatically when a negative sentiment threshold is crossed.
+>
+> **Correct answer: A.** The guide's rationale: the root cause is **unclear decision boundaries**; explicit criteria with few-shot examples address this directly and are "*the proportionate first response before adding infrastructure*". B: self-reported confidence is not calibrated. C: requires labeled data + ML infrastructure — **over-engineering** before prompt optimization has been tried. D: solves a different problem; sentiment does not correlate with complexity.
+
+In the scenario, calibration is broken **in both directions**: simple cases escalated, complex ones handled autonomously. A single threshold cannot fix that; only *examples* show both boundaries.
+
+### The proportionality ladder
+
+Same principle as in Domains 1 and 4: **prompt first, infrastructure later.**
+
+```
+1. Explicit criteria + few-shot examples in the system prompt   ← first intervention (Q3-A)
+2. Supply the policy data the criteria depend on via a tool (policy lookup tool)
+3. Measure: FCR, unnecessary escalation rate, policy violation count (labeled example set)
+4. If still not enough: separate classifier / routing layer   ← last resort (Q3-C)
+```
+
+### Sample system prompt block
+
+```xml
+<escalation_criteria>
+ESCALATE:
+- If the customer explicitly asks for a human representative (immediately, without investigating)
+- If the request is not defined in the written policy or the policy is silent
+- If the information needed for resolution cannot be reached and there is no match even after an additional identifier was requested
+
+RESOLVE YOURSELF:
+- If the request is defined in the policy — even if the customer is angry
+- If the case is complex but every step is within policy
+</escalation_criteria>
+
+<examples>
+<example>
+<request>The product arrived broken, I'm attaching a photo, I want a replacement.</request>
+<decision>RESOLVE</decision>
+<why>Standard damage replacement with photo evidence is policy section 3.2; tool: process_replacement</why>
+</example>
+<example>
+<request>It's $20 cheaper on a competitor's site, refund me the difference.</request>
+<decision>ESCALATE</decision>
+<why>Policy only covers own-site price drops; competitor matching is undefined → policy gap</why>
+</example>
+<example>
+<request>This is my third message, I want to talk to a human now!</request>
+<decision>ESCALATE_IMMEDIATELY</decision>
+<why>Explicit human request; do not investigate, do not propose a resolution</why>
+</example>
+<example>
+<request>I'm going to lose it, my order hasn't arrived in 3 days!!!</request>
+<decision>RESOLVE</decision>
+<why>Emotionally intense but the request is simple: check shipping status, give the estimated delivery; anger is not a trigger</why>
+</example>
+</examples>
+```
+
+This is the customer support application of Domain 4.2 (few-shot): examples of ambiguous situations, 2–4 of them, each with a rationale.
+
+---
+
+## The Frustration Nuance — Detailed Decision Flow
+
+This topic is tested on the exam with subtle distinctions. Learn the decision flow precisely:
+
+### Scenario A: Customer is angry + problem is simple
+
+The customer is upset, but the problem is a refund request the agent can resolve.
+
+→ **Do NOT escalate.** Acknowledge the frustration, offer the resolution:
+
+> "I apologize for the inconvenience you've experienced. I can initiate the refund for your order right away."
+
+### Scenario B: Customer is angry + agent offered a resolution + customer still wants a human
+
+The agent has offered a resolution, but the customer requests a human **again**.
+
+→ **Escalate.** If the customer repeats their preference for a human even after the resolution offer, fulfill the request now.
+
+### Scenario C: Customer explicitly says "I want a human"
+
+The customer's first message is a direct request for a human.
+
+→ **Escalate immediately.** Do not investigate, do not offer a resolution, do not ask questions — hand off directly.
+
+### Decision Table
+
+| Situation | Action |
+|---|---|
+| Customer angry, problem simple | Acknowledge frustration + offer resolution |
+| Case complex but within policy | Resolve — complexity is not a trigger |
+| Request undefined in policy / policy silent | Escalate — neither refuse nor accept |
+| Customer asks for a human again after resolution offer | Escalate |
+| Customer explicitly says "I want a human" | Escalate IMMEDIATELY — do not investigate |
+| Model confidence score is low | Do NOT use as an escalation trigger |
+| Customer angry (sentiment only) | Do NOT use as an escalation trigger |
+
+---
+
+## Escalation Is a Tool Call — Handoff Context
+
+Escalation is not the sentence "I'm connecting you to a human"; it is the `escalate_to_human` **tool call**, and its parameters are **5.1's case facts block**. The customer having to explain everything to the representative from scratch is escalation's version of context loss.
+
+```json
+{
+  "tool": "escalate_to_human",
+  "input": {
+    "reason": "policy_gap",
+    "reason_detail": "Competitor price match requested; policy covers own-site adjustments only",
+    "case_facts": {
+      "order_id": "#4412",
+      "amount": 89.90,
+      "customer_expectation": "match competitor price, refund $20 difference"
+    },
+    "attempted": ["policy_lookup: no competitor clause", "explained own-site policy to customer"],
+    "customer_sentiment_note": "frustrated but cooperative"
+  }
+}
+```
+
+Exam scenario: "When connected to the representative, the customer had to restate their order number and request" → the answer is to add structured handoff context to the escalation call.
+
+---
+
+## Ambiguous Customer Matching
+
+### Problem
+
+You search for a customer by the name "Ahmet Yılmaz". `get_customer` returns 3 different "Ahmet Yılmaz" records.
+
+### Wrong Approach
+
+Do not make a heuristic selection:
+
+- ❌ Pick the one who ordered most recently
+- ❌ Pick the most active account
+- ❌ Guess based on address or city
+
+### Right Approach
+
+Ask for additional identifying information:
+
+> "To verify your account, could you share your email address, phone number, or order number?"
+
+**Rule:** If there are multiple matches → ask for an additional identifier. Do NOT select heuristically.
+
+### The tool side (Domain 2 link)
+
+The exam guide says "*when **tool results** return multiple matches*" — meaning `get_customer` **must return all matches**, not pick the "most likely" one and return a single record. A heuristic selection buried inside the tool is a source of mismatches the agent never sees. The tool surfaces the ambiguity (Domain 2.1); the agent asks the customer (5.2).
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| Customer asks for a human | Escalate immediately — don't resolve first, don't investigate |
+| Outside policy / policy silent | Escalate — the agent has no authority; refusing is also stepping outside policy |
+| Complex but within policy | Resolve — complexity is not a trigger ("not just complex cases") |
+| No progress possible | Escalate — after retry / additional identifier have been tried |
+| Sentiment-based escalation | UNRELIABLE — anger ≠ complexity |
+| Model confidence score | UNRELIABLE — poorly calibrated, wrongly confident on hard cases |
+| How the criteria are taught | Explicit criteria + few-shot examples in the system prompt (Q3-A); the **proportionate first response** before infrastructure |
+| Separate classifier | Last resort — labeled data + ML infrastructure; over-engineering before the prompt is tried (Q3-C) |
+| Measurement | FCR (80% target), unnecessary escalation rate, policy violations |
+| Angry customer + simple problem | Resolve, do not escalate |
+| Customer still wants a human after resolution | Then escalate |
+| Escalation = tool call | `escalate_to_human` + case facts handoff context |
+| Multiple customer matches | Ask for an additional identifier; the tool must return all matches |
+
+---
+
+## Practice Scenario 1
+
+> A customer support agent operates on this logic: "If the sentiment score of the customer's message drops below -0.7, automatically route to a human representative."
+>
+> Analysis of the last 100 escalations shows: 65% of the escalated cases were simple refund requests the agent could have resolved in 1 step. The customers were merely expressing frustration.
+>
+> **What is the correct approach?**
+>
+> **A)** Lower the sentiment threshold from -0.7 to -0.9 — make it less sensitive.
+>
+> **B)** Remove sentiment-based escalation. Instead, write the three valid triggers into the system prompt with few-shot examples: the customer explicitly asks for a human, a request outside policy, no meaningful progress possible.
+>
+> **C)** Combine the sentiment score with the model's confidence score — escalate if both are low.
+>
+> **D)** Train a classifier on the last 100 escalations; let it predict which messages truly require escalation.
+
+### Correct Answer: B
+
+**Why B is correct:** Sentiment-based escalation is an unreliable trigger — frustration is not proportional to case complexity. The 65% wrong escalations prove it. The correct solution: remove the unreliable trigger and replace it with the three valid triggers *with few-shot examples* — the proportionate first response.
+
+**Why A is wrong:** Adjusting the threshold perpetuates the same structural problem. Even at -0.9, a sentiment score does not measure case complexity — it still wrongly escalates some simple cases.
+
+**Why C is wrong:** Combining two unreliable metrics does not produce a reliable metric. Both the sentiment score and the raw confidence score are unreliable for the escalation decision.
+
+**Why D is wrong:** Q3's option C: building ML infrastructure before prompt criteria have been tried is over-engineering. 100 examples is also too few for a training set. A classifier comes up only if, after the criteria are written and measured, they are still not enough.
+
+---
+
+## Practice Scenario 2
+
+> A customer writes to the agent: "I want a price match against a competitor's site for order #4412."
+>
+> The agent checks the policy document. The policy says: "If the price of the same product drops on our own site, we refund the price difference."
+>
+> There is **no statement at all** in the policy about competitor price matching.
+>
+> **What should the agent do?**
+>
+> **A)** Interpret the policy broadly, assume it also covers competitor price matching, and process it.
+>
+> **B)** Tell the customer "we can't do competitor price matching" and end the conversation.
+>
+> **C)** This is a policy gap — outside the agent's authority. Escalate with `escalate_to_human`, write the order number, the request, and the policy gap into the handoff context, and explain the situation to the customer.
+>
+> **D)** Decide based on the customer's emotional state — escalate if angry, refuse if calm.
+
+### Correct Answer: C
+
+**Why C is correct:** Competitor price matching is not defined in the policy — this is a policy gap; the exam guide's "*policy is ambiguous or silent*" case. The agent cannot step outside the policy. The right move: escalate with structured context and let the human representative decide.
+
+**Why A is wrong:** The agent does not have the authority to interpret the policy broadly. The policy covers only own-site prices — extending it exceeds the agent's authority.
+
+**Why B is wrong:** "Not in the policy" ≠ "the policy forbids it". If the policy is *silent*, refusing is also stepping outside policy — in the negative direction. The exam's "refusing is the safe side" intuition is a trap; in a gap, the decision belongs to the human, not the agent.
+
+**Why D is wrong:** Sentiment-based decision — an unreliable trigger. The escalation decision must rest on the policy gap, not on sentiment.
+
+---
+
+## Practice Scenario 3
+
+> A customer support agent's FCR is 58%. Log analysis shows two patterns: (1) 40% of standard missing-part requests such as "The product arrived with a part missing, photo attached" are being escalated; (2) requests exceeding the 90-day return window by 3 months are being approved by the agent "for customer satisfaction".
+>
+> **What is the most effective first intervention?**
+>
+> **A)** Ask the agent to report its confidence score before every response; escalate below 6/10.
+>
+> **B)** Add explicit escalation criteria to the system prompt and write few-shot examples with rationales for both patterns: missing part + photo → resolve (policy 3.1); window exceeded → escalate (policy exception).
+>
+> **C)** Add a regex pre-filter that catches missing-part requests; for the window overrun, disable the `process_refund` tool for orders older than 90 days.
+>
+> **D)** Use a larger model; it will grasp the decision boundaries better.
+
+### Correct Answer: B
+
+**Why B is correct:** Q3's two-directional calibration problem: simple cases escalated (over), policy exceptions handled autonomously (under). The root cause is unclear decision boundaries; explicit criteria with few-shot examples showing both directions are the proportionate first intervention.
+
+**Why A is wrong:** Self-reported confidence is not calibrated; the agent is already "wrongly confident" on the window-overrun cases. A threshold tries to solve a two-directional problem with a one-directional measure.
+
+**Why C is wrong:** Disabling the tool after 90 days (the Domain 1 hook/permission pattern) is reasonable as a *safety net* but does not fix escalation *calibration*: the agent still tries to resolve the overrun, and when the tool refuses, it does not know what to tell the customer. A regex pre-filter is a brittle infrastructure layer; it is considered after the criteria are written, not before.
+
+**Why D is wrong:** The problem is not model capacity but the absence of decision boundaries in the prompt; a larger model cannot know an undefined boundary either.

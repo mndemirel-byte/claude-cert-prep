@@ -1,0 +1,313 @@
+# Task Statement 3.2: Custom Slash Commands and Skills
+
+## Domain 3 — Claude Code Configuration & Workflows (20% of the exam)
+
+---
+
+## Core Idea
+
+In Claude Code you can package repeated workflows as **custom commands** and **skills**. They are invoked with slash commands like `/review`, `/test-setup`, `/brainstorm`. The exam expects you to know **where they go**, **how they are configured**, and **how they differ from CLAUDE.md**.
+
+Think of a skill as a "packaged repeated procedure" (course module: *Verification Skills*): CLAUDE.md holds *facts* loaded every session; a skill holds a *procedure* loaded when needed.
+
+---
+
+## Directory Structure
+
+### Project-Scoped Commands (Shared)
+
+```
+.claude/commands/<name>.md   →  /name
+```
+
+- Lives in the project repo
+- **Under version control** — shared via Git
+- Everyone on the team can use it
+- Examples: `/review`, `/deploy-checklist`, `/test-all`
+
+### Personal Commands (Not Shared)
+
+```
+~/.claude/commands/<name>.md   →  /name
+```
+
+- Lives in the user's home directory
+- **Not shared** — only you use it
+- Doesn't affect teammates
+- Examples: a personal `/brainstorm`, `/quick-fix`
+
+### Skill Files
+
+```
+.claude/skills/<name>/SKILL.md     →  /name   (project, in Git)
+~/.claude/skills/<name>/SKILL.md   →  /name   (personal)
+```
+
+- Each skill has its own **directory** containing `SKILL.md` (required) plus optional supporting files (`reference.md`, `examples.md`, `scripts/`)
+- The command name comes from the **directory name**
+- Configured with YAML frontmatter (below)
+
+> **Current note (does not change the exam answer):** `.claude/commands/<name>.md` is now the **legacy equivalent** of a skill — it still works and creates `/name` the same way, but skills are preferred because they support supporting files and extra frontmatter fields. If a skill and a command share a name, **the skill wins**. The exam guide counts them separately → on the exam, "where does the team-wide `/review` command go?" is answered with `.claude/commands/` (official sample question Q4).
+
+---
+
+## How Skills Get Triggered — Two Paths
+
+Most study material misses this distinction; the exam uses it in the rationale of its sample question (Q6):
+
+| Path | How | Control field |
+|---|---|---|
+| **User** | Types `/name arguments` | `user-invocable: false` → hidden from the `/` menu, only Claude invokes it (for background knowledge) |
+| **Claude** | **Loads the skill itself** when its `description` matches the conversation | `disable-model-invocation: true` → Claude cannot auto-invoke; only the user can (side-effect workflows: deploy, commit, open PR) |
+
+Every skill's `description` is **always** in context (so Claude can decide when to invoke it); the full content loads only on invocation. That is why a `description` should say "what it does + **when to use it**".
+
+> **Exam rule:** "Skills are on-demand" is true but incomplete. Loading a skill is *probabilistic* (the user remembers, or Claude decides); loading a path-scoped rule is *deterministic* (the file path matches). Exam guide Q6 eliminates option C on exactly that ground: "requires manual skill invocation **or relies on Claude choosing to load them**, contradicting the need for deterministic automatic application."
+
+---
+
+## Anatomy of SKILL.md
+
+```markdown
+---
+name: deep-analyze
+description: Maps a module's dependency graph and reports risks. Use before a large refactor.
+argument-hint: [module-path]
+disable-model-invocation: true
+context: fork
+agent: Explore
+allowed-tools: Read Grep Glob
+---
+
+Analyze the $ARGUMENTS module:
+
+## Current state
+!`git log --oneline -10 -- $ARGUMENTS`
+
+1. Find the module's files with Glob and Grep
+2. Extract imports/exports and build the dependency graph
+3. List risks (circular dependencies, untested exports) with file references
+```
+
+| Element | What it does |
+|---|---|
+| `$ARGUMENTS` | All arguments from the invocation (`/deep-analyze src/auth` → `src/auth`); `$0`, `$1` for individual ones (0-based); named via `arguments: [issue, branch]` (`$issue`) |
+| `` !`command` `` | **Dynamic context:** the command runs *before* the skill is sent, and its output replaces the placeholder (`git diff HEAD`, `git status`) |
+| Supporting files | Keep `SKILL.md` **under 500 lines**; details go to `reference.md`, scripts to `scripts/` (progressive disclosure) |
+| `${CLAUDE_SKILL_DIR}`, `${CLAUDE_PROJECT_DIR}` | Placeholders for the skill directory and the project root |
+
+---
+
+## Skill Frontmatter Options — The Exam's Three Critical Fields
+
+### 1. `context: fork` — Isolated Subagent Context
+
+```yaml
+---
+context: fork
+agent: Explore
+---
+```
+
+- Runs the skill in an **isolated subagent** context; the skill content becomes the subagent's **task prompt**
+- **`agent:`** selects which subagent runs it: the built-in `Explore` / `Plan` / `general-purpose`, or a custom agent from `.claude/agents/` — tools, permissions and model come from that agent (see Domain 1.3)
+- Runs in the **background** by default (you keep working); `background: false` makes it wait
+- Verbose/noisy output stays in the isolated context; **only a summary returns to the main conversation**
+- **Use for:** codebase analysis, brainstorming, exploration — anything that produces lots of output
+- **When NOT to use it:** a forked skill **cannot see the conversation history.** Put `context: fork` on a skill like "review the code you just wrote" and the subagent has no idea what to review. This is the exam's reverse distractor.
+
+### 2. `allowed-tools` — Exam Wording vs Real Behavior
+
+```yaml
+---
+allowed-tools: Read Grep Glob
+---
+# or with permission-rule syntax:
+allowed-tools: Bash(git add *) Bash(git commit *) Bash(git status *)
+```
+
+| | What it says |
+|---|---|
+| **Exam (exam guide)** | "Configuring allowed-tools in skill frontmatter to **restrict tool access** during skill execution … to prevent destructive actions." → On the exam, "the skill should only use read tools" is answered with **`allowed-tools`**. |
+| **Real behavior (documentation)** | `allowed-tools` **pre-approves** the listed tools — no permission prompts for the turn that invokes the skill. "**Doesn't restrict which tools are available; every tool remains callable.**" A skill with `allowed-tools: Read` can still call Write (it will prompt). The grant is **turn-scoped**: it clears on your next message. Deny rules override it. |
+| **To actually restrict** | **`disallowed-tools: Write, Edit, Bash`** — removes tools from the pool while the skill is active. Or `context: fork` + a restricted `agent` (Explore already denies Write/Edit). |
+
+> **Memorize:** On the exam, `allowed-tools` = restriction. In real life, `allowed-tools` = "use without asking", `disallowed-tools` = restriction. In a 40-developer org, to trust that an analysis skill won't delete files, use `disallowed-tools` or an Explore fork.
+
+### 3. `argument-hint` — Parameter Hint
+
+```yaml
+---
+argument-hint: [file-path] [format]
+---
+```
+
+- **Exam definition:** tells the developer what to enter when the skill is invoked **without arguments**
+- **Real behavior:** shown as a hint during autocomplete in the `/` menu — a short, bracketed form like `[issue-number]`
+- Improves the user experience; it is not a functional constraint
+
+### Other fields (for Architect-level questions)
+
+| Field | What it does |
+|---|---|
+| `disable-model-invocation: true` | Claude cannot auto-invoke — side-effect workflows |
+| `user-invocable: false` | Hidden from the `/` menu — background knowledge only Claude loads |
+| `model`, `effort` | Model/effort override while this skill runs |
+| `paths` | Ties the skill's auto-activation to a file pattern (same globs as rules in 3.3) |
+| `hooks` | Hooks registered when the skill is invoked |
+
+---
+
+## The Critical Distinction: Skill vs CLAUDE.md (and the rest)
+
+The exam tests this directly. Don't mix them up.
+
+| Property | CLAUDE.md | Skill |
+|---|---|---|
+| Loading | **Always loaded** — automatic | **On demand** — the user invokes it or Claude decides |
+| Purpose | Universal standards, facts | Task-specific workflows, procedures |
+| Example | "All functions must be documented with JSDoc" | "/review — review the PR" |
+| Rule | Universal standards go here | Task-specific procedures go here |
+
+> **Don't put task-specific procedures in CLAUDE.md. Don't put universal standards in skills.**
+
+- ✅ CLAUDE.md → "All API endpoints must use camelCase naming"
+- ✅ Skill → "/migrate — generate a database migration script"
+- ❌ CLAUDE.md → "When migrating, follow these steps" (task-specific — should be a skill)
+- ❌ Skill → "Always use TypeScript strict mode" (universal — should be CLAUDE.md)
+
+### The Five-Way Decision Table (the exam's real option set)
+
+The four options of exam guide Q6 are exactly these mechanisms. See them side by side:
+
+| Need | Mechanism | Loading |
+|---|---|---|
+| A fact/standard valid in every session | `CLAUDE.md` | Always |
+| Standards split by topic | `.claude/rules/*.md` (no `paths`) | Always |
+| A rule that applies only to certain file types | `.claude/rules/*.md` + `paths` | When a file matches (deterministic) |
+| A multi-step procedure needed occasionally | Skill (`SKILL.md`) | When invoked (by user or Claude) |
+| Enforcement with no exceptions ("never push to main") | Hook (`PreToolUse` etc.) | On every tool call, deterministic |
+| Isolated context / different tool set | Subagent (`.claude/agents/`) or `context: fork` | When delegated |
+
+---
+
+## Personal Skill Customization
+
+If you want personal variants of team skills:
+
+1. Put them in `~/.claude/skills/` (personal, not shared)
+2. Use a **different name** — don't collide with team skills
+3. Customize your personal workflow without affecting teammates
+
+**Why a different name?** For same-named skills, precedence is **Enterprise > Personal > Project**. If you create `~/.claude/skills/review/`, the project repo's `review` skill is shadowed *for you* — teammates are unaffected, but you lose the team standard and a "it works differently for me" problem appears. A distinct name like `review-mine` keeps both reachable.
+
+> Footnote: personal skills (`~/.claude/skills/`) are not loaded in cloud and Cowork sessions; there, only skills enabled on the claude.ai account and the repo's `.claude/skills/` are available.
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| `.claude/commands/` | Project-scoped — in Git, shared with the team (legacy, but the exam answer) |
+| `~/.claude/commands/` | Personal — not shared |
+| `.claude/skills/<name>/SKILL.md` | On-demand workflows; command name = directory name |
+| Triggering | User types `/name` **or** Claude matches the `description`; `disable-model-invocation` makes it user-only |
+| `context: fork` | Isolated subagent (chosen with `agent:`) — verbose output stays there, summary returns; **cannot see the conversation** |
+| `allowed-tools` | Exam: restricts tools. Real: pre-approves (turn-scoped); `disallowed-tools` restricts |
+| `argument-hint` | Argument hint (`[issue-number]`) — exam: tells what to enter when invoked without arguments |
+| `$ARGUMENTS`, `` !`cmd` `` | Argument substitution; dynamic context |
+| Skill vs CLAUDE.md | Skill = task-specific procedure, on demand. CLAUDE.md = universal, always |
+| Personal skills | `~/.claude/skills/` — with a different name; same name → Personal shadows Project |
+
+---
+
+## Practice Scenario 1
+
+> A team wants two things:
+> 1. A `/review` command everyone will use — it reviews PRs
+> 2. One developer wants a personal `/brainstorm` skill — it produces very verbose output and must not pollute the main conversation
+>
+> **Where should each go and how should it be configured?**
+>
+> **A)** Both go in `.claude/commands/` — for team sharing.
+>
+> **B)** `/review` → `.claude/commands/` (project-scoped, shared). `/brainstorm` → `~/.claude/skills/brainstorm/SKILL.md` with `context: fork` in the frontmatter (personal, runs in an isolated context).
+>
+> **C)** Both should be written as instructions in CLAUDE.md.
+>
+> **D)** Both go in `~/.claude/commands/` — it's a matter of personal preference.
+
+### Correct Answer: B
+
+**Why B is correct:** Two different requirements, two different solutions:
+- `/review` is a command everyone uses → `.claude/commands/` (project-scoped, in Git, shared) — same as exam guide Q4
+- `/brainstorm` is personal and verbose → `~/.claude/skills/` (personal, not shared) + `context: fork` (isolated context, main conversation stays clean)
+
+**Why A is wrong:** `/brainstorm` is a personal request — putting it in the project repo distributes it to the whole team and clutters everyone's `/` menu. A personal workflow belongs in `~/.claude/`.
+
+**Why C is wrong:** These are task-specific procedures — CLAUDE.md is for universal standards. CLAUDE.md is also always loaded, which is the opposite of the "don't pollute" requirement.
+
+**Why D is wrong:** `/review` must be team-wide — putting it in the personal directory means other teammates can't reach it. New members won't get the command.
+
+---
+
+## Practice Scenario 2
+
+> A team's `.claude/CLAUDE.md` contains:
+>
+> ```
+> When performing a database migration:
+> 1. Back up the current schema first
+> 2. Generate the migration script
+> 3. Run it in the test environment
+> 4. Verify the results
+> ```
+>
+> Claude Code loads these instructions in every conversation — even when no migration is happening.
+>
+> **What is the problem?**
+>
+> **A)** The CLAUDE.md file is too long — it should be shortened.
+>
+> **B)** A task-specific procedure (migration steps) is in CLAUDE.md — it should be a skill, loaded on demand.
+>
+> **C)** The instructions should be in English — Claude misinterprets Turkish instructions.
+>
+> **D)** It should be moved from CLAUDE.md to a `.claude/rules/migrations.md` file.
+
+### Correct Answer: B
+
+**Why B is correct:** The migration procedure is a task-specific workflow — not needed in every conversation. CLAUDE.md is always loaded, which means wasted tokens and context pollution every time. The right place: `.claude/skills/migrate/SKILL.md` — loaded only when a migration is needed. Since it has side effects, add `disable-model-invocation: true` so only the user triggers it.
+
+**Why A is wrong:** Length isn't the actual problem — the problem is a task-specific procedure living in an always-loaded file. Shorten it and it still loads every session.
+
+**Why C is wrong:** It's not a language issue. Claude handles Turkish instructions well. The problem is structural — where the content lives.
+
+**Why D is wrong:** A `.claude/rules/` file with no `paths` frontmatter **still loads at launch every session** — with the same priority as CLAUDE.md. Moving it splits the file but doesn't fix "always loaded". (Scoping the migration steps with `paths: ["migrations/**"]` is also wrong: the procedure is tied to a *task*, not to a file path.)
+
+---
+
+## Practice Scenario 3
+
+> A developer defined the step "review the code you just wrote for security issues and list findings" as a `/security-check` skill. Because the output is long, they added `context: fork` and `agent: Explore`. But every time the skill runs it says "I don't know which code to review" and reads random files.
+>
+> **What is the problem?**
+>
+> **A)** `agent: Explore` is read-only so it can't inspect the code — use `general-purpose` instead.
+>
+> **B)** `context: fork` runs the skill in an isolated context — the subagent **cannot see the conversation history**, so "the code you just wrote" refers to nothing. Either drop the fork, or pass the files to review explicitly via `$ARGUMENTS` / `` !`git diff HEAD` ``.
+>
+> **C)** Add `allowed-tools: Read Grep` so Claude can read the files.
+>
+> **D)** Move the skill from `~/.claude/skills/` to `.claude/skills/`.
+
+### Correct Answer: B
+
+**Why B is correct:** `context: fork` means "a new, isolated context"; the skill content is the subagent's *only* input. What was just written in the main conversation isn't there. Fix: remove the fork and run in the main context (if output is long, restrict with `disallowed-tools` and ask for a summary), or carry the context into the skill explicitly — cleanest is embedding the changed code with `` !`git diff HEAD` ``.
+
+**Why A is wrong:** Explore can read; the problem is it doesn't know *what* to read. Changing the agent type keeps the fork isolation the same.
+
+**Why C is wrong:** `allowed-tools` only removes permission prompts; Read is already usable (it's reading random files). The issue is context, not permissions.
+
+**Why D is wrong:** A skill's location determines sharing, not context visibility.

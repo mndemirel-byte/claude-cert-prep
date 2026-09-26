@@ -1,0 +1,340 @@
+# Task Statement 4.2: Few-Shot Prompting
+
+## Domain 4 — Prompt Engineering and Structured Output (20% of the Exam)
+
+---
+
+## Core Idea
+
+Few-shot prompting: **showing examples** to Claude instead of giving instructions. Instead of telling the model "do this," telling it "here is how it's done."
+
+This technique is **the most effective way to solve consistency problems.** Not more detailed instructions. Not confidence thresholds. Not a larger model. **Examples.**
+
+The exam guide's exact sentence: *"Few-shot examples as the most effective technique for achieving consistently formatted, actionable output **when detailed instructions alone produce inconsistent results**."* — that is, few-shot does not come *in place of* instructions; it comes *on top of* them when instructions aren't enough.
+
+The exam's questions on this topic ask you: *"In which situation should you use few-shot, and in which should you use something else?"* To know the answer, you first have to understand when it works.
+
+---
+
+## When Should You Use Few-Shot?
+
+Three trigger scenarios — memorize these:
+
+### Trigger 1: Inconsistent Formatting
+
+```
+Problem: You're working with the same data, but the output format changes on every run.
+Sometimes it produces JSON, sometimes a markdown table, sometimes plain text.
+You added an instruction: "Always output in JSON format." Still inconsistent.
+
+Solution: Few-shot example — show an input/output pair in exactly the format you want.
+```
+
+**The exam's format example:** four fields for a code review finding — *location, issue, severity, suggested fix*. A single example showing these four fields is more effective than the instruction "give the findings in a structured form":
+
+```xml
+<example>
+location: src/auth.py:42
+issue: User input is embedded into the SQL query via f-string
+severity: critical
+suggested_fix: Use a parameterized query: cursor.execute("... WHERE id = %s", (user_id,))
+</example>
+```
+
+### Trigger 2: Inconsistent Decisions in Ambiguous Cases
+
+```
+Problem: Claude makes different decisions in certain cases (whether a comment
+is a bug or a style issue). Sometimes it flags, sometimes it skips.
+
+Solution: Show an example of that ambiguous case + explain the reasoning
+for why one path was chosen in that case.
+```
+
+**The exam's ambiguous-case examples** (they come with these words):
+- *Tool selection for ambiguous requests* — "the user said 'update the report': the file editing tool or the email tool?" → show with an example which cue leads to which tool (connection to Domain 1/2)
+- *Branch-level test coverage gaps* — "only one branch of this `if/else` is tested; is this a finding?" → show with an example "yes, branch coverage is missing → finding; but a branch containing only a log line → skip"
+- *Acceptable code patterns vs genuine issues* — patterns deliberately used in the codebase that look like bugs from the outside (the "local patterns" from Task 4.1); without an example the model "rediscovers" them every time
+
+### Trigger 3: Failing to Extract Existing Information
+
+```
+Problem: The information is in the document, but the model can't find it or
+returns "null" / "not found".
+
+Solution: An example showing successful extraction from a document of similar format.
+This teaches the model "in this structure, the information is found this way."
+```
+
+**The exam's document-structure examples:** *inline citations vs bibliographies* (is the citation in the text or in the bibliography), *methodology sections vs embedded details* (is the method in a separate section or embedded in a paragraph), *narrative descriptions vs structured tables*, *informal measurements* ("about three kilos", "a handful" → numeric field). The exam guide's world is academic/scientific documents; the invoice examples in this document are the business-world version of the same principle.
+
+### The "null" trio — which null is which statement's job?
+
+The exam's finest distinction. Same symptom ("the field came back null"), three different diagnoses:
+
+| Situation | Symptom | Right tool | Statement |
+|-------|---------|------------|-----------|
+| Information **is** in the document, model can't find it | null / empty field | Few-shot: successful extraction example from a similar structure | 4.2 |
+| Information is **not** in the document, model fabricates | plausible-looking but fake value | Make the field nullable in the schema | 4.3 |
+| Information is **not** in the document, retry is sent | null again / fabrication again | Retry doesn't work; nullable + human | 4.4 |
+| Information is **in another document** (attachment, reference) | null | Add the missing document to context, then retry | 4.4 |
+
+---
+
+## How to Build a Good Few-Shot Example
+
+**Rule 1: 2-4 examples are enough.** You don't need 10 examples. 2-4 targeted, well-chosen examples make a dramatic difference.
+
+> **Exam vs. official guide:** The exam guide says "2-4 targeted few-shot examples" → **the exam answer is 2-4**. Claude's official prompting guide says "3-5 examples for best results." Both say the same thing: *few but well chosen*; 10+ is not recommended by any source.
+
+**Rule 2: Pick ambiguous/hard cases — and make them diverse.** Don't give examples of easy cases — it already does those well. Show examples for boundary cases, edge cases, the points where the model is undecided. The official guide's warning: if the examples are not **diverse** enough, Claude learns patterns you *don't* want — if the invoice number in every example starts with "INV-", it assumes that's a rule; if every "BUG" example is a comment line, it skips bugs that aren't comments.
+
+**Rule 3: Show the reasoning in every example.** The model generalizes from the example — it doesn't just pattern match. The reasoning enables the model's transfer to new, similar cases. The official guide recommends showing the reasoning inside the examples with a `<thinking>` tag; the model generalizes this reasoning style into its own thinking.
+
+**Rule 4: Wrap examples in `<example>` tags.** A single example goes in `<example>…</example>`, multiple examples inside `<examples>`. This lets Claude distinguish the example from the *instructions* and from the *input to be reviewed*. Untagged examples are the most common mistake: the model thinks the example is part of the task and responds to the example.
+
+### Structure
+
+```xml
+<examples>
+<example>
+<input>[hard case A]</input>
+<thinking>[why X was chosen, not Y]</thinking>
+<output>[expected format/decision]</output>
+</example>
+
+<example>
+<input>[hard case B — alternative variant]</input>
+<thinking>[why a different decision this time]</thinking>
+<output>[expected format/decision]</output>
+</example>
+</examples>
+```
+
+---
+
+## Concrete Example: Code Review Agent
+
+### Scenario
+
+The agent is reviewing a comment and must decide "is this a bug or a style preference?"
+
+### ❌ Instruction-Based (Inconsistent)
+
+```
+"If the comment describes wrong behavior, flag it as a bug.
+If it only makes a suggestion, skip it."
+```
+
+This instruction seems to work, but Claude calibrates the "wrong behavior" threshold differently every time.
+
+### ✅ Few-Shot (Consistent)
+
+```xml
+<examples>
+<example>
+<input>
+  def calculate_discount(price, rate):
+      # rate must be between 0-100
+      return price * rate  # Actually expects rate 0-1
+</input>
+<thinking>The comment says 0-100 is expected, the code expects 0-1.
+The claimed behavior contradicts the actual behavior → flag.</thinking>
+<output>
+location: pricing.py:1
+issue: Comment promises a 0-100 range for rate, code expects 0-1
+severity: major
+suggested_fix: Fix the comment to "rate between 0-1" or apply rate/100
+</output>
+</example>
+
+<example>
+<input>
+  def get_users():
+      # Maybe a cache could be added
+      return db.query("SELECT * FROM users")
+</input>
+<thinking>This is a suggestion; it doesn't misdescribe the code's behavior.
+No actual vs. claimed contradiction → skip.</thinking>
+<output>SKIP</output>
+</example>
+</examples>
+```
+
+Now when Claude encounters new cases, it generalizes from this reasoning pattern.
+
+---
+
+## Hallucination Reduction Effect
+
+This is especially critical in **document extraction** tasks.
+
+### Problem
+
+You're processing invoices in various formats:
+- Some use inline references: "Item A (Unit price: $50)"
+- Some are in table format: `| Item | Quantity | Price |`
+- Some are plain text: "3 items in total, $50 each"
+
+The model extracts the fields correctly in some formats, and in others returns "null" or **fabricates a value** (hallucination).
+
+### Solution: Few-Shot Showing Format Diversity
+
+```xml
+<examples>
+<example format="inline">
+<document>Item A (Unit price: $50, Qty: 3)</document>
+<thinking>In parentheses "Unit price: $50" → unit_price=50; "Qty: 3" → quantity=3</thinking>
+<output>{"item": "Item A", "unit_price": 50, "quantity": 3}</output>
+</example>
+
+<example format="table">
+<document>| Item A | 3 | $50 |</document>
+<thinking>Column order from the header: Item | Quantity | Price → 2nd column quantity, 3rd column unit price</thinking>
+<output>{"item": "Item A", "unit_price": 50, "quantity": 3}</output>
+</example>
+
+<example format="plain text">
+<document>3 units of Item A, $50 each</document>
+<thinking>"$50 each" is the unit price, not the total</thinking>
+<output>{"item": "Item A", "unit_price": 50, "quantity": 3}</output>
+</example>
+
+<example format="no information">
+<document>Item A has been shipped.</document>
+<thinking>The document doesn't mention price or quantity → don't fabricate, return null</thinking>
+<output>{"item": "Item A", "unit_price": null, "quantity": null}</output>
+</example>
+</examples>
+```
+
+**The critical last example:** If the information isn't there, null — don't fabricate. Without this example the model usually prefers to fabricate a value.
+
+**What actually reduces hallucination:** not just showing "successful extraction," but showing **the evidence in the document** on the `<thinking>` line ("2nd column quantity"). The model learns the habit of *finding* the value in the document; when it can't find it, it says null.
+
+---
+
+## Few-Shot vs. Other Techniques — Decision Matrix
+
+| Problem | Solution |
+|-------|-------|
+| Inconsistent format | Few-shot examples |
+| Wrong decisions in ambiguous cases | Few-shot + reasoning |
+| Can't find existing information (returns null) | Few-shot, similar format |
+| Syntactically invalid JSON output | JSON schema via tool_use (4.3) |
+| Semantic errors (wrong value but valid JSON) | Validation-retry loop (4.4) |
+| Information not in the document, model fabricates | Nullable schema field (4.3) |
+| High-cost, latency-tolerant tasks | Batch API (4.5) |
+
+The exam assumes you know this table. If you can't match the right technique to each scenario, you lose points.
+
+**What few-shot cannot do:** few-shot provides *format and decision consistency*; it **does not guarantee correctness**. The model can still produce broken JSON (→ tool_use), can still compute the total wrong (→ validation). When the exam sees the word "consistency" it expects few-shot; "guarantee" → tool_use; "validation" → retry.
+
+**Cost note:** every example is tokens. If the fixed few-shot block (system prompt + examples + schema) is the same across all requests, it is cached with **prompt caching**; it can be combined with the batch discount (4.5). (Connection to Domain 5.)
+
+---
+
+## The Exam's Trap: The "More Instructions" Trap
+
+The exam presents you with this:
+
+> *The model is making inconsistent decisions. You make the instructions more detailed. Still inconsistent. What should you do?*
+
+**Wrong answers:**
+- "Write longer, more detailed instructions" — The amount of instruction is not the solution
+- "Say 'skip if unsure' / set a confidence threshold" — Confidence-based filtering (4.1); there is no such API parameter either
+- "Use a larger model" — The problem is not the model's capacity
+
+**Correct answer:**
+- "Add 2-4 few-shot examples for the problematic cases, showing the reasoning in each example"
+
+---
+
+## Key Takeaway List
+
+| # | Key Takeaway |
+|---|---------------|
+| 1 | **Few-shot is the most effective technique for consistency when instructions aren't enough.** Not more instructions. |
+| 2 | **2-4 targeted examples are enough** (exam; official guide says 3-5). Pick edge cases, ambiguous cases; make them **diverse**, don't teach patterns unintentionally. |
+| 3 | **Show the reasoning in every example** (`<thinking>`). The model generalizes, it doesn't memorize patterns. |
+| 4 | **Wrap examples in `<example>` / `<examples>` tags** — keep them separate from instructions and input. |
+| 5 | **In document extraction, format diversity + examples showing the evidence in the document reduce hallucination.** |
+| 6 | **The "null if no information" example is critical** — without it the model fabricates. Information *is there* but null → few-shot; information *is not there* → nullable schema (4.3). |
+| 7 | **Inconsistent formatting, ambiguous decision, empty field → the three few-shot triggers.** Few-shot doesn't guarantee correctness → tool_use / validation. |
+
+---
+
+## Practice Questions and Answer Explanations
+
+### Question 1
+
+You're building a document extraction pipeline. For some documents the "payment date" field is extracted correctly, for others it returns null — but the date is present in the document. Which solution is most effective?
+
+**A)** Add "payment date" to the schema definition as a required field  
+**B)** Instruct the model "If there is a date, you must extract it"  
+**C)** Add few-shot examples showing different date formats (DD/MM/YYYY, "January 15, 2024", "Jan 15")  
+**D)** Add a retry loop: try again when it returns null  
+
+**✅ Answer: C**
+
+*Explanation:* The problem is that the model doesn't recognize different date formats. Few-shot examples teach the map of "in this format, the information is found here." A required field (A) leads to fabrication. The instruction (B) was already tried and didn't work. Retry (D) repeats the same failed approach.
+
+---
+
+### Question 2
+
+How many few-shot examples is a code review agent recommended to use?
+
+**A)** 1 — few but effective  
+**B)** 2-4 — targeted examples  
+**C)** 10-15 — comprehensive coverage  
+**D)** 50+ — maximum consistency  
+
+**✅ Answer: B**
+
+*Explanation:* 2-4 well-chosen examples provide dramatic improvement (exam guide; the official prompting guide says 3-5 — same order of magnitude). More examples fill the context window and marginal returns diminish. 1 example is insufficient for generalization and teaches a single pattern by rote. 10+ is rarely necessary.
+
+---
+
+### Question 3
+
+What is the purpose of showing reasoning in few-shot examples?
+
+**A)** To slow down Claude's thought process and make it decide more carefully  
+**B)** To enable Claude to generalize from the examples to new, similar cases  
+**C)** To enable Claude to verify which answer is "correct"  
+**D)** To shorten the length of the instructions  
+
+**✅ Answer: B**
+
+*Explanation:* The reasoning teaches the model not just "in this case do this," but also "why you're doing this." As a result, the model can correctly classify brand-new cases it has never seen by applying the same reasoning. This is the basis of transferability.
+
+---
+
+### Question 4
+
+In an extraction pipeline, document structures are highly varied: tables, plain text, nested lists. What is the best approach to reduce hallucination (fabrication)?
+
+**A)** Define a strict JSON schema — all fields required  
+**B)** A separate model deployment for each format type  
+**C)** Few-shot examples showing successful extraction from diverse document structures + a "null if no information" example  
+**D)** Raise the confidence threshold: tell the model "don't write if you're not sure"  
+
+**✅ Answer: C**
+
+*Explanation:* Hallucination usually stems from the model fabricating a "plausible" value instead of extracting from the format. Few-shot teaches the model the correct extraction strategy. The "null if no information" example teaches it to return null instead of fabricating. A strict required schema (A) does the exact opposite and causes it to fabricate.
+
+---
+
+### Question 5
+
+4 few-shot examples were added to a code review agent; all four show a "BUG" decision on code snippets containing a `TODO` comment. The agent now skips obvious bugs that don't contain `TODO`, and flags correct code that does contain `TODO`. What is the problem?
+
+**A)** 4 examples are too many; reduce to 2  
+**B)** The examples are not diverse; the model unintentionally learned the "TODO = bug" pattern. Examples of bugs without `TODO` and correct code with `TODO` should be added  
+**C)** The examples lack reasoning; once reasoning is added the model will ignore TODO  
+**D)** Few-shot is not suitable for this task; revert to an instruction-based approach  
+
+**✅ Answer: B**
+
+*Explanation:* The official guide's "diverse" warning: if the examples share a single superficial feature, the model assumes that feature is the decision rule. The solution is not the number of examples (A), but example **diversity**. Reasoning (C) helps, but as long as all four examples carry the same superficial cue, the pattern won't break. (D) blames the technique rather than the example selection, which is what should be blamed.

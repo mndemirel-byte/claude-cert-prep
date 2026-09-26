@@ -1,0 +1,196 @@
+# Task Statement 2.5: Built-in Tools
+
+## Domain 2 — Tool Design & MCP Integration (18% of the exam)
+
+---
+
+## Core Idea
+
+Claude Code has built-in tools. The task statement names six of them: **Read, Write, Edit, Bash, Grep, Glob**. The exam expects you to know when to use each, especially **the difference between Grep and Glob** and **what to do when Edit fails**.
+
+| Tool | What it does | Asks permission |
+|---|---|---|
+| **Read** | Reads file contents (whole file, or a slice via `offset`/`limit`) | No |
+| **Grep** | Searches file **contents** for a pattern (ripgrep-based) | No |
+| **Glob** | Matches file **paths** against a pattern | No |
+| **Edit** | Targeted change via unique text matching | Yes |
+| **Write** | Creates a file or **completely** overwrites it | Yes |
+| **Bash** | Runs a shell command (tests, build, git, package installs) | Yes |
+
+The permission column matters: read/search tools don't ask, tools that change things or run commands do (ties into Domain 3 — permission modes).
+
+---
+
+## Grep vs Glob — The Critical Distinction
+
+Confusing these two costs time on the exam or leads to the wrong answer.
+
+### Grep — Searching INSIDE Files
+Searches for a pattern in the **text inside** files.
+
+**Use cases:**
+- Finding all call sites of a function
+- Searching for error messages
+- Finding import statements
+- Finding files that use a specific variable name
+
+**Example:** Find all files calling the function "deprecatedFunction" → **Grep**
+
+**Output modes — matters for the context budget:**
+
+| Mode | Returns | When |
+|---|---|---|
+| `files_with_matches` (default) | File paths only | Initial discovery — cheapest |
+| `content` | Matching lines (+ surrounding lines via `-A/-B/-C`) | When you need context in a specific file |
+| `count` | Match count per file | "Where is it concentrated?" |
+
+Grep also takes a `glob` / `type` filter (`pattern: "fetchUserData", glob: "*.ts"`) — content search + path filter in one call.
+
+### Glob — Matching File PATHS
+Matches file **names and paths** against a pattern. Results come sorted by modification time.
+
+**Use cases:**
+- Finding files by extension (`**/*.test.tsx`)
+- Finding configuration files (`**/config.*`)
+- Listing files in a particular directory structure
+
+**Example:** Find all test files → **Glob** (`**/*.test.tsx`)
+
+### Summary Table
+
+| Tool | Searches for | Where | Example |
+|---|---|---|---|
+| **Grep** | Text pattern | File **contents** | Function calls, error messages, imports |
+| **Glob** | Name pattern | File **paths** | Files by extension, config files |
+
+### Current note (does not change the exam answer)
+
+Recent Claude Code versions on macOS/Linux/WSL leave Grep and Glob out of the default tool set; Claude searches with `grep`/`find` through Bash (embedded `ugrep` / `bfs`), and those calls reach permission rules as **`Bash`**. **The exam guide defines Grep/Glob as separate tools; on the exam the answer is Grep/Glob.** For team tooling decisions, though, knowing "does search now need Bash permission?" matters in practice.
+
+---
+
+## Bash — Running Commands
+
+Bash is not a search tool; it is an **action** tool:
+
+- Running tests (`npm test`, `pytest`)
+- Building, linting
+- Git operations (`git status`, `git diff`, `git commit`)
+- Installing packages, running scripts
+
+**When NOT Bash:**
+- Searching inside files → Grep (structured output, no permission prompt)
+- Finding files → Glob
+- Reading files → Read (line-numbered, `offset`/`limit`)
+- Changing files → Edit / Write (instead of `sed -i` — Edit's permission rule is granular and the change is reviewable)
+
+Rule: **Use Bash only for work no built-in tool can do.** Bash asks permission every time and its output is free text; the built-in tools are both safer and more context-efficient.
+
+---
+
+## Read / Write / Edit
+
+### Read — Reading Files
+Reads the whole file or a slice via `offset` + `limit`. The in-file counterpart of "don't read all files upfront": read only the relevant 80 lines of a 2,000-line file (Domain 5 — context management).
+
+Claude Code rule: an existing file must be **Read before Write or Edit** — writing to an unread file is refused. This prevents Claude from clobbering content it hasn't seen.
+
+### Edit — Targeted Changes
+Makes a **targeted** change via exact string matching (`old_string` → `new_string`). No regex, no fuzzy matching. Fast, precise, small diff.
+
+**When to use:** When the text you want to change is unique in the file — the default choice.
+
+### When Edit Fails — Decision Flow
+
+Edit fails when `old_string` appears in **more than one** place (is not unique). In order:
+
+1. **Widen the context** — add 1–2 surrounding lines to `old_string` so it matches exactly one place. Cheapest fix; enough in most cases.
+2. **`replace_all: true`** — if you *want* every occurrence changed (renaming a variable, changing an import path). One call, deterministic.
+3. **Read + Write** — if the above don't work (the file's structure is changing, many different edits): load the whole file with Read, write the modified version with Write.
+
+The exam guide names only step 3: *"When Edit fails due to non-unique text matches, using Read + Write as a fallback for reliable file modifications."* On the exam, the answer to "Edit can't find unique text → what now?" is **Read + Write**. But if a scenario like "rename the same variable in 12 places" appears, `replace_all` is the more correct tool.
+
+### The cost of Read + Write
+
+"Reliable fallback" is right; "always works, for free" is not:
+
+- The whole file enters the context (serious token cost for large files)
+- Claude regenerates the **entire** file — risk of unintended changes or truncation in parts that should stay the same
+- The diff grows, review gets harder
+
+Hence the order: Edit → widen context → `replace_all` → Read + Write.
+
+### Summary
+
+| Tool | Use | Advantage | Limitation |
+|---|---|---|---|
+| **Edit** | Targeted change via unique text match | Fast, precise, small diff | `old_string` must be unique (or use `replace_all`) |
+| **Read + Write** | Load whole file + write whole file | Works whenever Edit doesn't | Whole file enters context and is regenerated |
+
+---
+
+## Incremental Codebase Understanding
+
+The right approach to understanding a large codebase:
+
+1. **Find entry points with Grep** — in `files_with_matches` mode: function definitions, import statements, error messages
+2. **Get narrowed context with Grep `content`** — only in the relevant file, with a short surround like `-C 3`
+3. **Follow imports with Read** — trace flows from the entry points; use `offset`/`limit` for sections where needed
+4. **Don't read all files upfront** — that's a context-budget killer
+
+> **Reading all files upfront is the WRONG approach.** It fills the context window with unnecessary data. Instead: identify targets with Grep, read only the needed files (and sections) with Read.
+
+### Tracing Function Usage — Wrapper Modules
+
+A function is defined in `utils/date.ts` but `lib/index.ts` re-exports it; consumers import from `lib`. Grepping the definition name directly misses most callers.
+
+Two steps:
+1. **Identify the exported names** — Grep the `export` statements in the wrapper module: `export { formatDate, parseDate as parse }` → the names that leave the module are `formatDate` and **`parse`** (not `parseDate`!)
+2. **Grep each name across the codebase** — `formatDate` and `parse` separately; names re-exported under an alias are the trap
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| Grep | Search INSIDE files — function calls, error messages, imports; `files_with_matches` is the cheapest mode |
+| Glob | Match file PATHS — files by extension, config files |
+| Bash | Run commands (tests, build, git) — prefer built-ins for search/read/edit; asks permission |
+| Read | Read files; partial via `offset`/`limit`; required before Write/Edit |
+| Edit | Targeted change via unique text match — fast and precise |
+| Edit fails | Widen context → `replace_all` → Read + Write (exam answer: Read + Write) |
+| Read + Write | Reliable fallback — but the whole file enters context and is regenerated |
+| Incremental understanding | Grep (files) → Grep (content) → Read (section). Don't read everything upfront |
+| Wrapper tracing | First find the exported names (including aliases), then Grep each |
+| Exam trap | Confusing Grep with Glob — content search or path matching? |
+
+---
+
+## Practice Scenario
+
+> A developer wants to find all files in the codebase that call a deprecated function (`oldCalculate`), find the corresponding test files for each, and run the tests after making the change.
+>
+> **Which tool sequence is correct?**
+>
+> **A)** Glob to find all `.ts` files, then Read each one and filter for those containing `oldCalculate`; run tests with Bash.
+>
+> **B)** Grep for the function name `oldCalculate` (finds the callers), then Glob to match test files corresponding to the found files (`**/*.test.tsx`), make the changes with Edit, run the tests with Bash.
+>
+> **C)** Run `grep -r oldCalculate .` and `find . -name "*.test.tsx"` with Bash, make the changes with `sed -i`, run the tests with Bash.
+>
+> **D)** Glob with the pattern `**/*oldCalculate*` to find files containing the function, update the files with Write.
+
+### Correct Answer: B
+
+**Why B is correct:** Each tool in its area of strength:
+1. **Grep** for `oldCalculate` in file contents → the calling files
+2. **Glob** with `**/*.test.tsx` → the test files, matched against the found names
+3. **Edit** for targeted changes (granular permission, small diff)
+4. **Bash** for `npm test` — the only job no built-in tool can do
+
+**Why A is wrong:** Finding all `.ts` files and reading them all is inefficient — a waste of context budget. Grep finds the target directly. The Bash part is right, but the start of the sequence is wrong.
+
+**Why C is wrong:** Doing everything with Bash *works*, but throws away the built-in tools' advantages: Grep/Glob don't prompt for permission and return structured output; `sed -i` provides neither Edit's uniqueness guarantee nor a readable diff, and permission rules stay at the `Bash(sed …)` level. Bash is the right tool only for the last step (tests).
+
+**Why D is wrong:** Glob searches file **paths**, not file **contents**. If `oldCalculate` isn't in a file name (it usually isn't), Glob returns nothing. And Write clobbers the whole file — Edit is the right tool for targeted changes.

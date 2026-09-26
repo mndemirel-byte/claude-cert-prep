@@ -1,0 +1,238 @@
+# Task Statement 2.2: Structured Error Responses
+
+## Domain 2 — Tool Design & MCP Integration (18% of the exam)
+
+---
+
+## Core Idea
+
+Tools don't always succeed. They time out, receive invalid input, get denied. The question is: **when a tool fails, HOW do you tell Claude?**
+
+The bad answer: the same `"Error: operation failed"` text for every failure. This is a **uniform error response**, and the exam guide names it explicitly as an anti-pattern — the agent cannot tell whether the failure is transient, input-related, or a business rule; it either retries pointlessly or abandons a recoverable error.
+
+The good answer: a **structured error response** — an error flag + the error's category + whether it is retryable + a human-readable description.
+
+---
+
+## Two Layers: Protocol Flag and Application Metadata
+
+Learn this distinction well; if the exam asks "which field does MCP use to signal an error?" the answer is one word: **`isError`**.
+
+### Layer 1 — the field MCP knows about: `isError`
+
+An MCP `tools/call` result has two fields: `content` (content blocks) and `isError` (boolean). There is no other error field.
+
+```json
+{
+  "content": [
+    { "type": "text", "text": "Database connection timed out — retry in 5 seconds" }
+  ],
+  "isError": true
+}
+```
+
+### Layer 2 — the metadata you add: `errorCategory`, `isRetryable`, …
+
+`errorCategory`, `isRetryable`, `description`, `customerMessage` are **not protocol fields**. They are **application-level** structure that you place inside the `content` text (usually as JSON) or in the `structuredContent` field. MCP does not interpret them; Claude reads them and decides.
+
+```json
+{
+  "isError": true,
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"errorCategory\":\"transient\",\"isRetryable\":true,\"description\":\"Database connection timed out — retry in 5 seconds\"}"
+    }
+  ]
+}
+```
+
+> The exam guide's Skills bullet writes `"retriable: false"` (with an e); this document uses `isRetryable`. Recognize both spellings on the exam — same concept.
+
+### Messages API equivalent: `is_error`
+
+If you write your own agentic loop without MCP (Domain 1.1), errors are signaled with **`is_error: true`** on the `tool_result` block (snake_case):
+
+```json
+{
+  "type": "tool_result",
+  "tool_use_id": "toolu_01A09q90qw90lq917835lq9",
+  "content": "Rate limit exceeded. Retry after 60 seconds.",
+  "is_error": true
+}
+```
+
+Official guidance: the error text must be **instructive** — what went wrong + what Claude should try next. Not `"failed"`, but `"Rate limit exceeded. Retry after 60 seconds."`
+
+| Context | Field | Casing |
+|---|---|---|
+| MCP tool result | `isError` | camelCase |
+| Messages API `tool_result` | `is_error` | snake_case |
+| Your metadata | `errorCategory`, `isRetryable`, … | inside content, not a protocol field |
+
+---
+
+## MCP: Protocol Errors vs Tool Execution Errors
+
+The MCP specification defines two separate error mechanisms:
+
+| Type | How it returns | What for | Reaches the model? |
+|---|---|---|---|
+| **Protocol error** | JSON-RPC `error: { code, message }` | Unknown tool name, arguments that violate the schema, server crash | **No** — stays in the client layer |
+| **Tool execution error** | `isError: true` inside `result` | API failure, invalid input data, business-rule violation | **Yes** — Claude sees it and can self-correct |
+
+**Design rule:** Return business-logic, API and validation errors **as results with `isError: true`**, don't throw them as protocol errors. A protocol error never reaches the model — Claude cannot learn what went wrong, cannot fix the input, cannot look for an alternative path. `isError` exists precisely for "errors the model needs to see".
+
+---
+
+## The Four Error Categories
+
+Memorize these four — the exam expects you to tell them apart:
+
+| Category | Example | Retryable? | Agent's action | Who is told |
+|---|---|---|---|---|
+| **Transient** | Timeout, service temporarily unavailable, rate limit | ✅ Yes — same input, after waiting | 2–3 retries with backoff; if still failing, propagate | Coordinator (with partial results) |
+| **Validation** | Wrong format, missing required field | ❌ No (with the same input) — recovery: **fix the input, make a new call** | Fix the input, call once more | Ask the user for missing data if needed |
+| **Business** | Limit exceeded, suspended account, policy violation | ❌ No | Alternative workflow (approval, escalation); relay `customerMessage` to the customer | User / customer |
+| **Permission** | Access denied, insufficient credentials | ❌ No (with the same identity) | Escalation / different credentials | Coordinator or a human |
+
+### 1. Transient Errors
+
+```json
+{
+  "isError": true,
+  "content": [{ "type": "text", "text": "{\"errorCategory\":\"transient\",\"isRetryable\":true,\"description\":\"Database connection timed out — retry in 5 seconds\"}" }]
+}
+```
+
+**Retry policy:** an upper bound (2–3 attempts), exponential backoff (1s → 2s → 4s), propagate upward once the bound is exceeded. Infinite retry locks up the system; propagating on the first failure wastes the local-recovery opportunity.
+
+**The two faces of a timeout — exam trap:** After a timeout on a read (`lookup_order`), retrying is safe. On a **write** (`process_refund`, `send_email`) a timeout leaves it unknown whether the operation happened — blind retry risks **a double refund / double email**. Fix: an idempotency key (a repeat with the same `request_id` → the server does not duplicate) or query the state first. MCP **tool annotations** carry this information to the client: `idempotentHint`, `destructiveHint`, `readOnlyHint`, `openWorldHint`. Annotations from untrusted servers must be treated as untrusted.
+
+### 2. Validation Errors
+
+```json
+{
+  "isError": true,
+  "content": [{ "type": "text", "text": "{\"errorCategory\":\"validation\",\"isRetryable\":false,\"description\":\"customer_id must be numeric — 'abc123' is an invalid format. Example: 004512\"}" }]
+}
+```
+
+Convention: `isRetryable` answers "could the **same request, repeated as-is**, succeed?" For validation the answer is no → `false`. The recovery path is not a retry but **a new call with corrected input** — which is why the `description` field should show the correct format. If the agent tries the same bad input 3 times, the problem is not the retry count; it is that the agent mistakes validation for transient. (Some sources describe validation as "retryable after correction" — recognize both framings on the exam; the key point is that blind retry with the same input is wrong.)
+
+### 3. Business Errors
+
+```json
+{
+  "isError": true,
+  "content": [{ "type": "text", "text": "{\"errorCategory\":\"business\",\"isRetryable\":false,\"description\":\"Refund amount ($750) exceeds the maximum limit ($500). Manager approval required.\",\"customerMessage\":\"Your refund request will be forwarded to a manager for review.\"}" }]
+}
+```
+
+`isRetryable: false` + **a customer-friendly message**. Until the policy changes, the same operation fails every time; retrying is wrong. The agent must not change the amount on its own either — that business decision belongs to the customer.
+
+### 4. Permission Errors
+
+```json
+{
+  "isError": true,
+  "content": [{ "type": "text", "text": "{\"errorCategory\":\"permission\",\"isRetryable\":false,\"description\":\"No access to this account — admin-level credentials required\"}" }]
+}
+```
+
+Requires escalation or different credentials. Retrying with the same identity is pointless.
+
+---
+
+## Critical Distinction: Access Failure vs Valid Empty Result (EXAM TRAP)
+
+Learn this distinction cold. The exam tests it.
+
+### Access Failure
+The tool **could not reach** the data source — timeout, authentication failure. You don't know whether the data exists. **A retry decision is needed.**
+
+```json
+{
+  "isError": true,
+  "content": [{ "type": "text", "text": "{\"errorCategory\":\"transient\",\"isRetryable\":true,\"description\":\"Database connection timed out\"}" }]
+}
+```
+
+### Valid Empty Result — THIS IS NOT AN ERROR
+The tool **successfully** queried the source and found no match. There is no data. **Retrying is WRONG.** The answer is "no results found."
+
+```json
+{
+  "isError": false,
+  "content": [{ "type": "text", "text": "{\"results\":[],\"resultCount\":0,\"description\":\"Query succeeded, no matching records\"}" }]
+}
+```
+
+The difference: the empty result has `isError: false` — because the tool ran successfully. The result is simply empty. The agent must not retry; it should tell the customer "no record found". Confuse the two and your recovery logic breaks: you either query an empty result 3 times or report a timeout as "no data".
+
+---
+
+## Error Propagation in Multi-Agent Systems
+
+How should subagents handle errors? (See Domain 5.3 — Error Propagation for detail.)
+
+1. **Recover transient errors locally** — retry 2–3 times with backoff themselves
+2. **Propagate to the coordinator only the errors they cannot resolve locally**
+3. When propagating, include:
+   - **Partial results** — what they obtained before the failure (don't throw it away!)
+   - **What was attempted** — which recovery steps were taken, how many retries
+   - **The error category** — the coordinator uses the same distinction in its own decision
+
+That lets the coordinator make an informed decision — re-invoke the same subagent, use a different one, or escalate to a human.
+
+**Anti-pattern:** Swallowing the error silently and returning an empty result. The coordinator interprets it as a "valid empty result" — the multi-agent version of the trap above.
+
+---
+
+## Key Takeaways for the Exam
+
+| Concept | Remember |
+|---|---|
+| `isError` | MCP's **only** error field; `content` + `isError` = the result structure |
+| `is_error` | Messages API `tool_result` equivalent (snake_case) |
+| Metadata | `errorCategory` + `isRetryable` + `description` (+ `customerMessage`) — inside `content`, not a protocol field |
+| Protocol vs execution error | JSON-RPC error does not reach the model; `isError: true` does → return business/API errors via `isError` |
+| Uniform error response | Anti-pattern: same text for every failure → agent can't make the right recovery decision |
+| Four categories | Transient (backoff retry, `isRetryable: true`), Validation (no retry with the same input — fix input, new call), Business (no retry, alternative path + customer message), Permission (escalate) |
+| Timeout on a write | Blind retry = double-operation risk → idempotency key / state query; `idempotentHint`, `destructiveHint` |
+| Access failure vs empty result | `isError: true` → retry decision. `isError: false` + `results: []` → "not found", no retry |
+| Error propagation | Subagent recovers locally; propagates what it can't with partial results + attempts + category |
+
+---
+
+## Practice Scenario
+
+> A customer-support agent calls the order-lookup tool. The tool returns:
+>
+> ```json
+> { "results": [], "status": 200 }
+> ```
+>
+> The agent retries 3 times, then tells the customer "There's a problem with the system, please try again later."
+>
+> Reality: the customer has no order matching that number.
+>
+> **What is the problem and how is it fixed?**
+>
+> **A)** The agent's retry logic is insufficient — raise the retry count to 5 and increase the wait time.
+>
+> **B)** The tool's response does not distinguish an access failure from a valid empty result. The agent mistakes the empty array for an error. Fix: mark a successful empty result explicitly with `isError: false` and `resultCount: 0` + "query succeeded, no matches" in the content; separate real access failures with `isError: true` + `errorCategory`.
+>
+> **C)** Add "do not retry when you receive an empty result" to the agent's system prompt.
+>
+> **D)** Replace the order-lookup tool with a broader tool.
+
+### Correct Answer: B
+
+**Why B is correct:** The problem is that the tool cannot distinguish an access failure from a valid empty result. `status: 200` indicates a successful query, but the agent can't tell because there is no explicit `isError` flag and no "this emptiness is the result of a successful query" information. Fix: a structured response format that explicitly separates the successful empty result (`isError: false`, `resultCount: 0`) from an access failure (`isError: true`, `errorCategory: transient`). Seeing `isError: false`, the agent does not retry and tells the customer "order not found".
+
+**Why A is wrong:** Raising the retry count doesn't solve it — the problem isn't insufficient retries, it is a successful empty result being mistaken for an error. Five attempts return the same empty array, because the order really doesn't exist.
+
+**Why C is wrong:** A prompt instruction is probabilistic. The real problem is in the tool's response structure — a structural problem needs a structural fix. The instruction would also suppress retries on real access failures from a badly designed tool that returns empty on timeout.
+
+**Why D is wrong:** Replacing the tool doesn't help — if the new tool uses the same ambiguous response structure, the problem persists. The root cause is the response format, not the tool's scope.
