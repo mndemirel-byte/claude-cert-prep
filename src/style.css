@@ -7,7 +7,7 @@
   --d1:oklch(0.58 0.19 255);--d2:oklch(0.58 0.19 150);--d3:oklch(0.58 0.19 30);--d4:oklch(0.58 0.19 300);--d5:oklch(0.58 0.19 70);
   --on-domain:#FFFFFF;--tabbar-bg:rgba(255,255,255,.85);--card-shadow:none;
   --ac-scenarios-bg:oklch(0.94 0.04 255);--ac-scenarios-border:oklch(0.88 0.05 255);--ac-scenarios-fg:#1B1F2A;
-  --ac-exercises-bg:oklch(0.94 0.04 30);--ac-exercises-border:oklch(0.88 0.05 30);--ac-exercises-fg:#1B1F2A;
+  --ac-exercises-bg:oklch(0.94 0.04 150);--ac-exercises-border:oklch(0.88 0.05 150);--ac-exercises-fg:#1B1F2A;
   --c:var(--d1);
   --r:20px;--rs:12px;--rs-in:9px;--btn-r:50%;--dot-r:50%;
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
@@ -23,7 +23,7 @@
   --d1:oklch(0.72 0.17 255);--d2:oklch(0.72 0.17 150);--d3:oklch(0.72 0.17 30);--d4:oklch(0.72 0.17 300);--d5:oklch(0.72 0.17 70);
   --on-domain:#0B0D15;--tabbar-bg:rgba(20,22,30,.85);
   --ac-scenarios-bg:oklch(0.24 0.04 255);--ac-scenarios-border:oklch(0.32 0.05 255);--ac-scenarios-fg:#FFFFFF;
-  --ac-exercises-bg:oklch(0.24 0.04 30);--ac-exercises-border:oklch(0.32 0.05 30);--ac-exercises-fg:#FFFFFF;
+  --ac-exercises-bg:oklch(0.24 0.04 150);--ac-exercises-border:oklch(0.32 0.05 150);--ac-exercises-fg:#FFFFFF;
 }}
 :root[data-theme="dark"]{
   --bg:#000000;--surface:#1C1C1E;--surface2:#2C2C2E;--ink:#FFFFFF;--ink2:#C7C7CC;--muted:#98989F;--line:#2C2C2E;--code:#2C2C2E;--code-bg:#0A0A0B;--code-fg:#F2F2F7;
@@ -33,7 +33,7 @@
   --d1:oklch(0.72 0.17 255);--d2:oklch(0.72 0.17 150);--d3:oklch(0.72 0.17 30);--d4:oklch(0.72 0.17 300);--d5:oklch(0.72 0.17 70);
   --on-domain:#0B0D15;--tabbar-bg:rgba(20,22,30,.85);
   --ac-scenarios-bg:oklch(0.24 0.04 255);--ac-scenarios-border:oklch(0.32 0.05 255);--ac-scenarios-fg:#FFFFFF;
-  --ac-exercises-bg:oklch(0.24 0.04 30);--ac-exercises-border:oklch(0.32 0.05 30);--ac-exercises-fg:#FFFFFF;
+  --ac-exercises-bg:oklch(0.24 0.04 150);--ac-exercises-border:oklch(0.32 0.05 150);--ac-exercises-fg:#FFFFFF;
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
 *,*::before,*::after{box-sizing:inherit}
