@@ -244,6 +244,16 @@
     }
   })();
 
+  document.querySelectorAll('.lessons').forEach(function(group){
+    var items=group.querySelectorAll('.lesson');
+    items.forEach(function(item){
+      item.addEventListener('toggle',function(){
+        if(!item.open)return;
+        items.forEach(function(other){if(other!==item)other.open=false;});
+      });
+    });
+  });
+
   document.querySelectorAll('.quiz').forEach(function(quiz){
     var qs=quiz.querySelectorAll('.q'), scoreTxt=quiz.querySelector('.scoretxt');
     function update(){
