@@ -42,16 +42,18 @@ function sampleExamQuestions(pool, combo, domainTargets) {
 var LETTERS = ['A', 'B', 'C', 'D'];
 
 function shuffleQuestionOptions(question) {
-  var texts = LETTERS.map(function (k) { return question.opts[k]; });
-  var correctText = question.opts[question.ans];
   var order = shuffle(LETTERS);
-  var newOpts = {};
-  var newAns = null;
-  order.forEach(function (letter, i) {
-    newOpts[letter] = texts[i];
-    if (texts[i] === correctText) newAns = letter;
-  });
-  return Object.assign({}, question, { opts: newOpts, ans: newAns });
+  function reorder(opts) {
+    var newOpts = {};
+    order.forEach(function (letter, i) { newOpts[letter] = opts[LETTERS[i]]; });
+    return newOpts;
+  }
+  var newAns = order[LETTERS.indexOf(question.ans)];
+  var updated = Object.assign({}, question, { opts: reorder(question.opts), ans: newAns });
+  if (question.en) {
+    updated.en = Object.assign({}, question.en, { opts: reorder(question.en.opts) });
+  }
+  return updated;
 }
 
 function orderByScenario(questions) {

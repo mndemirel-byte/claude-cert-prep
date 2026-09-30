@@ -89,6 +89,19 @@ test('preserves all four option texts after shuffling', () => {
   assert.deepEqual(texts, ['correct', 'w1', 'w2', 'w3']);
 });
 
+test('shuffles the English options in lockstep with the Turkish ones', () => {
+  const question = {
+    opts: { A: 'tr wrong one', B: 'tr correct one', C: 'tr also wrong', D: 'tr still wrong' },
+    ans: 'B',
+    en: { opts: { A: 'en wrong one', B: 'en correct one', C: 'en also wrong', D: 'en still wrong' } },
+  };
+
+  const shuffled = shuffleQuestionOptions(question);
+
+  assert.equal(shuffled.opts[shuffled.ans], 'tr correct one');
+  assert.equal(shuffled.en.opts[shuffled.ans], 'en correct one');
+});
+
 test('orders questions into contiguous per-scenario blocks', () => {
   const questions = [
     { id: 'a', sc: 2 }, { id: 'b', sc: 1 }, { id: 'c', sc: 2 },
