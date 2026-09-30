@@ -39,23 +39,6 @@ function sampleExamQuestions(pool, combo, domainTargets) {
   return questions;
 }
 
-var LETTERS = ['A', 'B', 'C', 'D'];
-
-function shuffleQuestionOptions(question) {
-  var order = shuffle(LETTERS);
-  function reorder(opts) {
-    var newOpts = {};
-    order.forEach(function (letter, i) { newOpts[letter] = opts[LETTERS[i]]; });
-    return newOpts;
-  }
-  var newAns = order[LETTERS.indexOf(question.ans)];
-  var updated = Object.assign({}, question, { opts: reorder(question.opts), ans: newAns });
-  if (question.en) {
-    updated.en = Object.assign({}, question.en, { opts: reorder(question.en.opts) });
-  }
-  return updated;
-}
-
 function orderByScenario(questions) {
   var byScenario = {};
   var scenarios = [];
@@ -71,5 +54,5 @@ function orderByScenario(questions) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { viableScenarioCombos, sampleExamQuestions, shuffleQuestionOptions, orderByScenario };
+  module.exports = { viableScenarioCombos, sampleExamQuestions, orderByScenario };
 }

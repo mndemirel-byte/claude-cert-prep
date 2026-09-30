@@ -19983,23 +19983,6 @@ function sampleExamQuestions(pool, combo, domainTargets) {
   return questions;
 }
 
-var LETTERS = ['A', 'B', 'C', 'D'];
-
-function shuffleQuestionOptions(question) {
-  var order = shuffle(LETTERS);
-  function reorder(opts) {
-    var newOpts = {};
-    order.forEach(function (letter, i) { newOpts[letter] = opts[LETTERS[i]]; });
-    return newOpts;
-  }
-  var newAns = order[LETTERS.indexOf(question.ans)];
-  var updated = Object.assign({}, question, { opts: reorder(question.opts), ans: newAns });
-  if (question.en) {
-    updated.en = Object.assign({}, question.en, { opts: reorder(question.en.opts) });
-  }
-  return updated;
-}
-
 function orderByScenario(questions) {
   var byScenario = {};
   var scenarios = [];
@@ -20015,7 +19998,7 @@ function orderByScenario(questions) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { viableScenarioCombos, sampleExamQuestions, shuffleQuestionOptions, orderByScenario };
+  module.exports = { viableScenarioCombos, sampleExamQuestions, orderByScenario };
 }
 </script>
 <script>(function(){
@@ -20337,7 +20320,7 @@ if (typeof module !== 'undefined' && module.exports) {
   function buildExam(mode){
     var combos=viableScenarioCombos(MOCK_POOL,mode.targets);
     var combo=combos[Math.floor(Math.random()*combos.length)];
-    var qs=orderByScenario(sampleExamQuestions(MOCK_POOL,combo,mode.targets)).map(shuffleQuestionOptions);
+    var qs=orderByScenario(sampleExamQuestions(MOCK_POOL,combo,mode.targets));
     LIMIT=qs.length*PER_Q;
     return {scs:combo,qs:qs,ans:new Array(qs.length).fill(null),flag:new Array(qs.length).fill(false),i:0,start:Date.now(),done:false};
   }

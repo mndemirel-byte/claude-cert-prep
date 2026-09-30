@@ -317,7 +317,7 @@
   function buildExam(mode){
     var combos=viableScenarioCombos(MOCK_POOL,mode.targets);
     var combo=combos[Math.floor(Math.random()*combos.length)];
-    var qs=orderByScenario(sampleExamQuestions(MOCK_POOL,combo,mode.targets)).map(shuffleQuestionOptions);
+    var qs=orderByScenario(sampleExamQuestions(MOCK_POOL,combo,mode.targets));
     LIMIT=qs.length*PER_Q;
     return {scs:combo,qs:qs,ans:new Array(qs.length).fill(null),flag:new Array(qs.length).fill(false),i:0,start:Date.now(),done:false};
   }

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { viableScenarioCombos, sampleExamQuestions, shuffleQuestionOptions, orderByScenario } = require('./mock-builder.js');
+const { viableScenarioCombos, sampleExamQuestions, orderByScenario } = require('./mock-builder.js');
 
 function abundantPool() {
   const pool = [];
@@ -64,42 +64,6 @@ test('never selects the same question twice', () => {
   const questions = sampleExamQuestions(pool, combo, { 1: 5, 2: 0, 3: 0, 4: 0, 5: 0 });
 
   assert.equal(new Set(questions.map((q) => q.id)).size, 5);
-});
-
-test('the returned answer letter points at the originally-correct option text', () => {
-  const question = {
-    opts: { A: 'wrong one', B: 'correct one', C: 'also wrong', D: 'still wrong' },
-    ans: 'B',
-  };
-
-  const shuffled = shuffleQuestionOptions(question);
-
-  assert.equal(shuffled.opts[shuffled.ans], 'correct one');
-});
-
-test('preserves all four option texts after shuffling', () => {
-  const question = {
-    opts: { A: 'w1', B: 'correct', C: 'w2', D: 'w3' },
-    ans: 'B',
-  };
-
-  const shuffled = shuffleQuestionOptions(question);
-
-  const texts = ['A', 'B', 'C', 'D'].map((k) => shuffled.opts[k]).sort();
-  assert.deepEqual(texts, ['correct', 'w1', 'w2', 'w3']);
-});
-
-test('shuffles the English options in lockstep with the Turkish ones', () => {
-  const question = {
-    opts: { A: 'tr wrong one', B: 'tr correct one', C: 'tr also wrong', D: 'tr still wrong' },
-    ans: 'B',
-    en: { opts: { A: 'en wrong one', B: 'en correct one', C: 'en also wrong', D: 'en still wrong' } },
-  };
-
-  const shuffled = shuffleQuestionOptions(question);
-
-  assert.equal(shuffled.opts[shuffled.ans], 'tr correct one');
-  assert.equal(shuffled.en.opts[shuffled.ans], 'en correct one');
 });
 
 test('orders questions into contiguous per-scenario blocks', () => {
